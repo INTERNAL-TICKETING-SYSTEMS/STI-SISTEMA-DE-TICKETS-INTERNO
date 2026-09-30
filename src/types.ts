@@ -4,6 +4,13 @@ export type Priority = 'baixa' | 'media' | 'alta';
 
 export type UserRole = 'usuario' | 'tecnico' | 'gestor';
 
+export type GenderOption = 
+  | 'masculino'
+  | 'feminino'
+  | 'nao_binario'
+  | 'outro'
+  | 'prefiro_nao_informar';
+
 export interface TicketUpdate {
   id: string;
   author: 'usuario' | 'tecnico';
@@ -48,7 +55,10 @@ export interface Ticket {
 export interface User {
   name: string;
   email: string;
-  department: string;
+  cpf?: string;
+  birthDate?: string;
+  gender?: GenderOption;
+  department: string; // Setor/Lotação Oficial
   role: string;
   phone: string;
   userRole: UserRole;
