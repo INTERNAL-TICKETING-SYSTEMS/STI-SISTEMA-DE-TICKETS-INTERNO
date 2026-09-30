@@ -36,9 +36,13 @@ export default function Login({ onLogin, onGoToRegister }: LoginProps) {
         <div className="relative z-10 flex min-h-screen w-full flex-col justify-between px-10 py-10 lg:px-14">
           {/* Logo */}
           <div>
-            <div className="inline-flex items-center rounded-2xl bg-white/5 px-5 py-4 backdrop-blur-sm">
-              <Logo />
-            </div>
+            <Logo variant="full" />
+
+            <div className="mt-4 h-px w-16 bg-cyan-400/40" />
+
+            <p className="mt-3 text-sm font-medium tracking-wide text-slate-400">
+              Sistema de Tickets Interno
+            </p>
           </div>
 
           {/* Texto principal */}
@@ -172,7 +176,7 @@ export default function Login({ onLogin, onGoToRegister }: LoginProps) {
 
                 <ArrowRight className="h-4 w-4 transition-transform duration-200 group-hover:translate-x-1" />
               </button>
-              </form>
+            </form>
 
             {/* Cadastro */}
             <div className="mt-7 text-center text-sm text-slate-500">

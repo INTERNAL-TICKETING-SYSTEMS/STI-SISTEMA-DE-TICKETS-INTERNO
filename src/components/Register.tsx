@@ -8,6 +8,7 @@ import {
   ArrowLeft,
   CheckCircle2,
   UserCheck,
+  Search,
 } from 'lucide-react';
 
 interface RegisterProps {
@@ -42,6 +43,8 @@ export default function Register({ onBackToLogin }: RegisterProps) {
   const [birthDate, setBirthDate] = useState('');
   const [gender, setGender] = useState<GenderOption | ''>('');
   const [sector, setSector] = useState('');
+  const [sectorSearch, setSectorSearch] = useState('');
+  const [showSectorOptions, setShowSectorOptions] = useState(false);
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
@@ -49,6 +52,29 @@ export default function Register({ onBackToLogin }: RegisterProps) {
   const [loading, setLoading] = useState(false);
   const [done, setDone] = useState(false);
   const [error, setError] = useState('');
+
+  const sortedSectors = [...SETORES_DETRAN].sort((a, b) =>
+    a.nome.localeCompare(b.nome, 'pt-BR', { sensitivity: 'base' })
+  );
+
+  const filteredSectors = sortedSectors.filter((s) => {
+    const search = sectorSearch.trim().toLowerCase();
+
+    if (!search) return true;
+
+    return (
+      s.sigla.toLowerCase().includes(search) ||
+      s.nome.toLowerCase().includes(search)
+    );
+  });
+
+  const handleSectorSelect = (sigla: string, nome: string) => {
+    const value = `${sigla} - ${nome}`;
+
+    setSector(value);
+    setSectorSearch(value);
+    setShowSectorOptions(false);
+  };
 
   // Máscara de CPF
   const handleCpfChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -235,18 +261,53 @@ export default function Register({ onBackToLogin }: RegisterProps) {
               </Field>
 
               <Field label="Setor de Lotação (DETRAN)">
-                <Select
-                  value={sector}
-                  onChange={(e) => setSector(e.target.value)}
-                  required
-                >
-                  <option value="">Selecione seu setor...</option>
-                  {SETORES_DETRAN.map((s) => (
-                    <option key={s.sigla} value={`${s.sigla} - ${s.nome}`}>
-                      {s.sigla} - {s.nome}
-                    </option>
-                  ))}
-                </Select>
+                <div className="relative">
+                  <div className="relative">
+                    <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+
+                    <Input
+                      type="text"
+                      placeholder="Digite para buscar sua lotação..."
+                      value={sectorSearch}
+                      onChange={(e) => {
+                        setSectorSearch(e.target.value);
+                        setSector('');
+                        setShowSectorOptions(true);
+                      }}
+                      onFocus={() => setShowSectorOptions(true)}
+                      required
+                      autoComplete="off"
+                      className="pl-10"
+                    />
+                  </div>
+
+                  {showSectorOptions && (
+                    <div className="absolute z-50 mt-1 max-h-64 w-full overflow-y-auto rounded-xl border border-slate-200 bg-white shadow-lg">
+                      {filteredSectors.length > 0 ? (
+                        filteredSectors.map((s) => (
+                          <button
+                            key={s.sigla}
+                            type="button"
+                            onClick={() => handleSectorSelect(s.sigla, s.nome)}
+                            className="w-full border-b border-slate-100 px-4 py-3 text-left text-sm transition-colors last:border-b-0 hover:bg-cyan-50"
+                          >
+                            <span className="font-medium text-slate-800">
+                              {s.sigla}
+                            </span>
+
+                            <span className="text-slate-600">
+                              {' - '}{s.nome}
+                            </span>
+                          </button>
+                        ))
+                      ) : (
+                        <div className="px-4 py-3 text-sm text-slate-500">
+                          Nenhuma lotação encontrada.
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
               </Field>
             </div>
 
