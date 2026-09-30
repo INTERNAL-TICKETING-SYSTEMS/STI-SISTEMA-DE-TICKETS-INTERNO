@@ -1,4 +1,4 @@
-import { useState } from 'react';
+﻿import { useState } from 'react';
 import Sidebar, { Page, PageContainer } from '@/components/Sidebar';
 import Login from '@/components/Login';
 import Register from '@/components/Register';
@@ -115,7 +115,7 @@ export default function App() {
           ? 'Alto — não consigo trabalhar'
           : 'Médio — dá para contornar',
       errorMessage: 'Nenhuma',
-      attachments: [],
+      attachments: (data as any).attachments || [],
       assignee: null,
       attendanceStartedAt: null,
       solution: null,
@@ -123,7 +123,7 @@ export default function App() {
     };
 
     setTickets((prev) => [newTicket, ...prev]);
-    setUserView({ page: 'meus-chamados' });
+      // Deixa o OpenTicket exibir o comprovante e a animacao de sucesso
   };
 
   const handleUserReply = (id: string, message: string) => {
@@ -350,9 +350,7 @@ export default function App() {
           {userView.page === 'ticket-detail' && currentTicket && (
             <TicketDetail
               ticket={currentTicket}
-              onReply={(msg) => handleUserReply(currentTicket.id, msg)} onNavigate={function (p: Page): void {
-                throw new Error('Function not implemented.');
-              } }            />
+              onReply={(msg) => handleUserReply(currentTicket.id, msg)} onNavigate={navigate}            />
           )}
         </PageContainer>
       </div>
