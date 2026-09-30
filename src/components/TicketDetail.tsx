@@ -6,7 +6,7 @@ import { formatDate } from '@/data';
 import { Page } from '@/components/Sidebar';
 import {
   ArrowLeft,
-  Send,
+  Send, Star, CheckCircle,
   User as UserIcon,
   Headphones,
   Clock,
@@ -20,13 +20,18 @@ import {
 } from 'lucide-react';
 
 interface TicketDetailProps {
+  onRateTicket?: (id: string, rating: number, comment?: string) => void;
   ticket: Ticket;
   onNavigate: (p: Page) => void;
   onReply: (id: string, message: string) => void;
 }
 
-export default function TicketDetail({ ticket, onNavigate, onReply }: TicketDetailProps) {
+export default function TicketDetail({ ticket, onNavigate, onReply, onRateTicket }: TicketDetailProps) {
   const [reply, setReply] = useState('');
+  const [userRating, setUserRating] = useState(ticket.rating ?? 5);
+  const [hoverRating, setHoverRating] = useState(0);
+  const [ratingComment, setRatingComment] = useState(ticket.ratingComment ?? '');
+  const [submittedRating, setSubmittedRating] = useState(false);
   const [chatAttachments, setChatAttachments] = useState<string[]>([]);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
 
@@ -317,9 +322,99 @@ export default function TicketDetail({ ticket, onNavigate, onReply }: TicketDeta
                 </div>
               </div>
             ) : (
-              <div className="mt-6 rounded-xl bg-slate-50 border border-slate-200 p-4 text-center text-xs text-slate-500">
-                Este chamado está <strong>{ticket.status}</strong>. O canal de mensagens está arquivado para fins de auditoria.
-              </div>
+                              <div className="mt-6 space-y-4">
+                  {/* Se o chamado está resolvido e aguardando avaliação do usuário */}
+                  {ticket.status === 'resolvido' && !ticket.rating && !submittedRating ? (
+                    <div className="rounded-2xl border-2 border-emerald-400 bg-emerald-50/60 p-6 shadow-sm animate-fade-in">
+                      <div className="flex items-center gap-2.5 text-emerald-800 font-bold text-sm mb-1">
+                        <CheckCircle className="h-5 w-5 text-emerald-600" />
+                        Atendimento Concluído pelo Suporte!
+                      </div>
+                      <p className="text-xs text-slate-600 mb-4">
+                        Por favor, avalie a qualidade do atendimento técnico recebido para fecharmos o chamado.
+                      </p>
+
+                      <div className="mb-4 flex items-center gap-1.5">
+                        <span className="text-xs font-semibold text-slate-700 mr-2">Sua nota:</span>
+                        {[1, 2, 3, 4, 5].map((star) => (
+                          <button
+                            key={star}
+                            type="button"
+                            onClick={() => setUserRating(star)}
+                            onMouseEnter={() => setHoverRating(star)}
+                            onMouseLeave={() => setHoverRating(0)}
+                            className="p-1 transition-transform hover:scale-110 focus:outline-none"
+                          >
+                            <Star
+                              className={`h-6 w-6 ${
+                                star <= (hoverRating || userRating)
+                                  ? 'fill-amber-400 text-amber-400'
+                                  : 'text-slate-300'
+                              }`}
+                            />
+                          </button>
+                        ))}
+                        <span className="ml-2 text-xs font-medium text-amber-600">
+                          {userRating === 5 && 'Excelente'}
+                          {userRating === 4 && 'Muito Bom'}
+                          {userRating === 3 && 'Regular'}
+                          {userRating === 2 && 'Ruim'}
+                          {userRating === 1 && 'Péssimo'}
+                        </span>
+                      </div>
+
+                      <div className="mb-4">
+                        <textarea
+                          value={ratingComment}
+                          onChange={(e) => setRatingComment(e.target.value)}
+                          placeholder="Deixe um comentário opcional sobre a solução ou o técnico responsável..."
+                          rows={2}
+                          className="w-full rounded-xl border border-emerald-200 bg-white p-3 text-xs text-slate-800 placeholder:text-slate-400 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                        />
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (onRateTicket) {
+                            onRateTicket(ticket.id, userRating, ratingComment.trim() || undefined);
+                            setSubmittedRating(true);
+                          }
+                        }}
+                        className="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-4 py-2.5 text-xs font-bold text-white shadow-md hover:bg-emerald-700 transition-colors"
+                      >
+                        <CheckCircle className="h-4 w-4" />
+                        Enviar Avaliação e Concluir Chamado
+                      </button>
+                    </div>
+                  ) : (ticket.rating || submittedRating) ? (
+                    <div className="rounded-xl border border-amber-200 bg-amber-50/70 p-4 shadow-sm animate-fade-in">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-xs font-bold text-amber-900 flex items-center gap-1.5">
+                          <Star className="h-4 w-4 fill-amber-500 text-amber-500" />
+                          Avaliação do Solicitante Registrada
+                        </span>
+                        <div className="flex gap-1">
+                          {[1, 2, 3, 4, 5].map((s) => (
+                            <Star
+                              key={s}
+                              className={`h-4 w-4 ${s <= (ticket.rating ?? userRating) ? 'fill-amber-400 text-amber-400' : 'text-slate-300'}`}
+                            />
+                          ))}
+                        </div>
+                      </div>
+                      {(ticket.ratingComment || ratingComment) && (
+                        <p className="text-xs text-slate-700 italic bg-white/70 rounded-lg p-2.5 border border-amber-100">
+                          "{ticket.ratingComment || ratingComment}"
+                        </p>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="rounded-xl bg-slate-50 border border-slate-200 p-4 text-center text-xs text-slate-500">
+                      Este chamado está <strong>{ticket.status}</strong>. O canal de mensagens está arquivado para fins de auditoria.
+                    </div>
+                  )}
+                </div>
             )}
           </div>
         </div>

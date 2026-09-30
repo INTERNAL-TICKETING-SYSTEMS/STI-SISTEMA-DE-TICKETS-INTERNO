@@ -1,4 +1,4 @@
-export type TicketStatus = 'aberto' | 'em_andamento' | 'resolvido' | 'fechado' | 'aguardando';
+﻿export type TicketStatus = 'aberto' | 'em_andamento' | 'resolvido' | 'fechado' | 'aguardando';
 
 export type Priority = 'baixa' | 'media' | 'alta';
 
@@ -49,6 +49,10 @@ export interface Ticket {
   assignee: string | null;
   attendanceStartedAt: string | null;
   solution: string | null;
+  assetTag?: string;
+  replacedParts?: string;
+  rating?: number;
+  ratingComment?: string;
   internalNotes: InternalNote[];
 }
 

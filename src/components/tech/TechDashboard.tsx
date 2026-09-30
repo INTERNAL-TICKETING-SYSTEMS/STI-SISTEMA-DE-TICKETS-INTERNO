@@ -1,4 +1,4 @@
-import { Ticket } from '@/types';
+﻿import { Ticket } from '@/types';
 import StatusBadge from '@/components/ui/StatusBadge';
 import { formatDateShort } from '@/data';
 import { TechPage } from '@/components/tech/TechSidebar';

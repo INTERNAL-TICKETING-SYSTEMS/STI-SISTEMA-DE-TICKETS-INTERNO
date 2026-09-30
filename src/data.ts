@@ -1,4 +1,4 @@
-import { Ticket, User, TicketStatus } from '@/types';
+﻿import { Ticket, User, TicketStatus } from '@/types';
 
 export const currentUser: User = {
   name: 'Ana Carolina Mendes',
@@ -9,14 +9,42 @@ export const currentUser: User = {
   userRole: 'usuario',
 };
 
-export const currentTech: User = {
-  name: 'Marina Alves',
-  email: 'marina.alves@empresa.com.br',
-  department: 'TI',
-  role: 'Técnica de Suporte',
-  phone: '(11) 91234-5678',
-  userRole: 'tecnico',
-};
+export const mockTechnicians: User[] = [
+  {
+    name: 'Daniel Santos',
+    email: 'danielandsanfer@gmail.com',
+    department: 'Manutenção / TI',
+    role: 'Técnico de Suporte',
+    phone: '(63) 99999-0001',
+    userRole: 'tecnico',
+  },
+  {
+    name: 'João Pedro Moreira',
+    email: 'joaopedromms20@gmail.com',
+    department: 'Manutenção / TI',
+    role: 'Técnico de Suporte',
+    phone: '(63) 99999-0002',
+    userRole: 'tecnico',
+  },
+  {
+    name: 'Guilherme Ferreira',
+    email: 'guidetranto@gmail.com',
+    department: 'Manutenção / TI',
+    role: 'Técnico de Suporte',
+    phone: '(63) 99999-0003',
+    userRole: 'tecnico',
+  },
+  {
+    name: 'Wanderson Alves',
+    email: 'wandersonmaior@gmail.com',
+    department: 'Manutenção / TI',
+    role: 'Técnico de Suporte',
+    phone: '(63) 99999-0004',
+    userRole: 'tecnico',
+  },
+];
+
+export const currentTech: User = mockTechnicians[0];
 
 export const mockTickets: Ticket[] = [
   {

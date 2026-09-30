@@ -1,4 +1,4 @@
-import { useState } from 'react';
+﻿import { useState } from 'react';
 import Logo from '@/components/Logo';
 import { Field, Input } from '@/components/ui/Field';
 import { Lock, Mail, ShieldCheck, ArrowRight } from 'lucide-react';
@@ -172,7 +172,7 @@ export default function Login({ onLogin, onGoToRegister }: LoginProps) {
 
                 <ArrowRight className="h-4 w-4 transition-transform duration-200 group-hover:translate-x-1" />
               </button>
-            </form>
+              </form>
 
             {/* Cadastro */}
             <div className="mt-7 text-center text-sm text-slate-500">

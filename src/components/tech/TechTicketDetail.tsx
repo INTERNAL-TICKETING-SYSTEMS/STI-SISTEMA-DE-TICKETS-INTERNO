@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Ticket, TicketStatus } from '@/types';
+﻿import { useState } from 'react';
+import { Ticket, TicketStatus, User } from '@/types';
 import StatusBadge, { statusLabel } from '@/components/ui/StatusBadge';
 import Button from '@/components/ui/Button';
 import { Textarea, Select } from '@/components/ui/Field';
@@ -9,15 +9,15 @@ import {
   ArrowLeft,
   Send,
   User as UserIcon,
-  Headphones,
+  Headphones, ArrowRightLeft, UserCheck,
   Clock,
   MapPin,
   Phone,
   Monitor,
   AlertTriangle,
   FileText,
-  Paperclip,
-  CheckCircle2,
+  Paperclip, Tag, Wrench,
+  CheckCircle2, Star,
   StickyNote,
   MessageCircle,
 } from 'lucide-react';
@@ -28,9 +28,11 @@ interface TechTicketDetailProps {
   onSendMessage: (id: string, message: string) => void;
   onRequestInfo: (id: string, question: string) => void;
   onChangeStatus: (id: string, status: TicketStatus) => void;
-  onResolve: (id: string, solution: string) => void;
+  onResolve: (id: string, solution: string, assetTag?: string, replacedParts?: string) => void;
   onAddInternalNote: (id: string, note: string) => void;
   techName: string;
+  technicians?: User[];
+  onAssign?: (id: string, assigneeName: string) => void;
 }
 
 type Tab = 'interactions' | 'solution' | 'notes';
@@ -44,14 +46,22 @@ export default function TechTicketDetail({
   onResolve,
   onAddInternalNote,
   techName,
+  technicians = [],
+  onAssign,
 }: TechTicketDetailProps) {
+  const [selectedTransferTech, setSelectedTransferTech] = useState('');
+  const [showTransferSelect, setShowTransferSelect] = useState(false);
   const [tab, setTab] = useState<Tab>('interactions');
   const [message, setMessage] = useState('');
   const [requestMsg, setRequestMsg] = useState('');
   const [showRequest, setShowRequest] = useState(false);
   const [statusSelect, setStatusSelect] = useState<TicketStatus>(ticket.status);
   const [solution, setSolution] = useState(ticket.solution ?? '');
+  const [assetTag, setAssetTag] = useState(ticket.assetTag ?? '');
+  const [replacedParts, setReplacedParts] = useState(ticket.replacedParts ?? '');
   const [note, setNote] = useState('');
+  // Localiza a última transferência
+  const latestTransfer = [...ticket.updates].reverse().find((u) => u.message.toLowerCase().includes('transferido'));
 
   const handleSend = () => {
     if (!message.trim()) return;
@@ -228,27 +238,107 @@ export default function TechTicketDetail({
               <h2 className="mb-2 text-sm font-semibold text-sti-navy-800">Registrar solução</h2>
               <p className="mb-5 text-sm text-slate-500">Descreva como o problema foi solucionado.</p>
 
-              {ticket.solution ? (
-                <div className="mb-5 rounded-xl border border-green-200 bg-green-50/50 p-4">
-                  <div className="mb-2 flex items-center gap-2 text-sm font-medium text-green-700">
-                    <CheckCircle2 className="h-4 w-4" />
-                    Solução registrada
+                              {ticket.solution ? (
+                  <div className="mb-5 space-y-4">
+                    <div className="rounded-xl border border-emerald-200 bg-emerald-50/50 p-4">
+                                          {ticket.rating && (
+                      <div className="rounded-xl border border-amber-200 bg-amber-50/80 p-4">
+                        <div className="flex items-center justify-between mb-1.5">
+                          <span className="flex items-center gap-1.5 text-xs font-bold text-amber-900 uppercase tracking-wider">
+                            <Star className="h-4 w-4 fill-amber-500 text-amber-500" />
+                            Avaliação do Solicitante
+                          </span>
+                          <div className="flex gap-1">
+                            {[1, 2, 3, 4, 5].map((s) => (
+                              <Star
+                                key={s}
+                                className={`h-4 w-4 ${s <= (ticket.rating ?? 0) ? 'fill-amber-400 text-amber-400' : 'text-slate-300'}`}
+                              />
+                            ))}
+                          </div>
+                        </div>
+                        {ticket.ratingComment && (
+                          <p className="text-xs text-slate-700 italic bg-white/80 p-2.5 rounded-lg border border-amber-100">
+                            "{ticket.ratingComment}"
+                          </p>
+                        )}
+                      </div>
+                    )}
+                    <div className="mb-2 flex items-center gap-2 text-sm font-semibold text-emerald-800">
+                        <CheckCircle2 className="h-4 w-4 text-emerald-600" />
+                        Parecer Técnico Registrado
+                      </div>
+                      <p className="text-sm leading-relaxed text-slate-700 whitespace-pre-wrap">{ticket.solution}</p>
+                    </div>
+
+                    {(ticket.assetTag || ticket.replacedParts) && (
+                      <div className="grid gap-3 sm:grid-cols-2">
+                        {ticket.assetTag && (
+                          <div className="rounded-xl border border-slate-200 bg-slate-50 p-3.5">
+                            <span className="flex items-center gap-1.5 text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">
+                              <Tag className="h-3.5 w-3.5 text-sti-teal-600" />
+                              Patrimônio / Tombamento
+                            </span>
+                            <span className="font-mono text-sm font-bold text-slate-800">{ticket.assetTag}</span>
+                          </div>
+                        )}
+                        {ticket.replacedParts && (
+                          <div className="rounded-xl border border-slate-200 bg-slate-50 p-3.5">
+                            <span className="flex items-center gap-1.5 text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">
+                              <Wrench className="h-3.5 w-3.5 text-amber-600" />
+                              Peças / Insumos Utilizados
+                            </span>
+                            <span className="text-sm font-medium text-slate-700">{ticket.replacedParts}</span>
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
-                  <p className="text-sm leading-relaxed text-slate-700">{ticket.solution}</p>
-                </div>
-              ) : (
-                <div className="mb-4">
-                  <label className="mb-2 block text-sm font-medium text-sti-navy-800">
-                    Descrição da solução
-                  </label>
-                  <Textarea
-                    value={solution}
-                    onChange={(e) => setSolution(e.target.value)}
-                    placeholder="Registre: o que foi identificado, o que foi realizado e o resultado do atendimento…"
-                    rows={6}
-                  />
-                </div>
-              )}
+                ) : (
+                  <div className="mb-5 space-y-4">
+                    <div>
+                      <label className="mb-2 block text-xs font-semibold uppercase tracking-wider text-slate-500">
+                        Descrição Técnica da Solução *
+                      </label>
+                      <Textarea
+                        value={solution}
+                        onChange={(e) => setSolution(e.target.value)}
+                        placeholder="Registre: diagnóstico técnico realizado, procedimento aplicado e validação funcional..."
+                        rows={5}
+                      />
+                    </div>
+
+                    <div className="grid gap-4 sm:grid-cols-2">
+                      <div>
+                        <label className="mb-1.5 flex items-center gap-1.5 text-xs font-semibold text-slate-600">
+                          <Tag className="h-3.5 w-3.5 text-slate-400" />
+                          Nº do Patrimônio / Tombamento (Opcional)
+                        </label>
+                        <input
+                          type="text"
+                          value={assetTag}
+                          onChange={(e) => setAssetTag(e.target.value)}
+                          placeholder="Ex: PAT-2024-0891 ou Placa 10423"
+                          className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 placeholder:text-slate-400 focus:border-sti-teal-500 focus:outline-none focus:ring-1 focus:ring-sti-teal-500"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="mb-1.5 flex items-center gap-1.5 text-xs font-semibold text-slate-600">
+                          <Wrench className="h-3.5 w-3.5 text-slate-400" />
+                          Peças ou Insumos Trocados (Opcional)
+                        </label>
+                        <input
+                          type="text"
+                          value={replacedParts}
+                          onChange={(e) => setReplacedParts(e.target.value)}
+                          placeholder="Ex: Cabo de rede Cat6 2m, SSD 256GB, Fonte ATX"
+                          className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 placeholder:text-slate-400 focus:border-sti-teal-500 focus:outline-none focus:ring-1 focus:ring-sti-teal-500"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                )}
 
               {!ticket.solution && ticket.status !== 'fechado' && (
                 <div className="flex justify-end">
@@ -372,7 +462,100 @@ export default function TechTicketDetail({
           <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sti">
             <h3 className="mb-4 text-sm font-semibold text-sti-navy-800">Atendimento</h3>
             <dl className="flex flex-col gap-3 text-sm">
-              <InfoRow icon={Headphones} label="Responsável" value={ticket.assignee ?? 'Não atribuído'} />
+                              <div>
+                  <dt className="mb-1 flex items-center justify-between text-xs text-slate-400">
+                    <span className="flex items-center gap-1.5">
+                      <Headphones className="h-3.5 w-3.5" />
+                      Responsável Atual
+                    </span>
+                    {ticket.assignee && (
+                      <span className="font-semibold text-emerald-600 text-[11px] bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
+                        Atribuído
+                      </span>
+                    )}
+                  </dt>
+                  <dd className="font-medium text-slate-800 text-sm">
+                    {ticket.assignee || <span className="text-amber-600 font-semibold italic">Aguardando Técnico</span>}
+                  </dd>
+
+                  {/* Ações de Gestão de Custódia */}
+                  {onAssign && ticket.status !== 'fechado' && (
+                    <div className="mt-3 space-y-2 border-t border-slate-100 pt-3">
+                      {ticket.assignee !== techName ? (
+                        <button
+                          type="button"
+                          onClick={() => onAssign(ticket.id, techName)}
+                          className="w-full flex items-center justify-center gap-2 rounded-xl bg-slate-900 px-3 py-2 text-xs font-semibold text-white shadow-sm hover:bg-slate-800 transition-all"
+                        >
+                          <UserCheck className="h-3.5 w-3.5 text-emerald-400" />
+                          Assumir Atendimento
+                        </button>
+                      ) : (
+                        <div className="rounded-lg bg-emerald-50 p-2 text-center text-xs font-medium text-emerald-800 border border-emerald-200">
+                          Você é o responsável por este chamado
+                        </div>
+                      )}
+
+                      {/* Botão de Transferência entre os 4 técnicos */}
+                      {!showTransferSelect ? (
+                        <button
+                          type="button"
+                          onClick={() => setShowTransferSelect(true)}
+                          className="w-full flex items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-50 transition-colors"
+                        >
+                          <ArrowRightLeft className="h-3.5 w-3.5 text-slate-400" />
+                          Transferir para outro colega
+                        </button>
+                      ) : (
+                        <div className="space-y-1.5 rounded-xl border border-slate-200 bg-slate-50 p-2.5">
+                          <label className="block text-[11px] font-semibold text-slate-600">
+                            Selecione o técnico de destino:
+                          </label>
+                          <select
+                            value={selectedTransferTech}
+                            onChange={(e) => setSelectedTransferTech(e.target.value)}
+                            className="w-full rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs text-slate-800 focus:outline-none focus:ring-1 focus:ring-slate-400"
+                          >
+                            <option value="">Escolha na equipe...</option>
+                            {technicians
+                              .filter((t) => t.name !== ticket.assignee)
+                              .map((t) => (
+                                <option key={t.email} value={t.name}>
+                                  {t.name} (Manutenção / TI)
+                                </option>
+                              ))}
+                          </select>
+                          <div className="flex gap-1.5 pt-1">
+                            <button
+                              type="button"
+                              disabled={!selectedTransferTech}
+                              onClick={() => {
+                                if (selectedTransferTech) {
+                                  onAssign(ticket.id, selectedTransferTech);
+                                  setShowTransferSelect(false);
+                                  setSelectedTransferTech('');
+                                }
+                              }}
+                              className="flex-1 rounded-lg bg-slate-900 py-1.5 text-xs font-semibold text-white disabled:opacity-40 hover:bg-slate-800"
+                            >
+                              Confirmar
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setShowTransferSelect(false);
+                                setSelectedTransferTech('');
+                              }}
+                              className="rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs text-slate-500 hover:bg-slate-100"
+                            >
+                              Cancelar
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
               <div>
                 <dt className="mb-0.5 flex items-center gap-1.5 text-xs text-slate-400">
                   <Clock className="h-3.5 w-3.5" />

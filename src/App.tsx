@@ -12,7 +12,7 @@ import TechDashboard from '@/components/tech/TechDashboard';
 import TechTickets from '@/components/tech/TechTickets';
 import TechMyAttendance from '@/components/tech/TechMyAttendance';
 import TechTicketDetail from '@/components/tech/TechTicketDetail';
-import { mockTickets, currentUser, currentTech } from '@/data';
+import { mockTickets, currentUser, currentTech, mockTechnicians } from '@/data';
 import { Ticket, UserRole, TicketStatus, User } from '@/types';
 import Logo from '@/components/Logo';
 import { BarChart3, ClipboardList, CheckCircle2, Clock, Users } from 'lucide-react';
@@ -22,17 +22,20 @@ type TechView = { page: TechPage } | { page: 'tech-ticket-detail'; ticketId: str
 type AuthScreen = 'login' | 'register';
 
 // Simulated account database — maps email to role
-const knownAccounts: Record<string, { role: UserRole; user: User }> = {
+const knownAccounts: Record<string, { role: UserRole; user: User; defaultPassword?: string }> = {
   'ana.mendes@empresa.com.br': { role: 'usuario', user: currentUser },
-  'marina.alves@empresa.com.br': { role: 'tecnico', user: currentTech },
+  'danielandsanfer@gmail.com': { role: 'tecnico', user: mockTechnicians[0], defaultPassword: '.\ati@!#$%2020' },
+  'joaopedromms20@gmail.com': { role: 'tecnico', user: mockTechnicians[1], defaultPassword: '.\ati@!#$%2020' },
+  'guidetranto@gmail.com': { role: 'tecnico', user: mockTechnicians[2], defaultPassword: '.\ati@!#$%2020' },
+  'wandersonmaior@gmail.com': { role: 'tecnico', user: mockTechnicians[3], defaultPassword: '.\ati@!#$%2020' },
   'roberto.gestor@empresa.com.br': {
     role: 'gestor',
     user: {
       name: 'Roberto Gestor',
       email: 'roberto.gestor@empresa.com.br',
-      department: 'TI',
+      department: 'Manutenção / TI',
       role: 'Gestor de TI',
-      phone: '(11) 90000-0000',
+      phone: '(63) 98888-0000',
       userRole: 'gestor',
     },
   },
@@ -173,6 +176,39 @@ export default function App() {
     setTechView({ page: 'tech-ticket-detail', ticketId: id });
   };
 
+    const handleAssignTicket = (id: string, assigneeName: string) => {
+    const now = new Date().toISOString();
+
+    setTickets((prev) =>
+      prev.map((t) => {
+        if (t.id !== id) return t;
+
+        const isReassign = Boolean(t.assignee && t.assignee !== assigneeName);
+        const logMsg = isReassign
+          ? 'Chamado transferido de ' + t.assignee + ' para ' + assigneeName + '.'
+          : 'Atendimento assumido por ' + assigneeName + ' (Manutenção / TI).';
+
+        return {
+          ...t,
+          assignee: assigneeName,
+          status: t.status === 'aberto' ? 'em_andamento' : t.status,
+          attendanceStartedAt: t.attendanceStartedAt || now,
+          updatedAt: now,
+          updates: [
+            ...t.updates,
+            {
+              id: String(Date.now()),
+              author: 'tecnico' as const,
+              authorName: activeUser.name,
+              message: logMsg,
+              createdAt: now,
+            },
+          ],
+        };
+      })
+    );
+  };
+
   const handleTechMessage = (id: string, message: string) => {
     const now = new Date().toISOString();
 
@@ -240,16 +276,17 @@ export default function App() {
     );
   };
 
-  const handleResolve = (id: string, solution: string) => {
+  const handleResolve = (id: string, solution: string, assetTag?: string, replacedParts?: string) => {
     const now = new Date().toISOString();
-
     setTickets((prev) =>
       prev.map((t) =>
         t.id === id
           ? {
-            ...t,
-            status: 'resolvido' as TicketStatus,
-            solution,
+              ...t,
+              status: 'resolvido' as TicketStatus,
+              solution,
+              assetTag: assetTag || t.assetTag,
+              replacedParts: replacedParts || t.replacedParts,
             updatedAt: now,
             updates: [
               ...t.updates,
@@ -267,7 +304,33 @@ export default function App() {
     );
   };
 
-  const handleAddNote = (id: string, note: string) => {
+  
+  const handleRateTicket = (id: string, rating: number, comment?: string) => {
+    const now = new Date().toISOString();
+    setTickets((prev) =>
+      prev.map((t) => {
+        if (t.id !== id) return t;
+        return {
+          ...t,
+          status: 'fechado' as const,
+          rating,
+          ratingComment: comment,
+          updatedAt: now,
+          updates: [
+            ...t.updates,
+            {
+              id: String(Date.now()),
+              author: 'usuario' as const,
+              authorName: activeUser.name,
+              message: `Chamado avaliado com ${rating} de 5 estrelas pelo usuário.${comment ? ' Feedback: "' + comment + '"' : ''}`,
+              createdAt: now,
+            },
+          ],
+        };
+      })
+    );
+  };
+const handleAddNote = (id: string, note: string) => {
     const now = new Date().toISOString();
 
     setTickets((prev) =>
@@ -348,9 +411,12 @@ export default function App() {
           {userView.page === 'perfil' && <Profile user={activeUser} />}
 
           {userView.page === 'ticket-detail' && currentTicket && (
-            <TicketDetail
-              ticket={currentTicket}
-              onReply={(msg) => handleUserReply(currentTicket.id, msg)} onNavigate={navigate}            />
+                          <TicketDetail
+                ticket={currentTicket}
+                onReply={(msg) => handleUserReply(currentTicket.id, msg)}
+                onNavigate={navigate}
+                onRateTicket={handleRateTicket}
+              />
           )}
         </PageContainer>
       </div>
@@ -427,13 +493,13 @@ export default function App() {
               onChangeStatus={(id, status) =>
                 handleChangeStatus(id, status)
               }
-              onResolve={(id, solution) =>
-                handleResolve(id, solution)
-              }
+              onResolve={(id, solution, assetTag, replacedParts) => handleResolve(id, solution, assetTag, replacedParts)}
               onAddInternalNote={(id, note) =>
                 handleAddNote(id, note)
               }
               techName={activeUser.name}
+                technicians={mockTechnicians}
+                onAssign={handleAssignTicket}
             />
           )}
         </TechPageContainer>
