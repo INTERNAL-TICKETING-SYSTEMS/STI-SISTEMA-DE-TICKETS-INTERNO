@@ -1,28 +1,48 @@
-import { useState } from 'react';
+﻿import React, { useState } from 'react';
 import Logo from '@/components/Logo';
 import Button from '@/components/ui/Button';
-import { Field, Input } from '@/components/ui/Field';
+import { Field, Input, Select } from '@/components/ui/Field';
+import { SETORES_DETRAN, GENEROS_OPCOES } from '@/data/setores';
+import { GenderOption } from '@/types';
 import {
-  Lock,
-  Mail,
-  User as UserIcon,
-  Building2,
-  MapPin,
-  Phone,
   ArrowLeft,
   CheckCircle2,
-  Info,
+  UserCheck,
 } from 'lucide-react';
 
 interface RegisterProps {
   onBackToLogin: () => void;
 }
 
+// Algoritmo real de validação de CPF
+function validarCPF(cpf: string): boolean {
+  const clean = cpf.replace(/\D/g, '');
+  if (clean.length !== 11 || /^(\d)\1{10}$/.test(clean)) return false;
+
+  let soma = 0;
+  for (let i = 0; i < 9; i++) {
+    soma += parseInt(clean.charAt(i), 10) * (10 - i);
+  }
+  let resto = 11 - (soma % 11);
+  const dv1 = resto >= 10 ? 0 : resto;
+  if (dv1 !== parseInt(clean.charAt(9), 10)) return false;
+
+  soma = 0;
+  for (let i = 0; i < 10; i++) {
+    soma += parseInt(clean.charAt(i), 10) * (11 - i);
+  }
+  resto = 11 - (soma % 11);
+  const dv2 = resto >= 10 ? 0 : resto;
+  return dv2 === parseInt(clean.charAt(10), 10);
+}
+
 export default function Register({ onBackToLogin }: RegisterProps) {
   const [name, setName] = useState('');
+  const [cpf, setCpf] = useState('');
+  const [birthDate, setBirthDate] = useState('');
+  const [gender, setGender] = useState<GenderOption | ''>('');
+  const [sector, setSector] = useState('');
   const [email, setEmail] = useState('');
-  const [department, setDepartment] = useState('');
-  const [location, setLocation] = useState('');
   const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -30,17 +50,61 @@ export default function Register({ onBackToLogin }: RegisterProps) {
   const [done, setDone] = useState(false);
   const [error, setError] = useState('');
 
+  // Máscara de CPF
+  const handleCpfChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    let v = e.target.value.replace(/\D/g, '').slice(0, 11);
+    if (v.length > 9) {
+      v = v.replace(/(\d{3})(\d{3})(\d{3})(\d{1,2})/, '$1.$2.$3-$4');
+    } else if (v.length > 6) {
+      v = v.replace(/(\d{3})(\d{3})(\d{1,3})/, '$1.$2.$3');
+    } else if (v.length > 3) {
+      v = v.replace(/(\d{3})(\d{1,3})/, '$1.$2');
+    }
+    setCpf(v);
+  };
+
+  // Máscara de Telefone
+  const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    let v = e.target.value.replace(/\D/g, '').slice(0, 11);
+    if (v.length > 6) {
+      v = v.replace(/(\d{2})(\d{5})(\d{1,4})/, '($1) $2-$3');
+    } else if (v.length > 2) {
+      v = v.replace(/(\d{2})(\d{1,5})/, '($1) $2');
+    }
+    setPhone(v);
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
 
+    if (!validarCPF(cpf)) {
+      setError('O CPF informado é inválido. Por favor, confira os números.');
+      return;
+    }
+
+    if (!birthDate) {
+      setError('Informe a data de nascimento.');
+      return;
+    }
+
+    if (!gender) {
+      setError('Selecione seu gênero.');
+      return;
+    }
+
+    if (!sector) {
+      setError('Selecione seu setor de lotação no DETRAN.');
+      return;
+    }
+
     if (password !== confirmPassword) {
-      setError('As senhas não coincidem. Verifique e tente novamente.');
+      setError('As senhas digitadas não coincidem.');
       return;
     }
 
     if (password.length < 6) {
-      setError('A senha deve ter ao menos 6 caracteres.');
+      setError('A senha deve conter no mínimo 6 caracteres.');
       return;
     }
 
@@ -48,25 +112,29 @@ export default function Register({ onBackToLogin }: RegisterProps) {
     setTimeout(() => {
       setLoading(false);
       setDone(true);
-    }, 800);
+    }, 600);
   };
 
   if (done) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-white">
-        <div className="w-full max-w-sm text-center animate-slide-up">
-          <div className="mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-green-50 mx-auto">
-            <CheckCircle2 className="h-10 w-10 text-green-500" />
+      <div className="flex min-h-screen items-center justify-center bg-slate-50 p-6">
+        <div className="w-full max-w-md rounded-xl bg-white p-8 shadow-sm border border-slate-200 text-center">
+          <div className="mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-emerald-50 mx-auto">
+            <CheckCircle2 className="h-10 w-10 text-emerald-600" />
           </div>
-          <h1 className="text-2xl font-bold text-sti-navy-800">Conta criada!</h1>
-          <p className="mt-3 text-sm leading-relaxed text-slate-500">
-            Seu cadastro foi enviado. O administrador do sistema vai definir seu perfil de acesso.
-            Você receberá um e-mail quando sua conta estiver liberada.
+          <h1 className="text-2xl font-bold text-slate-900">Primeiro Acesso Concluído!</h1>
+          <p className="mt-3 text-sm leading-relaxed text-slate-600">
+            Seus dados cadastrais foram registrados com sucesso no setor <strong>{sector}</strong>.
           </p>
+          <div className="mt-6 bg-slate-50 p-4 rounded-lg border border-slate-200 text-left text-xs space-y-1">
+            <div><span className="font-semibold">Colaborador:</span> {name}</div>
+            <div><span className="font-semibold">CPF:</span> {cpf}</div>
+            <div><span className="font-semibold">E-mail:</span> {email}</div>
+          </div>
           <div className="mt-8">
-            <Button variant="secondary" onClick={onBackToLogin}>
-              <ArrowLeft className="h-4 w-4" />
-              Voltar para o login
+            <Button variant="primary" className="w-full" onClick={onBackToLogin}>
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Ir para o Login
             </Button>
           </div>
         </div>
@@ -75,163 +143,162 @@ export default function Register({ onBackToLogin }: RegisterProps) {
   }
 
   return (
-    <div className="flex min-h-screen">
-      {/* Left — brand panel */}
-      <div className="relative hidden w-[44%] flex-col justify-between bg-sti-navy-800 p-12 lg:flex">
+    <div className="flex min-h-screen bg-slate-50">
+      {/* Painel Esquerdo Institucional */}
+      <div className="relative hidden w-[38%] lg:flex flex-col justify-between bg-slate-900 p-10 text-white">
         <Logo variant="full" light className="h-12" />
-
-        <div className="max-w-sm">
-          <h1 className="text-3xl font-bold leading-tight text-white">
-            Suporte de TI, simples e direto.
+        <div className="space-y-4">
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/10 px-3 py-1 text-xs font-medium text-emerald-400">
+            <UserCheck className="h-3.5 w-3.5" />
+            Credenciamento DETRAN
+          </span>
+          <h1 className="text-2xl font-bold leading-tight">
+            Primeiro Acesso ao STI
           </h1>
-          <p className="mt-4 text-base leading-relaxed text-slate-300">
-            Abra chamados, acompanhe o andamento e converse com a equipe de TI — tudo em um só lugar.
+          <p className="text-sm text-slate-400 leading-relaxed">
+            Cadastre-se para solicitar suporte técnico, acompanhar o status dos seus chamados de TI e gerenciar ocorrências da sua unidade.
           </p>
         </div>
-
-        <p className="text-xs text-slate-500">© 2026 STI — Sistema de Tickets Interno</p>
+        <div className="text-xs text-slate-500">
+          &copy; 2026 STI &mdash; Departamento de Tecnologia da Informação.
+        </div>
       </div>
 
-      {/* Right — register form */}
-      <div className="flex flex-1 items-center justify-center bg-white px-8 py-10">
-        <div className="w-full max-w-md">
-          {/* Mobile logo */}
-          <div className="mb-8 lg:hidden">
-            <Logo variant="full" className="h-12" />
-          </div>
-
+      {/* Formulário Central */}
+      <div className="flex flex-1 items-center justify-center p-6 sm:p-10">
+        <div className="w-full max-w-2xl rounded-xl bg-white p-8 shadow-sm border border-slate-200">
           <div className="mb-6">
-            <h2 className="text-2xl font-bold text-sti-navy-800">Criar sua conta</h2>
-            <p className="mt-2 text-sm text-slate-500">
-              Preencha seus dados para solicitar acesso ao STI.
-            </p>
-          </div>
-
-          {/* Info banner */}
-          <div className="mb-5 flex items-start gap-2.5 rounded-lg bg-sti-navy-50 px-4 py-3">
-            <Info className="mt-0.5 h-4 w-4 shrink-0 text-sti-navy-500" />
-            <p className="text-sm text-sti-navy-700">
-              Seu perfil de acesso será definido pelo administrador do sistema.
-            </p>
-          </div>
-
-          <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-            <Field label="Nome completo">
-              <div className="relative">
-                <UserIcon className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-                <Input
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  placeholder="Digite seu nome completo"
-                  className="pl-10"
-                  required
-                />
-              </div>
-            </Field>
-
-            <Field label="E-mail corporativo">
-              <div className="relative">
-                <Mail className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-                <Input
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="Digite seu e-mail"
-                  className="pl-10"
-                  required
-                />
-              </div>
-            </Field>
-
-            <div className="grid gap-4 sm:grid-cols-2">
-              <Field label="Setor">
-                <div className="relative">
-                  <Building2 className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-                  <Input
-                    value={department}
-                    onChange={(e) => setDepartment(e.target.value)}
-                    placeholder="Ex: Financeiro"
-                    className="pl-10"
-                    required
-                  />
-                </div>
-              </Field>
-
-              <Field label="Localização">
-                <div className="relative">
-                  <MapPin className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-                  <Input
-                    value={location}
-                    onChange={(e) => setLocation(e.target.value)}
-                    placeholder="Ex: Sala 302"
-                    className="pl-10"
-                    required
-                  />
-                </div>
-              </Field>
-            </div>
-
-            <Field label="Telefone / Ramal">
-              <div className="relative">
-                <Phone className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-                <Input
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                  placeholder="Ex: (11) 98765-4321"
-                  className="pl-10"
-                  required
-                />
-              </div>
-            </Field>
-
-            <div className="grid gap-4 sm:grid-cols-2">
-              <Field label="Senha">
-                <div className="relative">
-                  <Lock className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-                  <Input
-                    type="password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    placeholder="Digite sua senha"
-                    className="pl-10"
-                    required
-                  />
-                </div>
-              </Field>
-
-              <Field label="Confirmar senha">
-                <div className="relative">
-                  <Lock className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-                  <Input
-                    type="password"
-                    value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
-                    placeholder="Repita a senha"
-                    className="pl-10"
-                    required
-                  />
-                </div>
-              </Field>
-            </div>
-
-            {error && (
-              <p className="rounded-lg bg-red-50 px-4 py-2.5 text-sm text-red-600">{error}</p>
-            )}
-
-            <Button type="submit" size="lg" className="mt-1 w-full" disabled={loading}>
-              {loading ? 'Criando…' : 'Criar conta'}
-            </Button>
-          </form>
-
-          <div className="mt-6 text-center text-sm text-slate-500">
-            Já possui uma conta?{' '}
             <button
+              type="button"
               onClick={onBackToLogin}
-              className="font-semibold text-sti-teal-600 hover:text-sti-teal-700"
+              className="mb-4 inline-flex items-center gap-1.5 text-xs font-medium text-slate-500 hover:text-slate-800"
             >
+              <ArrowLeft className="h-4 w-4" />
               Voltar para o login
             </button>
+            <h1 className="text-xl font-bold text-slate-900">Cadastro de Primeiro Acesso</h1>
+            <p className="mt-1 text-xs text-slate-500">
+              Preencha os dados institucionais para ativação da sua conta.
+            </p>
           </div>
+
+          {error && (
+            <div className="mb-5 p-3 rounded-md bg-rose-50 border border-rose-200 text-xs text-rose-600 font-medium">
+              {error}
+            </div>
+          )}
+
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <Field label="Nome Completo">
+              <Input
+                placeholder="Ex: João da Silva"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                required
+              />
+            </Field>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <Field label="CPF">
+                <Input
+                  placeholder="000.000.000-00"
+                  value={cpf}
+                  onChange={handleCpfChange}
+                  required
+                />
+              </Field>
+
+              <Field label="Data de Nascimento">
+                <Input
+                  type="date"
+                  value={birthDate}
+                  onChange={(e) => setBirthDate(e.target.value)}
+                  required
+                />
+              </Field>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <Field label="Gênero">
+                <Select
+                  value={gender}
+                  onChange={(e) => setGender(e.target.value as GenderOption)}
+                  required
+                >
+                  <option value="">Selecione...</option>
+                  {GENEROS_OPCOES.map((g) => (
+                    <option key={g.valor} value={g.valor}>
+                      {g.rotulo}
+                    </option>
+                  ))}
+                </Select>
+              </Field>
+
+              <Field label="Setor de Lotação (DETRAN)">
+                <Select
+                  value={sector}
+                  onChange={(e) => setSector(e.target.value)}
+                  required
+                >
+                  <option value="">Selecione seu setor...</option>
+                  {SETORES_DETRAN.map((s) => (
+                    <option key={s.sigla} value={`${s.sigla} - ${s.nome}`}>
+                      {s.sigla} - {s.nome}
+                    </option>
+                  ))}
+                </Select>
+              </Field>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <Field label="E-mail Institucional ou Pessoal">
+                <Input
+                  type="email"
+                  placeholder="nome.sobrenome@detran.to.gov.br"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                />
+              </Field>
+
+              <Field label="Telefone / WhatsApp">
+                <Input
+                  placeholder="(63) 99999-9999"
+                  value={phone}
+                  onChange={handlePhoneChange}
+                  required
+                />
+              </Field>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <Field label="Senha de Acesso">
+                <Input
+                  type="password"
+                  placeholder="Mínimo 6 dígitos"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                />
+              </Field>
+
+              <Field label="Confirmar Senha">
+                <Input
+                  type="password"
+                  placeholder="Repita sua senha"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  required
+                />
+              </Field>
+            </div>
+
+            <div className="pt-2">
+              <Button type="submit" variant="primary" className="w-full" disabled={loading}>
+                {loading ? 'Validando e Cadastrando...' : 'Finalizar Primeiro Acesso'}
+              </Button>
+            </div>
+          </form>
         </div>
       </div>
     </div>

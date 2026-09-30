@@ -1,14 +1,19 @@
-import React from 'react';
+import { ImgHTMLAttributes } from 'react';
 import logoImg from '../logo.png.jpeg';
 
-export default function Logo() {
+interface LogoProps extends ImgHTMLAttributes<HTMLImageElement> {
+  variant?: 'full' | 'compact' | string;
+  light?: boolean;
+}
+
+export default function Logo({ variant, light, className = 'h-16', ...rest }: LogoProps) {
   return (
     <div className="flex items-center justify-start">
-      {/* Exibe a logo oficial com tamanho otimizado e sem textos duplicados */}
-      <img 
-        src={logoImg} 
-        alt="STI Logo" 
-        className="h-16 w-auto object-contain" 
+      <img
+        src={logoImg}
+        alt="STI Logo"
+        className={`${className} w-auto object-contain ${light ? 'brightness-110' : ''}`.trim()}
+        {...rest}
       />
     </div>
   );
