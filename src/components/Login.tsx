@@ -1,217 +1,198 @@
-﻿import { useState } from 'react';
-import Logo from '@/components/Logo';
+﻿import React, { useState } from 'react';
+import { Mail, Lock, ShieldCheck, Wrench, UserCheck } from 'lucide-react';
+import Button from '@/components/ui/Button';
 import { Field, Input } from '@/components/ui/Field';
-import { Lock, Mail, ShieldCheck, ArrowRight } from 'lucide-react';
+import Logo from '@/components/Logo';
+import { UserRole } from '@/types';
+
+const multiRoleAccountsConfig: Record<string, { name: string; roles: { id: UserRole; title: string; desc: string; icon: any }[] }> = {
+  'wanderson.ti@orgao.to.gov.br': {
+    name: 'Wanderson Silveira',
+    roles: [
+      { id: 'gestor', title: 'Painel do Gestor (BI & SLA)', desc: 'Visão executiva, indicadores e auditoria geral', icon: ShieldCheck },
+      { id: 'tecnico', title: 'Console Operacional (Técnico)', desc: 'Atendimento direto da fila e resolução de ordens', icon: Wrench },
+    ],
+  },
+  'diretor.geral@orgao.to.gov.br': {
+    name: 'Dr. Carlos Eduardo Lima',
+    roles: [
+      { id: 'gestor', title: 'Diretoria Geral (Gestor)', desc: 'Acompanhamento estratégico, metas e relatórios consolidados', icon: ShieldCheck },
+      { id: 'usuario', title: 'Portal do Solicitante (Servidor)', desc: 'Abertura e acompanhamento de chamados próprios', icon: UserCheck },
+    ],
+  },
+  'roberto.gerencia@orgao.to.gov.br': {
+    name: 'Roberto Albuquerque',
+    roles: [
+      { id: 'gestor', title: 'Gerência Operacional (Gestor)', desc: 'Auditoria de SLA, prazos de atendimento e relatórios', icon: ShieldCheck },
+      { id: 'usuario', title: 'Portal do Solicitante (Servidor)', desc: 'Abertura e acompanhamento de chamados próprios', icon: UserCheck },
+    ],
+  },
+};
 
 interface LoginProps {
-  onLogin: (email: string) => void;
+  onLogin: (email: string, role?: UserRole) => void;
   onGoToRegister: () => void;
 }
 
-export default function Login({ onLogin, onGoToRegister }: LoginProps) {
+export default function Login({ onLogin }: LoginProps) {
   const [email, setEmail] = useState('');
   const [senha, setSenha] = useState('');
+  const [multiRoleData, setMultiRoleData] = useState<{
+    email: string;
+    name: string;
+    roles: { id: UserRole; title: string; desc: string; icon: any }[];
+  } | null>(null);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    const cleanEmail = email.toLowerCase().trim();
+    if (!cleanEmail) return;
 
-    if (email) {
-      onLogin(email);
+    if (multiRoleAccountsConfig[cleanEmail]) {
+      setMultiRoleData({
+        email: cleanEmail,
+        ...multiRoleAccountsConfig[cleanEmail],
+      });
+      return;
+    }
+
+    onLogin(cleanEmail);
+  };
+
+  const handleSelectRoleAndEnter = (role: UserRole) => {
+    if (multiRoleData) {
+      onLogin(multiRoleData.email, role);
     }
   };
 
   return (
-    <div className="min-h-screen bg-slate-100 md:flex">
-      {/* =====================================================
-          LADO ESQUERDO
-      ====================================================== */}
+    <div className="min-h-screen bg-slate-100 md:flex relative">
+      {/* Modal de Escolha para Perfis Híbridos */}
+      {multiRoleData && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 p-4 backdrop-blur-sm">
+          <div className="w-full max-w-lg rounded-2xl border border-white/10 bg-[#0b1624] p-6 shadow-2xl text-white">
+            <div className="flex items-center gap-3 border-b border-white/10 pb-4">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-500/20 text-amber-400">
+                <ShieldCheck className="h-6 w-6" />
+              </div>
+              <div>
+                <h3 className="text-lg font-bold text-white">Selecione o Ambiente de Acesso</h3>
+                <p className="text-xs text-slate-400">
+                  Olá, <span className="text-amber-300 font-semibold">{multiRoleData.name}</span>. Escolha o perfil operacional para esta sessão:
+                </p>
+              </div>
+            </div>
+
+            <div className="mt-5 space-y-3">
+              {multiRoleData.roles.map((r) => {
+                const Icon = r.icon;
+                return (
+                  <button
+                    key={r.id}
+                    onClick={() => handleSelectRoleAndEnter(r.id)}
+                    className="group flex w-full items-start gap-4 rounded-xl border border-white/10 bg-white/5 p-4 text-left transition-all hover:border-cyan-500/50 hover:bg-cyan-950/30"
+                  >
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-cyan-500/10 text-cyan-400 group-hover:bg-cyan-500 group-hover:text-slate-950 transition-colors">
+                      <Icon className="h-5 w-5" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between">
+                        <h4 className="text-sm font-bold text-white group-hover:text-cyan-300">{r.title}</h4>
+                        <span className="text-xs text-cyan-400 opacity-0 group-hover:opacity-100 transition-opacity">
+                          Acessar &rarr;
+                        </span>
+                      </div>
+                      <p className="text-xs text-slate-400 mt-1">{r.desc}</p>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+
+            <div className="mt-6 flex justify-end border-t border-white/10 pt-4">
+              <button
+                type="button"
+                onClick={() => setMultiRoleData(null)}
+                className="text-xs text-slate-400 hover:text-white"
+              >
+                Cancelar e voltar ao login
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* LADO ESQUERDO */}
       <section className="relative hidden overflow-hidden bg-[#0b1624] md:flex md:w-[46%] lg:w-[48%]">
-        {/* Brilhos decorativos */}
         <div className="absolute -left-32 -top-32 h-96 w-96 rounded-full bg-cyan-500/10 blur-3xl" />
         <div className="absolute -bottom-32 -right-32 h-96 w-96 rounded-full bg-teal-500/10 blur-3xl" />
 
-        {/* Linhas decorativas */}
-        <div className="absolute right-0 top-0 h-full w-px bg-gradient-to-b from-transparent via-cyan-500/20 to-transparent" />
-
-        <div className="relative z-10 flex min-h-screen w-full flex-col justify-between px-10 py-10 lg:px-14">
-          {/* Logo */}
-          <div>
-            <Logo variant="full" />
-
-            <div className="mt-4 h-px w-16 bg-cyan-400/40" />
-
-            <p className="mt-3 text-sm font-medium tracking-wide text-slate-400">
-              Sistema de Tickets Interno
+        <div className="relative z-10 flex h-full w-full flex-col justify-between p-10 lg:p-14 text-white">
+          <Logo />
+          <div className="max-w-md space-y-4">
+            <h2 className="text-2xl lg:text-3xl font-bold leading-tight">
+              Gestão de TI centralizada, ágil e em conformidade de SLA.
+            </h2>
+            <p className="text-sm text-slate-300">
+              Acompanhamento de chamados em tempo real com controle de acessos, inventário de peças e métricas de produtividade.
             </p>
           </div>
-
-          {/* Texto principal */}
-          <div className="max-w-xl -translate-y-4">
-            <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-cyan-400/20 bg-cyan-400/10 px-3 py-1.5 text-xs font-medium text-cyan-300">
-              <span className="h-1.5 w-1.5 rounded-full bg-cyan-400" />
-              Central de suporte de TI
-            </div>
-
-            <h1 className="text-4xl font-bold leading-tight tracking-tight text-white lg:text-5xl">
-              Suporte de TI,
-              <br />
-              <span className="text-cyan-400">simples e direto.</span>
-            </h1>
-
-            <p className="mt-6 max-w-lg text-base leading-7 text-slate-400 lg:text-lg">
-              Abra chamados, acompanhe o andamento das solicitações
-              e converse com a equipe de TI em um único lugar.
-            </p>
-
-            {/* Mini informações */}
-            <div className="mt-8 grid max-w-md grid-cols-2 gap-3">
-              <div className="rounded-xl border border-white/5 bg-white/[0.04] p-4">
-                <p className="text-2xl font-bold text-white">24h</p>
-                <p className="mt-1 text-xs text-slate-500">
-                  Acompanhamento
-                </p>
-              </div>
-
-              <div className="rounded-xl border border-white/5 bg-white/[0.04] p-4">
-                <p className="text-2xl font-bold text-white">STI</p>
-                <p className="mt-1 text-xs text-slate-500">
-                  Suporte interno
-                </p>
-              </div>
-            </div>
-          </div>
-
-          {/* Rodapé */}
-          <div className="flex items-end justify-between gap-6">
-            <div className="flex items-center gap-2 rounded-full border border-cyan-400/10 bg-cyan-400/5 px-3 py-2 text-xs font-medium text-cyan-300">
-              <ShieldCheck className="h-4 w-4" />
-              Ambiente seguro
-            </div>
-
-            <p className="text-xs text-slate-600">
-              © {new Date().getFullYear()} STI
-            </p>
+          <div className="text-xs text-slate-500">
+            STI &copy; 2026 - Governo do Estado do Tocantins
           </div>
         </div>
       </section>
 
-      {/* =====================================================
-          LADO DIREITO
-      ====================================================== */}
-      <section className="flex min-h-screen flex-1 items-center justify-center bg-slate-50 px-5 py-10 sm:px-8 lg:px-12">
-        <div className="w-full max-w-md">
-          {/* Card do formulário */}
-          <div className="rounded-3xl border border-slate-200 bg-white p-7 shadow-xl shadow-slate-200/50 sm:p-9">
-            {/* Cabeçalho */}
-            <div className="mb-8">
-              <div className="mb-5 flex h-11 w-11 items-center justify-center rounded-xl bg-cyan-50 text-cyan-600">
-                <ShieldCheck className="h-5 w-5" />
-              </div>
-
-              <h2 className="text-3xl font-bold tracking-tight text-slate-900">
-                Entrar no sistema
-              </h2>
-
-              <p className="mt-2 text-sm leading-6 text-slate-500">
-                Use seu e-mail corporativo para acessar o STI.
-              </p>
-            </div>
-
-            {/* Formulário */}
-            <form onSubmit={handleSubmit} className="space-y-5">
-              <Field label="E-mail corporativo">
-                <div className="relative">
-                  <Mail className="pointer-events-none absolute left-3.5 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
-
-                  <Input
-                    type="email"
-                    required
-                    placeholder="seu.nome@empresa.com.br"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    className="h-12 rounded-xl border-slate-200 bg-slate-50 pl-11 transition-all focus:border-cyan-500 focus:bg-white focus:ring-4 focus:ring-cyan-500/10"
-                  />
-                </div>
-              </Field>
-
-              <Field label="Senha">
-                <div className="relative">
-                  <Lock className="pointer-events-none absolute left-3.5 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
-
-                  <Input
-                    type="password"
-                    required
-                    placeholder="Digite sua senha"
-                    value={senha}
-                    onChange={(e) => setSenha(e.target.value)}
-                    className="h-12 rounded-xl border-slate-200 bg-slate-50 pl-11 transition-all focus:border-cyan-500 focus:bg-white focus:ring-4 focus:ring-cyan-500/10"
-                  />
-                </div>
-              </Field>
-
-              {/* Opções */}
-              <div className="flex items-center justify-between text-sm">
-                <label className="flex cursor-pointer select-none items-center gap-2 text-slate-500">
-                  <input
-                    type="checkbox"
-                    className="h-4 w-4 rounded border-slate-300 text-cyan-600 focus:ring-cyan-500"
-                  />
-                  Lembrar de mim
-                </label>
-
-                <button
-                  type="button"
-                  className="font-medium text-cyan-600 transition-colors hover:text-cyan-700"
-                >
-                  Esqueci minha senha
-                </button>
-              </div>
-
-              {/* Botão */}
-              <button
-                type="submit"
-                className="group flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#00A896] px-4 font-semibold text-white shadow-lg shadow-teal-500/20 transition-all duration-200 hover:bg-[#008f80] hover:shadow-xl hover:shadow-teal-500/25 active:scale-[0.98]"
-              >
-                Entrar
-
-                <ArrowRight className="h-4 w-4 transition-transform duration-200 group-hover:translate-x-1" />
-              </button>
-            </form>
-
-            {/* Cadastro */}
-            <div className="mt-7 text-center text-sm text-slate-500">
-              Ainda não possui uma conta?{' '}
-              <button
-                type="button"
-                onClick={onGoToRegister}
-                className="font-semibold text-cyan-600 transition-colors hover:text-cyan-700"
-              >
-                Criar minha conta
-              </button>
-            </div>
-
-            {/* Separador */}
-            <div className="my-7 h-px bg-slate-100" />
-
-            {/* Ajuda */}
-            <div className="text-center">
-              <p className="text-xs text-slate-400">
-                Precisa de ajuda?
-              </p>
-
-              <p className="mt-1 text-xs text-slate-500">
-                Contate o setor de TI pelo ramal{' '}
-                <span className="font-semibold text-slate-700">
-                  4001
-                </span>
-              </p>
-            </div>
+      {/* LADO DIREITO */}
+      <section className="flex flex-1 items-center justify-center p-6 md:p-10">
+        <div className="w-full max-w-md space-y-6">
+          <div>
+            <h1 className="text-2xl font-bold text-slate-900">Acesse sua conta</h1>
+            <p className="text-sm text-slate-500">Entre com seu e-mail institucional.</p>
           </div>
 
-          {/* Texto inferior */}
-          <p className="mt-5 text-center text-xs text-slate-400">
-            Sistema de Tickets Interno • STI
-          </p>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <Field label="E-mail corporativo">
+              <div className="relative">
+                <Mail className="pointer-events-none absolute left-3.5 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
+                <Input
+                  type="email"
+                  required
+                  placeholder="seu.nome@orgao.to.gov.br"
+                  value={email}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setEmail(e.target.value)}
+                  className="h-12 rounded-xl border-slate-200 bg-slate-50 pl-11"
+                />
+              </div>
+            </Field>
+
+            <Field label="Senha de acesso">
+              <div className="relative">
+                <Lock className="pointer-events-none absolute left-3.5 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
+                <Input
+                  type="password"
+                  required
+                  placeholder="••••••••••••"
+                  value={senha}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSenha(e.target.value)}
+                  className="h-12 rounded-xl border-slate-200 bg-slate-50 pl-11"
+                />
+              </div>
+            </Field>
+
+            <Button
+              type="submit"
+              className="w-full h-12 rounded-xl bg-cyan-600 font-semibold text-white hover:bg-cyan-500"
+            >
+              Entrar no Sistema &rarr;
+            </Button>
+          </form>
+
+          <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 text-xs text-slate-600 space-y-1">
+            <p className="font-semibold text-slate-800">Contas Híbridas de Teste:</p>
+            <p className="font-mono text-[11px] text-slate-500">wanderson.ti@orgao.to.gov.br (Gestor + Técnico)</p>
+            <p className="font-mono text-[11px] text-slate-500">diretor.geral@orgao.to.gov.br (Gestor + Solicitante)</p>
+          </div>
         </div>
       </section>
     </div>

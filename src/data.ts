@@ -7,9 +7,49 @@ export const currentUser: User = {
   role: 'Analista Financeiro',
   phone: '(11) 98765-4321',
   userRole: 'usuario',
+  roles: ['usuario'],
 };
 
+export const mockManagersAndMultiRoles: User[] = [
+  {
+    name: 'Wanderson Silveira',
+    email: 'wanderson.ti@orgao.to.gov.br',
+    department: 'Diretoria de TI',
+    role: 'Chefe de Setor / TI',
+    phone: '(63) 98400-1001',
+    userRole: 'gestor',
+    roles: ['tecnico', 'gestor'],
+  },
+  {
+    name: 'Dr. Carlos Eduardo Lima',
+    email: 'diretor.geral@orgao.to.gov.br',
+    department: 'Gabinete da Diretoria',
+    role: 'Diretor Geral',
+    phone: '(63) 98400-1002',
+    userRole: 'gestor',
+    roles: ['usuario', 'gestor'],
+  },
+  {
+    name: 'Roberto Albuquerque',
+    email: 'roberto.gerencia@orgao.to.gov.br',
+    department: 'Gerência Operacional',
+    role: 'Gerente Administrativo',
+    phone: '(63) 98400-1003',
+    userRole: 'gestor',
+    roles: ['usuario', 'gestor'],
+  },
+];
+
 export const mockTechnicians: User[] = [
+  {
+    name: 'Wanderson Silveira',
+    email: 'wanderson.ti@orgao.to.gov.br',
+    department: 'Diretoria de TI',
+    role: 'Chefe de Setor / TI',
+    phone: '(63) 98400-1001',
+    userRole: 'tecnico',
+    roles: ['tecnico', 'gestor'],
+  },
   {
     name: 'Daniel Santos',
     email: 'danielandsanfer@gmail.com',

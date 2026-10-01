@@ -13,6 +13,7 @@ interface TechTicketsProps {
   onOpenTicket: (id: string) => void;
   onAssume: (id: string) => void;
   techName?: string;
+  initialStatus?: TicketStatus | 'todos';
 }
 
 const statusFilters: { id: TicketStatus | 'todos'; label: string }[] = [
@@ -24,8 +25,8 @@ const statusFilters: { id: TicketStatus | 'todos'; label: string }[] = [
   { id: 'fechado', label: 'Fechados' },
 ];
 
-export default function TechTickets({ tickets, onOpenTicket, onAssume, techName = 'Daniel Santos' }: TechTicketsProps) {
-  const [statusFilter, setStatusFilter] = useState<TicketStatus | 'todos'>('todos');
+export default function TechTickets({ tickets, onOpenTicket, onAssume, techName = 'Daniel Santos', initialStatus = 'todos' }: TechTicketsProps) {
+  const [statusFilter, setStatusFilter] = useState<TicketStatus | 'todos'>(initialStatus || 'todos');
   const [techFilter, setTechFilter] = useState<string>('todos');
   const [search, setSearch] = useState('');
 

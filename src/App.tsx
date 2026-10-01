@@ -1,4 +1,6 @@
-﻿import { useState } from 'react';
+﻿import GestorSidebar, { GestorPage, GestorPageContainer } from '@/components/gestor/GestorSidebar';
+import GestorDashboard from '@/components/gestor/GestorDashboard';
+import { useState } from 'react';
 import Sidebar, { Page, PageContainer } from '@/components/Sidebar';
 import Login from '@/components/Login';
 import Register from '@/components/Register';
@@ -24,7 +26,43 @@ type AuthScreen = 'login' | 'register';
 // Simulated account database — maps email to role
 const knownAccounts: Record<string, { role: UserRole; user: User; defaultPassword?: string }> = {
   'ana.mendes@empresa.com.br': { role: 'usuario', user: currentUser },
-  'danielandsanfer@gmail.com': { role: 'tecnico', user: mockTechnicians[0], defaultPassword: '.\ati@!#$%2020' },
+    'danielandsanfer@gmail.com': { role: 'tecnico', user: mockTechnicians[0], defaultPassword: '.\ati@!#$%2020' },
+  'wanderson.ti@orgao.to.gov.br': {
+    role: 'gestor',
+    user: {
+      name: 'Wanderson Silveira',
+      email: 'wanderson.ti@orgao.to.gov.br',
+      department: 'Diretoria de TI',
+      role: 'Chefe de Setor / TI',
+      phone: '(63) 98400-1001',
+      userRole: 'gestor',
+      roles: ['tecnico', 'gestor'],
+    },
+  },
+  'diretor.geral@orgao.to.gov.br': {
+    role: 'gestor',
+    user: {
+      name: 'Dr. Carlos Eduardo Lima',
+      email: 'diretor.geral@orgao.to.gov.br',
+      department: 'Gabinete da Diretoria',
+      role: 'Diretor Geral',
+      phone: '(63) 98400-1002',
+      userRole: 'gestor',
+      roles: ['usuario', 'gestor'],
+    },
+  },
+  'roberto.gerencia@orgao.to.gov.br': {
+    role: 'gestor',
+    user: {
+      name: 'Roberto Albuquerque',
+      email: 'roberto.gerencia@orgao.to.gov.br',
+      department: 'Gerência Operacional',
+      role: 'Gerente Administrativo',
+      phone: '(63) 98400-1003',
+      userRole: 'gestor',
+      roles: ['usuario', 'gestor'],
+    },
+  },
   'joaopedromms20@gmail.com': { role: 'tecnico', user: mockTechnicians[1], defaultPassword: '.\ati@!#$%2020' },
   'guidetranto@gmail.com': { role: 'tecnico', user: mockTechnicians[2], defaultPassword: '.\ati@!#$%2020' },
   'wandersonmaior@gmail.com': { role: 'tecnico', user: mockTechnicians[3], defaultPassword: '.\ati@!#$%2020' },
@@ -64,14 +102,27 @@ export default function App() {
   const [role, setRole] = useState<UserRole>('usuario');
   const [userView, setUserView] = useState<UserView>({ page: 'inicio' });
   const [techView, setTechView] = useState<TechView>({ page: 'tech-inicio' });
-  const [gestorView, setGestorView] = useState<'gestor-inicio' | 'gestor-perfil'>('gestor-inicio');
+    const [gestorView, setGestorView] = useState<GestorPage>('gestor-dashboard');
+
+  const handleSwitchRole = (newRole: UserRole) => {
+    setRole(newRole);
+    setActiveUser((prev) => ({ ...prev, userRole: newRole }));
+    if (newRole === 'usuario') setUserView({ page: 'inicio' });
+    if (newRole === 'tecnico') setTechView({ page: 'tech-inicio' });
+    if (newRole === 'gestor') setGestorView('gestor-dashboard');
+  };
   const [tickets, setTickets] = useState<Ticket[]>(mockTickets);
+  const [inspectedTicket, setInspectedTicket] = useState<Ticket | null>(null);
 
-  const handleLogin = (email: string) => {
+      const handleLogin = (email: string, chosenRole?: UserRole) => {
     const { role: detectedRole, user } = detectRoleFromEmail(email);
+    const finalRole = chosenRole || detectedRole;
 
-    setRole(detectedRole);
-    setActiveUser(user);
+    setRole(finalRole);
+    setActiveUser({
+      ...user,
+      userRole: finalRole,
+    });
     setAuthed(true);
   };
 
@@ -81,7 +132,7 @@ export default function App() {
     setRole('usuario');
     setUserView({ page: 'inicio' });
     setTechView({ page: 'tech-inicio' });
-    setGestorView('gestor-inicio');
+    setGestorView('gestor-dashboard');
     setActiveUser(currentUser);
   };
 
@@ -436,16 +487,19 @@ const handleAddNote = (id: string, note: string) => {
 
     return (
       <div className="flex h-screen bg-slate-50">
-        <TechSidebar
-          current={
-            techView.page === 'tech-ticket-detail'
-              ? 'tech-chamados'
-              : techView.page
-          }
-          onNavigate={navigate}
-          onLogout={handleLogout}
-          userName={activeUser.name}
-        />
+<TechSidebar
+            current={
+              techView.page === 'tech-ticket-detail'
+                ? 'tech-chamados'
+                : techView.page
+            }
+            onNavigate={navigate}
+            onLogout={handleLogout}
+            userName={activeUser.name}
+            activeUser={activeUser}
+            onSwitchRole={handleSwitchRole}
+            tickets={tickets}
+          />
 
         <TechPageContainer>
           {techView.page === 'tech-inicio' && (
@@ -508,205 +562,111 @@ const handleAddNote = (id: string, note: string) => {
   }
 
   // ---- Gestor area ----
-  const totalTickets = tickets.length;
-  const openTicketsCount = tickets.filter(
-    (t) => t.status === 'aberto'
-  ).length;
-  const inProgressTicketsCount = tickets.filter(
-    (t) => t.status === 'em_andamento'
-  ).length;
-  const resolvedTicketsCount = tickets.filter(
-    (t) => t.status === 'resolvido'
-  ).length;
+  if (role === 'gestor') {
+    return (
+      <div className="flex h-screen bg-[#070e17]">
+        <GestorSidebar
+          current={gestorView}
+          onNavigate={(page: GestorPage) => setGestorView(page)}
+          onLogout={handleLogout}
+          activeUser={activeUser}
+          onSwitchRole={handleSwitchRole}
+        />
 
-  return (
-    <div className="flex h-screen bg-slate-100">
-      {/* Gestor Sidebar */}
-      <aside className="w-64 bg-slate-900 text-white flex flex-col justify-between p-4">
-        <div className="space-y-6">
-          <div className="px-2 py-4">
-            <Logo />
-          </div>
+        <GestorPageContainer>
+          {gestorView === 'gestor-perfil' && (
+            <Profile user={activeUser} />
+          )}
 
-          <nav className="space-y-1">
-            <button
-              onClick={() => setGestorView('gestor-inicio')}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl font-medium transition-colors ${gestorView === 'gestor-inicio'
-                ? 'bg-cyan-600 text-white'
-                : 'text-slate-400 hover:bg-slate-800 hover:text-white'
-                }`}
-            >
-              <BarChart3 className="w-5 h-5" />
-              Painel Geral
-            </button>
+          {gestorView === 'gestor-dashboard' && (
+            <GestorDashboard tickets={tickets} onNavigate={(p: any) => setGestorView(p)} />
+          )}
 
-            <button
-              onClick={() => setGestorView('gestor-perfil')}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl font-medium transition-colors ${gestorView === 'gestor-perfil'
-                ? 'bg-cyan-600 text-white'
-                : 'text-slate-400 hover:bg-slate-800 hover:text-white'
-                }`}
-            >
-              <Users className="w-5 h-5" />
-              Meu Perfil
-            </button>
-          </nav>
-        </div>
-
-        <button
-          onClick={handleLogout}
-          className="w-full text-left px-4 py-3 text-slate-400 hover:bg-slate-800 hover:text-white rounded-xl transition-colors font-medium"
-        >
-          Sair do Sistema
-        </button>
-      </aside>
-
-      {/* Gestor content */}
-      <main className="flex-1 overflow-auto p-8">
-        {gestorView === 'gestor-inicio' && (
-          <div className="max-w-6xl mx-auto space-y-8">
-            <div>
-              <h2 className="text-3xl font-bold text-slate-900">
-                Painel do Gestor de TI
-              </h2>
-              <p className="text-slate-500 mt-1">
-                Visão analítica de demandas e performance da equipe de suporte.
-              </p>
-            </div>
-
-            {/* Métricas */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-              <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200/60 flex items-center gap-4">
-                <div className="p-3 bg-blue-50 text-blue-600 rounded-xl">
-                  <ClipboardList className="w-6 h-6" />
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-slate-400">
-                    Total de Chamados
-                  </p>
-                  <p className="text-2xl font-bold text-slate-800">
-                    {totalTickets}
-                  </p>
-                </div>
-              </div>
-
-              <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200/60 flex items-center gap-4">
-                <div className="p-3 bg-amber-50 text-amber-600 rounded-xl">
-                  <Clock className="w-6 h-6" />
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-slate-400">
-                    Não Atendidos
-                  </p>
-                  <p className="text-2xl font-bold text-slate-800">
-                    {openTicketsCount}
-                  </p>
-                </div>
-              </div>
-
-              <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200/60 flex items-center gap-4">
-                <div className="p-3 bg-cyan-50 text-cyan-600 rounded-xl">
-                  <Clock className="w-6 h-6" />
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-slate-400">
-                    Em Andamento
-                  </p>
-                  <p className="text-2xl font-bold text-slate-800">
-                    {inProgressTicketsCount}
-                  </p>
-                </div>
-              </div>
-
-              <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200/60 flex items-center gap-4">
-                <div className="p-3 bg-emerald-50 text-emerald-600 rounded-xl">
-                  <CheckCircle2 className="w-6 h-6" />
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-slate-400">
-                    Resolvidos
-                  </p>
-                  <p className="text-2xl font-bold text-slate-800">
-                    {resolvedTicketsCount}
-                  </p>
-                </div>
+          {gestorView === 'gestor-equipe' && (
+            <div className="space-y-4">
+              <h2 className="text-xl font-bold text-white">Produtividade da Equipe de TI</h2>
+              <p className="text-xs text-slate-400">Distribuição de chamados atendidos e tempo de resposta por técnico.</p>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-4">
+                {mockTechnicians.map((t) => {
+                  const techTickets = tickets.filter((tk) => tk.assignee === t.name);
+                  const concluidos = techTickets.filter((tk) => tk.status === 'resolvido' || tk.status === 'fechado').length;
+                  return (
+                    <div key={t.email} className="rounded-2xl border border-white/10 bg-[#0b1624] p-4">
+                      <div className="flex items-center gap-3">
+                        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-cyan-500/10 text-cyan-400 font-bold">
+                          {t.name.charAt(0)}
+                        </div>
+                        <div>
+                          <p className="text-sm font-bold text-white">{t.name}</p>
+                          <p className="text-xs text-slate-400">{t.role}</p>
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-2 gap-2 mt-4 pt-4 border-t border-white/5 text-center">
+                        <div className="rounded-lg bg-black/20 p-2">
+                          <span className="block text-base font-bold text-white">{techTickets.length}</span>
+                          <span className="text-[10px] text-slate-400">Atribuídos</span>
+                        </div>
+                        <div className="rounded-lg bg-black/20 p-2">
+                          <span className="block text-base font-bold text-emerald-400">{concluidos}</span>
+                          <span className="text-[10px] text-slate-400">Concluídos</span>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             </div>
+          )}
 
-            {/* Lista Geral de Monitoramento */}
-            <div className="bg-white rounded-2xl shadow-sm border border-slate-200/60 p-6">
-              <h3 className="text-lg font-bold text-slate-800 mb-4">
-                Monitoramento em Tempo Real
-              </h3>
-
-              <div className="overflow-x-auto">
-                <table className="w-full text-left border-collapse">
-                  <thead>
-                    <tr className="border-b border-slate-100 text-xs font-semibold text-slate-400 uppercase tracking-wider">
-                      <th className="pb-3">Protocolo</th>
-                      <th className="pb-3">Título</th>
-                      <th className="pb-3">Requerente</th>
-                      <th className="pb-3">Prioridade</th>
-                      <th className="pb-3">Técnico</th>
-                      <th className="pb-3">Status</th>
+          {gestorView === 'gestor-auditoria' && (
+            <div className="space-y-4">
+              <h2 className="text-xl font-bold text-white">Trilha de Auditoria & Conformidade SLA</h2>
+              <p className="text-xs text-slate-400">Inspeção detalhada de prazos e patrimônios alocados.</p>
+              <div className="rounded-2xl border border-white/10 bg-[#0b1624] p-4 overflow-x-auto">
+                <table className="w-full text-left text-xs">
+                  <thead className="border-b border-white/10 text-slate-400 uppercase tracking-wider text-[10px]">
+                    <tr>
+                      <th className="py-2.5">Código</th>
+                      <th>Solicitante / Setor</th>
+                      <th>Técnico Responsável</th>
+                      <th>Patrimônio / Peça</th>
+                      <th>Estado</th>
+                      <th>Avaliação</th>
                     </tr>
                   </thead>
-
-                  <tbody className="divide-y divide-slate-50 text-sm text-slate-600">
+                  <tbody className="divide-y divide-white/5 text-slate-300">
                     {tickets.map((t) => (
-                      <tr
-                        key={t.id}
-                        className="hover:bg-slate-50/80 transition-colors"
-                      >
-                        <td className="py-3.5 font-medium text-slate-900">
-                          {t.protocol}
+                      <tr key={t.id} className="hover:bg-white/[0.02]">
+                        <td className="py-3 font-mono text-cyan-400">{t.id}</td>
+                        <td>
+                          <div className="font-semibold text-white">{t.requesterName}</div>
+                          <div className="text-[10px] text-slate-500">{t.requesterDepartment}</div>
                         </td>
-
-                        <td className="py-3.5 max-w-xs truncate">
-                          {t.title}
-                        </td>
-
-                        <td className="py-3.5">
-                          {t.requesterName}{' '}
-                          <span className="text-xs text-slate-400">
-                            ({t.requesterDepartment})
-                          </span>
-                        </td>
-
-                        <td className="py-3.5">
-                          <span
-                            className={`px-2 py-1 rounded-md text-xs font-medium ${t.priority === 'alta'
-                              ? 'bg-red-50 text-red-600'
-                              : t.priority === 'media'
-                                ? 'bg-amber-50 text-amber-600'
-                                : 'bg-slate-100 text-slate-600'
-                              }`}
-                          >
-                            {t.priority}
-                          </span>
-                        </td>
-
-                        <td className="py-3.5 text-slate-500">
-                          {t.assignee || (
-                            <span className="text-slate-400 italic">
-                              Não assumido
-                            </span>
+                        <td>{t.assignee || <span className="text-slate-500 italic">Pendente</span>}</td>
+                        <td className="font-mono text-amber-300">
+                          {t.assetTag || t.replacedParts ? (
+                            <span>{t.assetTag || 'S/P'} - {t.replacedParts || 'Manutenção'}</span>
+                          ) : (
+                            <span className="text-slate-600">-</span>
                           )}
                         </td>
-
-                        <td className="py-3.5">
-                          <span
-                            className={`px-2.5 py-1 rounded-full text-xs font-semibold ${t.status === 'aberto'
-                              ? 'bg-amber-100 text-amber-800'
-                              : t.status === 'em_andamento'
-                                ? 'bg-cyan-100 text-cyan-800'
-                                : t.status === 'resolvido'
-                                  ? 'bg-emerald-100 text-emerald-800'
-                                  : 'bg-slate-100 text-slate-700'
-                              }`}
-                          >
-                            {t.status.replace('_', ' ')}
+                        <td>
+                          <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold ${
+                            t.status === 'resolvido' ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' :
+                            t.status === 'em_andamento' ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/30' :
+                            'bg-amber-500/20 text-amber-300 border border-amber-500/30'
+                          }`}>
+                            {t.status.toUpperCase()}
                           </span>
+                        </td>
+                        <td>
+                          {t.rating ? (
+                            <span className="text-amber-400 font-bold flex items-center gap-1">
+                              ★ {t.rating}.0
+                            </span>
+                          ) : (
+                            <span className="text-slate-600 text-[10px]">Pendente</span>
+                          )}
                         </td>
                       </tr>
                     ))}
@@ -714,13 +674,41 @@ const handleAddNote = (id: string, note: string) => {
                 </table>
               </div>
             </div>
-          </div>
-        )}
+          )}
 
-        {gestorView === 'gestor-perfil' && (
-          <Profile user={activeUser} />
-        )}
-      </main>
-    </div>
-  );
+          {gestorView === 'gestor-relatorios' && (
+            <div className="space-y-4">
+              <h2 className="text-xl font-bold text-white">Central de Relatórios Oficiais</h2>
+              <p className="text-xs text-slate-400">Emissão de relatórios consolidados em PDF e CSV.</p>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
+                <div className="rounded-2xl border border-white/10 bg-[#0b1624] p-5">
+                  <h4 className="font-bold text-white text-sm">Relatório Semanal de Atendimentos</h4>
+                  <p className="text-xs text-slate-400 mt-1">Consolidado das demandas e tempos de resolução da semana corrente.</p>
+                  <button onClick={() => window.print()} className="mt-4 w-full rounded-xl bg-cyan-500 py-2 text-xs font-bold text-slate-950 hover:bg-cyan-400">
+                    Gerar PDF Semanal
+                  </button>
+                </div>
+                <div className="rounded-2xl border border-white/10 bg-[#0b1624] p-5">
+                  <h4 className="font-bold text-white text-sm">Relatório Mensal de Produtividade</h4>
+                  <p className="text-xs text-slate-400 mt-1">Balanço mensal de horas gastas por técnico e peças substituídas.</p>
+                  <button onClick={() => window.print()} className="mt-4 w-full rounded-xl bg-[#00A896] py-2 text-xs font-bold text-white hover:bg-teal-500">
+                    Gerar PDF Mensal
+                  </button>
+                </div>
+                <div className="rounded-2xl border border-white/10 bg-[#0b1624] p-5">
+                  <h4 className="font-bold text-white text-sm">Auditoria Anual de Patrimônio</h4>
+                  <p className="text-xs text-slate-400 mt-1">Histórico completo de equipamentos intervencionados.</p>
+                  <button onClick={() => window.print()} className="mt-4 w-full rounded-xl border border-white/15 bg-white/5 py-2 text-xs font-bold text-white hover:bg-white/10">
+                    Exportar Tabela
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+        </GestorPageContainer>
+      </div>
+    );
+  }
+
+  return null;
 }
