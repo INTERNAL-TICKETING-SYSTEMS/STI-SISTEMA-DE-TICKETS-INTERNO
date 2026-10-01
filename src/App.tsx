@@ -191,15 +191,31 @@ export default function App() {
   const [tickets, setTickets] = useState<Ticket[]>(mockTickets);
   const [inspectedTicket, setInspectedTicket] = useState<Ticket | null>(null);
 
-      const handleLogin = (email: string, chosenRole?: UserRole) => {
+        const handleLogin = (email: string, chosenRole?: UserRole) => {
     const { role: detectedRole, user } = detectRoleFromEmail(email);
     const finalRole = chosenRole || detectedRole;
+
+    console.log('[Auth STI] Autenticando:', {
+      inputEmail: email,
+      detectedRole,
+      finalRole,
+      userName: user.name
+    });
 
     setRole(finalRole);
     setActiveUser({
       ...user,
       userRole: finalRole,
     });
+
+    if (finalRole === 'tecnico') {
+      setTechView({ page: 'tech-inicio' });
+    } else if (finalRole === 'gestor') {
+      setGestorView('gestor-dashboard');
+    } else {
+      setUserView({ page: 'inicio' });
+    }
+
     setAuthed(true);
   };
 
