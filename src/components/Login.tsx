@@ -1,5 +1,14 @@
 ﻿import React, { useState } from 'react';
-import { Mail, Lock, ShieldCheck, Wrench, UserCheck } from 'lucide-react';
+import { 
+  Lock, 
+  Mail, 
+  ShieldCheck, 
+  Wrench, 
+  UserCheck, 
+  ArrowRight, 
+  TicketCheck, 
+  MessagesSquare 
+} from 'lucide-react';
 import Button from '@/components/ui/Button';
 import { Field, Input } from '@/components/ui/Field';
 import Logo from '@/components/Logo';
@@ -122,76 +131,107 @@ export default function Login({ onLogin }: LoginProps) {
         </div>
       )}
 
-      {/* LADO ESQUERDO */}
-      <section className="relative hidden overflow-hidden bg-[#0b1624] md:flex md:w-[46%] lg:w-[48%]">
+      {/* =====================================================
+          LADO ESQUERDO (Apresentação Visual Institucional)
+      ====================================================== */}
+      <section className="relative hidden overflow-hidden bg-[#0b1624] md:flex md:w-[42%] lg:w-[44%]">
         <div className="absolute -left-32 -top-32 h-96 w-96 rounded-full bg-cyan-500/10 blur-3xl" />
         <div className="absolute -bottom-32 -right-32 h-96 w-96 rounded-full bg-teal-500/10 blur-3xl" />
 
         <div className="relative z-10 flex h-full w-full flex-col justify-between p-10 lg:p-14 text-white">
           <Logo />
-          <div className="max-w-md space-y-4">
-            <h2 className="text-2xl lg:text-3xl font-bold leading-tight">
-              Gestão de TI centralizada, ágil e em conformidade de SLA.
-            </h2>
+          
+          <div className="max-w-md space-y-6">
+            <div className="space-y-2">
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-cyan-500/10 px-3 py-1 text-xs font-semibold text-cyan-400 border border-cyan-500/20">
+                <TicketCheck className="h-3.5 w-3.5" /> STI Conectado
+              </span>
+              <h2 className="text-2xl lg:text-3xl font-bold leading-tight">
+                Gestão de TI centralizada, ágil e em conformidade de SLA.
+              </h2>
+            </div>
             <p className="text-sm text-slate-300">
               Acompanhamento de chamados em tempo real com controle de acessos, inventário de peças e métricas de produtividade.
             </p>
+
+            <div className="grid grid-cols-2 gap-3 pt-2">
+              <div className="rounded-xl border border-white/10 bg-white/5 p-3.5">
+                <div className="flex items-center gap-2 text-cyan-400 mb-1">
+                  <MessagesSquare className="h-4 w-4" />
+                  <span className="text-xs font-semibold">Atendimento Rápido</span>
+                </div>
+                <p className="text-[11px] text-slate-400">Comunicação direta com o solicitante.</p>
+              </div>
+              <div className="rounded-xl border border-white/10 bg-white/5 p-3.5">
+                <div className="flex items-center gap-2 text-amber-400 mb-1">
+                  <ShieldCheck className="h-4 w-4" />
+                  <span className="text-xs font-semibold">Auditoria de SLA</span>
+                </div>
+                <p className="text-[11px] text-slate-400">Controle rigoroso de prazos e metas.</p>
+              </div>
+            </div>
           </div>
-          <div className="text-xs text-slate-500">
-            STI &copy; 2026 - Governo do Estado do Tocantins
-          </div>
+
+          <p className="text-xs text-slate-500">
+            STI &copy; {new Date().getFullYear()} - Governo do Estado do Tocantins
+          </p>
         </div>
       </section>
 
-      {/* LADO DIREITO */}
-      <section className="flex flex-1 items-center justify-center p-6 md:p-10">
-        <div className="w-full max-w-md space-y-6">
-          <div>
-            <h1 className="text-2xl font-bold text-slate-900">Acesse sua conta</h1>
-            <p className="text-sm text-slate-500">Entre com seu e-mail institucional.</p>
-          </div>
+      {/* =====================================================
+          LADO DIREITO (Card de Login Refinado)
+      ====================================================== */}
+      <section className="flex min-h-screen flex-1 items-center justify-center bg-slate-50 px-5 py-10 sm:px-8 lg:px-12">
+        <div className="w-full max-w-md">
+          <div className="rounded-3xl border border-slate-200 bg-white p-7 shadow-xl shadow-slate-200/50 sm:p-9 space-y-6">
+            <div>
+              <h1 className="text-2xl font-bold text-slate-900">Acesse sua conta</h1>
+              <p className="text-sm text-slate-500">Entre com seu e-mail corporativo institucional.</p>
+            </div>
 
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <Field label="E-mail corporativo">
-              <div className="relative">
-                <Mail className="pointer-events-none absolute left-3.5 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
-                <Input
-                  type="email"
-                  required
-                  placeholder="seu.nome@orgao.to.gov.br"
-                  value={email}
-                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setEmail(e.target.value)}
-                  className="h-12 rounded-xl border-slate-200 bg-slate-50 pl-11"
-                />
-              </div>
-            </Field>
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <Field label="E-mail corporativo">
+                <div className="relative">
+                  <Mail className="pointer-events-none absolute left-3.5 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
+                  <Input
+                    type="email"
+                    required
+                    placeholder="seu.nome@orgao.to.gov.br"
+                    value={email}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => setEmail(e.target.value)}
+                    className="h-12 rounded-xl border-slate-200 bg-slate-50 pl-11"
+                  />
+                </div>
+              </Field>
 
-            <Field label="Senha de acesso">
-              <div className="relative">
-                <Lock className="pointer-events-none absolute left-3.5 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
-                <Input
-                  type="password"
-                  required
-                  placeholder="••••••••••••"
-                  value={senha}
-                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSenha(e.target.value)}
-                  className="h-12 rounded-xl border-slate-200 bg-slate-50 pl-11"
-                />
-              </div>
-            </Field>
+              <Field label="Senha de acesso">
+                <div className="relative">
+                  <Lock className="pointer-events-none absolute left-3.5 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
+                  <Input
+                    type="password"
+                    required
+                    placeholder="••••••••••••"
+                    value={senha}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSenha(e.target.value)}
+                    className="h-12 rounded-xl border-slate-200 bg-slate-50 pl-11"
+                  />
+                </div>
+              </Field>
 
-            <Button
-              type="submit"
-              className="w-full h-12 rounded-xl bg-cyan-600 font-semibold text-white hover:bg-cyan-500"
-            >
-              Entrar no Sistema &rarr;
-            </Button>
-          </form>
+              <Button
+                type="submit"
+                className="w-full h-12 rounded-xl bg-cyan-600 font-semibold text-white hover:bg-cyan-500 shadow-md shadow-cyan-600/20 flex items-center justify-center gap-2"
+              >
+                <span>Entrar no Sistema</span>
+                <ArrowRight className="h-4 w-4" />
+              </Button>
+            </form>
 
-          <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 text-xs text-slate-600 space-y-1">
-            <p className="font-semibold text-slate-800">Contas Híbridas de Teste:</p>
-            <p className="font-mono text-[11px] text-slate-500">wanderson.ti@orgao.to.gov.br (Gestor + Técnico)</p>
-            <p className="font-mono text-[11px] text-slate-500">diretor.geral@orgao.to.gov.br (Gestor + Solicitante)</p>
+            <div className="rounded-2xl border border-slate-200/80 bg-slate-50/80 p-3.5 text-xs text-slate-600 space-y-1.5">
+              <p className="font-semibold text-slate-800">Contas Híbridas de Teste:</p>
+              <p className="font-mono text-[11px] text-slate-500">wanderson.ti@orgao.to.gov.br (Gestor + Técnico)</p>
+              <p className="font-mono text-[11px] text-slate-500">diretor.geral@orgao.to.gov.br (Gestor + Solicitante)</p>
+            </div>
           </div>
         </div>
       </section>
