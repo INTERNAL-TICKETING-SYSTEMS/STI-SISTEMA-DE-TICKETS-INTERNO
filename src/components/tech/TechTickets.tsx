@@ -1,4 +1,4 @@
-﻿import { useState } from 'react';
+﻿import { useState, useEffect } from 'react';
 import { Ticket, TicketStatus, User } from '@/types';
 import StatusBadge from '@/components/ui/StatusBadge';
 import { formatDateShort } from '@/data';
@@ -27,6 +27,11 @@ const statusFilters: { id: TicketStatus | 'todos'; label: string }[] = [
 
 export default function TechTickets({ tickets, onOpenTicket, onAssume, techName = 'Daniel Santos', initialStatus = 'todos' }: TechTicketsProps) {
   const [statusFilter, setStatusFilter] = useState<TicketStatus | 'todos'>(initialStatus || 'todos');
+  useEffect(() => {
+    if (initialStatus) {
+      setStatusFilter(initialStatus);
+    }
+  }, [initialStatus]);
   const [techFilter, setTechFilter] = useState<string>('todos');
   const [search, setSearch] = useState('');
 

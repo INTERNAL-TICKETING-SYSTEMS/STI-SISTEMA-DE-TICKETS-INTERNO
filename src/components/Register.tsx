@@ -136,6 +136,19 @@ export default function Register({ onBackToLogin }: RegisterProps) {
 
     setLoading(true);
     setTimeout(() => {
+      
+      try {
+        const currentList = JSON.parse(localStorage.getItem('sti_registered_users') || '[]');
+        const formattedEmail = email.includes('@') ? email : `${email}@sti.chamados.com`;
+        currentList.push({
+          name,
+          email: formattedEmail,
+          department: sectorSearch || 'Administrativo',
+          phone,
+          password
+        });
+        localStorage.setItem('sti_registered_users', JSON.stringify(currentList));
+      } catch (err) {}
       setLoading(false);
       setDone(true);
     }, 600);
@@ -315,7 +328,7 @@ export default function Register({ onBackToLogin }: RegisterProps) {
               <Field label="E-mail Institucional ou Pessoal">
                 <Input
                   type="email"
-                  placeholder="nome.sobrenome@detran.to.gov.br"
+                  placeholder="nome.sobrenome@sti.chamados.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required

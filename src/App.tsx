@@ -1,3 +1,4 @@
+import FeedbackCenter from '@/components/FeedbackCenter';
 ﻿import GestorSidebar, { GestorPage, GestorPageContainer } from '@/components/gestor/GestorSidebar';
 import GestorDashboard from '@/components/gestor/GestorDashboard';
 import { useState } from 'react';
@@ -24,59 +25,110 @@ type TechView = { page: TechPage } | { page: 'tech-ticket-detail'; ticketId: str
 type AuthScreen = 'login' | 'register';
 
 // Simulated account database — maps email to role
-const knownAccounts: Record<string, { role: UserRole; user: User; defaultPassword?: string }> = {
-  'ana.mendes@empresa.com.br': { role: 'usuario', user: currentUser },
-    'danielandsanfer@gmail.com': { role: 'tecnico', user: mockTechnicians[0], defaultPassword: '.\ati@!#$%2020' },
-  'wanderson.ti@orgao.to.gov.br': {
-    role: 'gestor',
+// Base Oficial STI Exclusiva (@sti.chamados.com)
+const TECH_DEFAULT_PASSWORD = '.\\ati@!#$%2020';
+
+const knownAccounts: Record<string, { role: UserRole; user: User; defaultPassword?: string; requireStrictPassword?: boolean }> = {
+  // Solicitante Padrão de Demonstração
+  'servidor@sti.chamados.com': { 
+    role: 'usuario', 
+    user: currentUser,
+    requireStrictPassword: false
+  },
+
+  // Carlos Daniel Santos Ferreira (Técnico de Suporte STI)
+  'carlos.daniel@sti.chamados.com': {
+    role: 'tecnico',
     user: {
-      name: 'Wanderson Silveira',
-      email: 'wanderson.ti@orgao.to.gov.br',
-      department: 'Diretoria de TI',
-      role: 'Chefe de Setor / TI',
+      name: 'Carlos Daniel Santos Ferreira',
+      email: 'carlos.daniel@sti.chamados.com',
+      department: 'Suporte Técnico STI',
+      role: 'Técnico de Suporte',
+      phone: '(63) 98400-2020',
+      userRole: 'tecnico',
+      roles: ['tecnico'],
+    },
+    defaultPassword: TECH_DEFAULT_PASSWORD,
+    requireStrictPassword: true
+  },
+
+  // João Pedro Moreira (Técnico de Suporte STI)
+  'joao.pedro@sti.chamados.com': {
+    role: 'tecnico',
+    user: {
+      name: 'João Pedro Moreira',
+      email: 'joao.pedro@sti.chamados.com',
+      department: 'Suporte Técnico STI',
+      role: 'Técnico de Suporte',
+      phone: '(63) 98400-2021',
+      userRole: 'tecnico',
+      roles: ['tecnico'],
+    },
+    defaultPassword: TECH_DEFAULT_PASSWORD,
+    requireStrictPassword: true
+  },
+
+  // Guilherme Ferreira de Souza (Técnico de Suporte STI)
+  'guilherme.ferreira@sti.chamados.com': {
+    role: 'tecnico',
+    user: {
+      name: 'Guilherme Ferreira de Souza',
+      email: 'guilherme.ferreira@sti.chamados.com',
+      department: 'Suporte Técnico STI',
+      role: 'Técnico de Suporte',
+      phone: '(63) 98400-2022',
+      userRole: 'tecnico',
+      roles: ['tecnico'],
+    },
+    defaultPassword: TECH_DEFAULT_PASSWORD,
+    requireStrictPassword: true
+  },
+
+  // Wanderson Alves Maior (Técnico & Gestor)
+  'wanderson.maior@sti.chamados.com': {
+    role: 'tecnico',
+    user: {
+      name: 'Wanderson Alves Maior',
+      email: 'wanderson.maior@sti.chamados.com',
+      department: 'Infraestrutura & Gestão TI',
+      role: 'Técnico / Gestor de TI',
       phone: '(63) 98400-1001',
-      userRole: 'gestor',
+      userRole: 'tecnico',
       roles: ['tecnico', 'gestor'],
     },
+    defaultPassword: TECH_DEFAULT_PASSWORD,
+    requireStrictPassword: true
   },
-  'diretor.geral@orgao.to.gov.br': {
+
+  // Luigue Soares Brandão (Diretor Administrativo)
+  'luigue.brandao@sti.chamados.com': {
     role: 'gestor',
     user: {
-      name: 'Dr. Carlos Eduardo Lima',
-      email: 'diretor.geral@orgao.to.gov.br',
-      department: 'Gabinete da Diretoria',
-      role: 'Diretor Geral',
-      phone: '(63) 98400-1002',
+      name: 'Luigue Soares Brandão',
+      email: 'luigue.brandao@sti.chamados.com',
+      department: 'Diretoria Administrativa',
+      role: 'Diretor Administrativo',
+      phone: '(63) 98400-3001',
       userRole: 'gestor',
-      roles: ['usuario', 'gestor'],
+      roles: ['gestor', 'usuario'],
     },
+    requireStrictPassword: false
   },
-  'roberto.gerencia@orgao.to.gov.br': {
+
+  // Elias Nunes da Silva Junior (Gerente Administrativo)
+  'elias.junior@sti.chamados.com': {
     role: 'gestor',
     user: {
-      name: 'Roberto Albuquerque',
-      email: 'roberto.gerencia@orgao.to.gov.br',
-      department: 'Gerência Operacional',
+      name: 'Elias Nunes da Silva Junior',
+      email: 'elias.junior@sti.chamados.com',
+      department: 'Gerência Administrativa',
       role: 'Gerente Administrativo',
-      phone: '(63) 98400-1003',
+      phone: '(63) 98400-3002',
       userRole: 'gestor',
-      roles: ['usuario', 'gestor'],
+      roles: ['gestor', 'usuario'],
     },
-  },
-  'joaopedromms20@gmail.com': { role: 'tecnico', user: mockTechnicians[1], defaultPassword: '.\ati@!#$%2020' },
-  'guidetranto@gmail.com': { role: 'tecnico', user: mockTechnicians[2], defaultPassword: '.\ati@!#$%2020' },
-  'wandersonmaior@gmail.com': { role: 'tecnico', user: mockTechnicians[3], defaultPassword: '.\ati@!#$%2020' },
-  'roberto.gestor@empresa.com.br': {
-    role: 'gestor',
-    user: {
-      name: 'Roberto Gestor',
-      email: 'roberto.gestor@empresa.com.br',
-      department: 'Manutenção / TI',
-      role: 'Gestor de TI',
-      phone: '(63) 98888-0000',
-      userRole: 'gestor',
-    },
-  },
+    requireStrictPassword: false
+  }
 };
 
 function detectRoleFromEmail(email: string): { role: UserRole; user: User } {
@@ -85,7 +137,26 @@ function detectRoleFromEmail(email: string): { role: UserRole; user: User } {
 
   if (account) return account;
 
-  // Default to usuario for unknown emails
+  // Busca se foi cadastrado via tela de cadastro
+  try {
+    const customUsers = JSON.parse(localStorage.getItem('sti_registered_users') || '[]');
+    const found = customUsers.find((u: any) => u.email.toLowerCase() === normalizedEmail);
+    if (found) {
+      return {
+        role: 'usuario',
+        user: {
+          ...currentUser,
+          name: found.name,
+          email: found.email,
+          department: found.department,
+          phone: found.phone || '(63) 98400-0000',
+          userRole: 'usuario',
+          roles: ['usuario'],
+        }
+      };
+    }
+  } catch (err) {}
+
   return {
     role: 'usuario',
     user: {
@@ -102,7 +173,13 @@ export default function App() {
   const [role, setRole] = useState<UserRole>('usuario');
   const [userView, setUserView] = useState<UserView>({ page: 'inicio' });
   const [techView, setTechView] = useState<TechView>({ page: 'tech-inicio' });
+  const [techInitialStatus, setTechInitialStatus] = useState<TicketStatus | 'todos'>('todos');
     const [gestorView, setGestorView] = useState<GestorPage>('gestor-dashboard');
+
+    const handleTechFilterSelect = (status: TicketStatus) => {
+    setTechInitialStatus(status);
+    setTechView({ page: 'tech-chamados' });
+  };
 
   const handleSwitchRole = (newRole: UserRole) => {
     setRole(newRole);
@@ -431,9 +508,16 @@ const handleAddNote = (id: string, note: string) => {
 
     return (
       <div className="flex h-screen bg-slate-50">
-        <Sidebar
-          onNavigate={navigate}
-          onLogout={handleLogout} current={'inicio'} userName={''}        />
+          <Sidebar
+            current={userView.page === 'ticket-detail' ? 'meus-chamados' : userView.page}
+            onNavigate={navigate}
+            onLogout={handleLogout}
+            userName={activeUser.name}
+            userRole={activeUser.department || 'Colaborador'}
+            tickets={tickets}
+            activeUser={activeUser}
+            onSwitchRole={handleSwitchRole}
+          />
 
         <PageContainer>
           {userView.page === 'inicio' && (
@@ -509,6 +593,7 @@ const handleAddNote = (id: string, note: string) => {
               onOpenTicket={openTicket}
               onAssume={handleAssume}
               techName={activeUser.name}
+                onFilterSelect={handleTechFilterSelect}
             />
           )}
 
@@ -518,6 +603,7 @@ const handleAddNote = (id: string, note: string) => {
               onNavigate={navigate}
               onOpenTicket={openTicket}
               onAssume={handleAssume}
+                initialStatus={techInitialStatus}
             />
           )}
 
@@ -530,7 +616,16 @@ const handleAddNote = (id: string, note: string) => {
             />
           )}
 
-          {techView.page === 'tech-perfil' && (
+          
+            {techView.page === ('tech-feedbacks' as any) && (
+              <FeedbackCenter 
+                currentRole="tecnico" 
+                activeUserName={activeUser.name}
+                activeUserDepartment={activeUser.department}
+              />
+            )}
+  
+            {techView.page === 'tech-perfil' && (
             <Profile user={activeUser} />
           )}
 
@@ -676,7 +771,16 @@ const handleAddNote = (id: string, note: string) => {
             </div>
           )}
 
-          {gestorView === 'gestor-relatorios' && (
+          
+            {gestorView === ('gestor-feedbacks' as any) && (
+              <FeedbackCenter 
+                currentRole="gestor" 
+                activeUserName={activeUser.name}
+                activeUserDepartment={activeUser.department}
+              />
+            )}
+  
+            {gestorView === 'gestor-relatorios' && (
             <div className="space-y-4">
               <h2 className="text-xl font-bold text-white">Central de Relatórios Oficiais</h2>
               <p className="text-xs text-slate-400">Emissão de relatórios consolidados em PDF e CSV.</p>

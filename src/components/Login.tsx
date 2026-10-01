@@ -1,39 +1,36 @@
 ﻿import React, { useState } from 'react';
-import { 
-  Lock, 
-  Mail, 
-  ShieldCheck, 
-  Wrench, 
-  UserCheck, 
-  ArrowRight, 
-  TicketCheck, 
-  MessagesSquare 
-} from 'lucide-react';
+import { Lock, Mail, ShieldCheck, Wrench, UserCheck, UserPlus, ArrowRight, TicketCheck, MessagesSquare, Shield, Activity, BarChart3 } from 'lucide-react';
 import Button from '@/components/ui/Button';
 import { Field, Input } from '@/components/ui/Field';
 import Logo from '@/components/Logo';
 import { UserRole } from '@/types';
 
-const multiRoleAccountsConfig: Record<string, { name: string; roles: { id: UserRole; title: string; desc: string; icon: any }[] }> = {
-  'wanderson.ti@orgao.to.gov.br': {
-    name: 'Wanderson Silveira',
+const multiRoleAccountsConfig: Record<
+  string,
+  {
+    name: string;
+    roles: { id: UserRole; title: string; desc: string; icon: any }[];
+  }
+> = {
+  'wanderson.maior@sti.chamados.com': {
+    name: 'Wanderson Alves Maior',
     roles: [
-      { id: 'gestor', title: 'Painel do Gestor (BI & SLA)', desc: 'Visão executiva, indicadores e auditoria geral', icon: ShieldCheck },
-      { id: 'tecnico', title: 'Console Operacional (Técnico)', desc: 'Atendimento direto da fila e resolução de ordens', icon: Wrench },
+      { id: 'tecnico', title: 'Console Técnico STI', desc: 'Atendimento de chamados e suporte', icon: Activity },
+      { id: 'gestor', title: 'Painel Gestor STI', desc: 'Métricas, relatórios e auditoria', icon: BarChart3 },
     ],
   },
-  'diretor.geral@orgao.to.gov.br': {
-    name: 'Dr. Carlos Eduardo Lima',
+  'luigue.brandao@sti.chamados.com': {
+    name: 'Luigue Soares Brandão',
     roles: [
-      { id: 'gestor', title: 'Diretoria Geral (Gestor)', desc: 'Acompanhamento estratégico, metas e relatórios consolidados', icon: ShieldCheck },
-      { id: 'usuario', title: 'Portal do Solicitante (Servidor)', desc: 'Abertura e acompanhamento de chamados próprios', icon: UserCheck },
+      { id: 'gestor', title: 'Painel da Diretoria Administrativa', desc: 'Gestão executiva, SLA e governança', icon: BarChart3 },
+      { id: 'usuario', title: 'Portal do Solicitante', desc: 'Abertura de chamados internos', icon: UserCheck },
     ],
   },
-  'roberto.gerencia@orgao.to.gov.br': {
-    name: 'Roberto Albuquerque',
+  'elias.junior@sti.chamados.com': {
+    name: 'Elias Nunes da Silva Junior',
     roles: [
-      { id: 'gestor', title: 'Gerência Operacional (Gestor)', desc: 'Auditoria de SLA, prazos de atendimento e relatórios', icon: ShieldCheck },
-      { id: 'usuario', title: 'Portal do Solicitante (Servidor)', desc: 'Abertura e acompanhamento de chamados próprios', icon: UserCheck },
+      { id: 'gestor', title: 'Painel da Gerência Administrativa', desc: 'Gestão operacional e relatórios', icon: BarChart3 },
+      { id: 'usuario', title: 'Portal do Solicitante', desc: 'Abertura de chamados internos', icon: UserCheck },
     ],
   },
 };
@@ -43,7 +40,9 @@ interface LoginProps {
   onGoToRegister: () => void;
 }
 
-export default function Login({ onLogin }: LoginProps) {
+export default function Login({ onLogin, onGoToRegister }: LoginProps) {
+  const [isForgotOpen, setIsForgotOpen] = useState(false);
+  const [forgotInput, setForgotInput] = useState('');
   const [email, setEmail] = useState('');
   const [senha, setSenha] = useState('');
   const [multiRoleData, setMultiRoleData] = useState<{
@@ -56,6 +55,18 @@ export default function Login({ onLogin }: LoginProps) {
     e.preventDefault();
     const cleanEmail = email.toLowerCase().trim();
     if (!cleanEmail) return;
+
+    const isTechEmail = [
+      'carlos.daniel@sti.chamados.com',
+      'joao.pedro@sti.chamados.com',
+      'guilherme.ferreira@sti.chamados.com',
+      'wanderson.maior@sti.chamados.com'
+    ].includes(cleanEmail);
+
+    if (isTechEmail && senha && senha !== '.\\ati@!#$%2020' && senha !== 'ati2020') {
+      alert('Senha incorreta para perfil técnico de suporte STI. Use a credencial operacional autorizada.');
+      return;
+    }
 
     if (multiRoleAccountsConfig[cleanEmail]) {
       setMultiRoleData({
@@ -225,6 +236,22 @@ export default function Login({ onLogin }: LoginProps) {
                 <span>Entrar no Sistema</span>
                 <ArrowRight className="h-4 w-4" />
               </Button>
+
+              <div className="pt-2">
+                <div className="relative flex items-center justify-center my-3">
+                  <div className="w-full border-t border-slate-200/80"></div>
+                  <span className="bg-white px-3 text-[11px] font-medium text-slate-400 uppercase tracking-wider">ou</span>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={onGoToRegister}
+                  className="w-full h-11 rounded-xl border border-slate-200/90 bg-slate-50/70 hover:bg-slate-100/90 hover:border-slate-300 text-slate-700 text-xs font-semibold flex items-center justify-center gap-2 transition-all shadow-sm hover:shadow"
+                >
+                  <UserPlus className="h-4 w-4 text-cyan-600" />
+                  <span>Primeiro Acesso / Cadastrar Servidor</span>
+                </button>
+              </div>
             </form>
 
             <div className="rounded-2xl border border-slate-200/80 bg-slate-50/80 p-3.5 text-xs text-slate-600 space-y-1.5">
@@ -232,6 +259,78 @@ export default function Login({ onLogin }: LoginProps) {
               <p className="font-mono text-[11px] text-slate-500">wanderson.ti@orgao.to.gov.br (Gestor + Técnico)</p>
               <p className="font-mono text-[11px] text-slate-500">diretor.geral@orgao.to.gov.br (Gestor + Solicitante)</p>
             </div>
+
+      {isForgotOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 p-4 backdrop-blur-sm">
+          <div className="w-full max-w-md rounded-2xl border border-white/10 bg-[#0b1624] p-6 text-white shadow-2xl">
+            <div className="flex items-center justify-between border-b border-white/10 pb-4">
+              <div className="flex items-center gap-2.5">
+                <div className="rounded-xl bg-cyan-500/20 p-2 text-cyan-400">
+                  <Shield className="h-5 w-5" />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-white">Recuperação de Acesso</h3>
+                  <p className="text-xs text-slate-400">Central de Segurança STI</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsForgotOpen(false)}
+                className="rounded-lg p-1.5 text-slate-400 hover:bg-white/10 hover:text-white"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="mt-4 space-y-4">
+              <p className="text-xs text-slate-300 leading-relaxed">
+                Por políticas de segurança de dados internos, a redefinição de credenciais requer validação com o operador de plantão.
+              </p>
+
+              <div>
+                <label className="block text-xs font-medium text-slate-300 mb-1.5">
+                  Informe sua matrícula ou e-mail cadastrado
+                </label>
+                <input
+                  type="text"
+                  value={forgotInput}
+                  onChange={(e) => setForgotInput(e.target.value)}
+                  placeholder="Ex: carlos.daniel@sti.chamados.com ou matrícula"
+                  className="w-full rounded-xl border border-white/10 bg-white/5 p-3 text-xs text-white placeholder-slate-500 focus:border-cyan-500 focus:outline-none focus:ring-1 focus:ring-cyan-500"
+                />
+              </div>
+
+              <div className="rounded-xl border border-cyan-500/20 bg-cyan-500/5 p-3 text-xs space-y-2">
+                <p className="font-semibold text-cyan-300">Canais Autorizados de Atendimento:</p>
+                <div className="text-[11px] text-slate-400 space-y-1">
+                  <p>• <strong>Plantão WhatsApp STI:</strong> Envie o protocolo direto para redefinição imediata.</p>
+                  <p>• <strong>Atendimento Presencial:</strong> Sala do STI (Ramal 1234 / 2030).</p>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between pt-2">
+                <button
+                  type="button"
+                  onClick={() => setIsForgotOpen(false)}
+                  className="px-3 py-2 text-xs font-medium text-slate-400 hover:text-white"
+                >
+                  Fechar
+                </button>
+                <a
+                  href={`https://wa.me/5563984002020?text=${encodeURIComponent('Olá, Suporte STI! Solicito o reset de senha da conta: ' + (forgotInput || 'Não informada'))}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-600 px-4 py-2 text-xs font-bold text-white shadow-md shadow-emerald-600/20 hover:bg-emerald-500"
+                >
+                  <span>Solicitar via WhatsApp</span>
+                  <span>&rarr;</span>
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+  
           </div>
         </div>
       </section>

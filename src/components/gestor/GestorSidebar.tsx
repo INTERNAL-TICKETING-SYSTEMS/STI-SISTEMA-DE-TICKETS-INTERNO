@@ -8,7 +8,7 @@ import {
   Activity,
   UserCheck,
   User
-} from 'lucide-react';
+, MessageSquareHeart } from 'lucide-react';
 import { User as UserType, UserRole } from '@/types';
 
 export type GestorPage = 'gestor-dashboard' | 'gestor-equipe' | 'gestor-auditoria' | 'gestor-relatorios' | 'gestor-perfil';
@@ -136,6 +136,21 @@ export default function GestorSidebar({
             <span>Relatórios & Exportações</span>
           </div>
         </button>
+
+          <button
+            onClick={() => onNavigate('gestor-feedbacks' as any)}
+            className={`flex items-center justify-between rounded-xl px-3.5 py-2.5 text-xs font-medium transition-all ${
+              (current as string) === 'gestor-feedbacks'
+                ? 'bg-[#00A896] text-white font-semibold shadow-md shadow-teal-500/20'
+                : 'text-slate-400 hover:bg-white/5 hover:text-white'
+            }`}
+          >
+            <div className="flex items-center gap-3">
+              <MessageSquareHeart className="h-4 w-4 shrink-0 text-amber-400" />
+              <span>Feedbacks & Demandas</span>
+            </div>
+          </button>
+  
       </nav>
 
       {/* Rodapé / Perfil do Gestor Interativo */}

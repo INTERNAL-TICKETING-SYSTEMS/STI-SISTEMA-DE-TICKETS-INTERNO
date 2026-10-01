@@ -13,9 +13,9 @@ export default function Logo({
   ...rest
 }: LogoProps) {
   const sizeClass = {
-    dashboard: 'w-full max-w-[760px]',
-    full: 'w-full max-w-[420px]',
-    compact: 'w-full max-w-[300px]',
+    dashboard: 'w-auto max-w-[340px] max-h-16',
+    full: 'w-auto max-w-[260px] max-h-14',
+    compact: 'w-auto max-w-[180px] max-h-10',
   }[variant];
 
   return (
