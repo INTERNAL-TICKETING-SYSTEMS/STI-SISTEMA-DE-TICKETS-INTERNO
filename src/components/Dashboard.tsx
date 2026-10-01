@@ -9,16 +9,24 @@ interface DashboardProps {
   tickets: Ticket[];
   onNavigate: (p: Page) => void;
   onOpenTicket: (id: string) => void;
+  userName: string;
 }
 
-export default function Dashboard({ tickets, onNavigate, onOpenTicket }: DashboardProps) {
+export default function Dashboard({
+  tickets,
+  onNavigate,
+  onOpenTicket,
+  userName,
+}: DashboardProps) {
   const recent = tickets.slice(0, 4);
 
   return (
     <div>
       {/* Greeting */}
       <div className="mb-8">
-        <p className="text-sm font-medium text-slate-400">Olá, Ana</p>
+        <p className="text-sm font-medium text-slate-400">
+          Olá, {userName || 'Usuário'}
+        </p>
         <h1 className="mt-1 text-2xl font-bold text-sti-navy-800">Como podemos ajudar?</h1>
       </div>
 
@@ -76,9 +84,8 @@ export default function Dashboard({ tickets, onNavigate, onOpenTicket }: Dashboa
               <button
                 key={t.id}
                 onClick={() => onOpenTicket(t.id)}
-                className={`flex w-full items-center gap-4 px-5 py-4 text-left transition-colors hover:bg-slate-50 ${
-                  i > 0 ? 'border-t border-slate-100' : ''
-                }`}
+                className={`flex w-full items-center gap-4 px-5 py-4 text-left transition-colors hover:bg-slate-50 ${i > 0 ? 'border-t border-slate-100' : ''
+                  }`}
               >
                 <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-slate-400">
                   <MessagesSquare className="h-5 w-5" />

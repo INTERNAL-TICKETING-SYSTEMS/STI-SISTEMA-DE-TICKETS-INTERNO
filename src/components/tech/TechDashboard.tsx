@@ -1,12 +1,12 @@
 ﻿import React from 'react';
-import { 
-  Inbox, 
-  Headphones, 
-  Clock, 
-  CheckCircle2, 
-  AlertCircle, 
+import {
+  Inbox,
+  Headphones,
+  Clock,
+  CheckCircle2,
+  AlertCircle,
   ArrowRight,
-  LucideIcon 
+  LucideIcon
 } from 'lucide-react';
 import { Ticket, TicketStatus } from '@/types';
 
@@ -29,9 +29,9 @@ interface TechDashboardProps {
   techName?: string;
 }
 
-export default function TechDashboard({ 
-  tickets, 
-  onOpenTicket, 
+export default function TechDashboard({
+  tickets,
+  onOpenTicket,
   onFilterSelect,
   onNavigateToQueue,
   onNavigate,
@@ -68,8 +68,12 @@ export default function TechDashboard({
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-slate-900">Olá, Técnico!</h1>
-        <p className="text-sm text-slate-500">Veja os chamados que precisam da sua atenção e clique nos cards para filtrar.</p>
+        <h1 className="text-2xl font-bold text-slate-900">
+          Olá, {techName?.trim() || 'Técnico'}!
+        </h1>
+        <p className="text-sm text-slate-500">
+          Veja os chamados que precisam da sua atenção e clique nos cards para filtrar.
+        </p>
       </div>
 
       {/* Grid de Métricas Clicáveis */}
@@ -137,8 +141,8 @@ export default function TechDashboard({
                 </tr>
               ) : (
                 attention.map((t) => (
-                  <tr 
-                    key={t.id} 
+                  <tr
+                    key={t.id}
                     onClick={() => onOpenTicket(t.id)}
                     className="hover:bg-slate-50/80 cursor-pointer transition-colors group"
                   >

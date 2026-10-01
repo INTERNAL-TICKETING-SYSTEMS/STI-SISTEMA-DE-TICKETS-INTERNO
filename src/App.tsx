@@ -1,5 +1,5 @@
 import FeedbackCenter from '@/components/FeedbackCenter';
-﻿import GestorSidebar, { GestorPage, GestorPageContainer } from '@/components/gestor/GestorSidebar';
+import GestorSidebar, { GestorPage, GestorPageContainer } from '@/components/gestor/GestorSidebar';
 import GestorDashboard from '@/components/gestor/GestorDashboard';
 import { useState } from 'react';
 import Sidebar, { Page, PageContainer } from '@/components/Sidebar';
@@ -30,8 +30,8 @@ const TECH_DEFAULT_PASSWORD = '.\\ati@!#$%2020';
 
 const knownAccounts: Record<string, { role: UserRole; user: User; defaultPassword?: string; requireStrictPassword?: boolean }> = {
   // Solicitante Padrão de Demonstração
-  'servidor@sti.chamados.com': { 
-    role: 'usuario', 
+  'servidor@sti.chamados.com': {
+    role: 'usuario',
     user: currentUser,
     requireStrictPassword: false
   },
@@ -40,7 +40,7 @@ const knownAccounts: Record<string, { role: UserRole; user: User; defaultPasswor
   'carlos.daniel@sti.chamados.com': {
     role: 'tecnico',
     user: {
-      name: 'Carlos Daniel Santos Ferreira',
+      name: 'Carlos Daniel Santos',
       email: 'carlos.daniel@sti.chamados.com',
       department: 'Suporte Técnico STI',
       role: 'Técnico de Suporte',
@@ -72,7 +72,7 @@ const knownAccounts: Record<string, { role: UserRole; user: User; defaultPasswor
   'guilherme.ferreira@sti.chamados.com': {
     role: 'tecnico',
     user: {
-      name: 'Guilherme Ferreira de Souza',
+      name: 'Guilherme Ferreira',
       email: 'guilherme.ferreira@sti.chamados.com',
       department: 'Suporte Técnico STI',
       role: 'Técnico de Suporte',
@@ -88,7 +88,7 @@ const knownAccounts: Record<string, { role: UserRole; user: User; defaultPasswor
   'wanderson.maior@sti.chamados.com': {
     role: 'tecnico',
     user: {
-      name: 'Wanderson Alves Maior',
+      name: 'Wanderson Alves',
       email: 'wanderson.maior@sti.chamados.com',
       department: 'Infraestrutura & Gestão TI',
       role: 'Técnico / Gestor de TI',
@@ -155,7 +155,7 @@ function detectRoleFromEmail(email: string): { role: UserRole; user: User } {
         }
       };
     }
-  } catch (err) {}
+  } catch (err) { }
 
   return {
     role: 'usuario',
@@ -174,9 +174,9 @@ export default function App() {
   const [userView, setUserView] = useState<UserView>({ page: 'inicio' });
   const [techView, setTechView] = useState<TechView>({ page: 'tech-inicio' });
   const [techInitialStatus, setTechInitialStatus] = useState<TicketStatus | 'todos'>('todos');
-    const [gestorView, setGestorView] = useState<GestorPage>('gestor-dashboard');
+  const [gestorView, setGestorView] = useState<GestorPage>('gestor-dashboard');
 
-    const handleTechFilterSelect = (status: TicketStatus) => {
+  const handleTechFilterSelect = (status: TicketStatus) => {
     setTechInitialStatus(status);
     setTechView({ page: 'tech-chamados' });
   };
@@ -191,7 +191,7 @@ export default function App() {
   const [tickets, setTickets] = useState<Ticket[]>(mockTickets);
   const [inspectedTicket, setInspectedTicket] = useState<Ticket | null>(null);
 
-        const handleLogin = (email: string, chosenRole?: UserRole) => {
+  const handleLogin = (email: string, chosenRole?: UserRole) => {
     const { role: detectedRole, user } = detectRoleFromEmail(email);
     const finalRole = chosenRole || detectedRole;
 
@@ -270,7 +270,7 @@ export default function App() {
     };
 
     setTickets((prev) => [newTicket, ...prev]);
-      // Deixa o OpenTicket exibir o comprovante e a animacao de sucesso
+    // Deixa o OpenTicket exibir o comprovante e a animacao de sucesso
   };
 
   const handleUserReply = (id: string, message: string) => {
@@ -320,7 +320,7 @@ export default function App() {
     setTechView({ page: 'tech-ticket-detail', ticketId: id });
   };
 
-    const handleAssignTicket = (id: string, assigneeName: string) => {
+  const handleAssignTicket = (id: string, assigneeName: string) => {
     const now = new Date().toISOString();
 
     setTickets((prev) =>
@@ -426,11 +426,11 @@ export default function App() {
       prev.map((t) =>
         t.id === id
           ? {
-              ...t,
-              status: 'resolvido' as TicketStatus,
-              solution,
-              assetTag: assetTag || t.assetTag,
-              replacedParts: replacedParts || t.replacedParts,
+            ...t,
+            status: 'resolvido' as TicketStatus,
+            solution,
+            assetTag: assetTag || t.assetTag,
+            replacedParts: replacedParts || t.replacedParts,
             updatedAt: now,
             updates: [
               ...t.updates,
@@ -448,7 +448,7 @@ export default function App() {
     );
   };
 
-  
+
   const handleRateTicket = (id: string, rating: number, comment?: string) => {
     const now = new Date().toISOString();
     setTickets((prev) =>
@@ -474,7 +474,7 @@ export default function App() {
       })
     );
   };
-const handleAddNote = (id: string, note: string) => {
+  const handleAddNote = (id: string, note: string) => {
     const now = new Date().toISOString();
 
     setTickets((prev) =>
@@ -524,16 +524,16 @@ const handleAddNote = (id: string, note: string) => {
 
     return (
       <div className="flex h-screen bg-slate-50">
-          <Sidebar
-            current={userView.page === 'ticket-detail' ? 'meus-chamados' : userView.page}
-            onNavigate={navigate}
-            onLogout={handleLogout}
-            userName={activeUser.name}
-            userRole={activeUser.department || 'Colaborador'}
-            tickets={tickets}
-            activeUser={activeUser}
-            onSwitchRole={handleSwitchRole}
-          />
+        <Sidebar
+          current={userView.page === 'ticket-detail' ? 'meus-chamados' : userView.page}
+          onNavigate={navigate}
+          onLogout={handleLogout}
+          userName={activeUser.name}
+          userRole={activeUser.department || 'Colaborador'}
+          tickets={tickets}
+          activeUser={activeUser}
+          onSwitchRole={handleSwitchRole}
+        />
 
         <PageContainer>
           {userView.page === 'inicio' && (
@@ -541,35 +541,34 @@ const handleAddNote = (id: string, note: string) => {
               tickets={tickets}
               onNavigate={navigate}
               onOpenTicket={openTicket}
+              userName={activeUser?.name || ''}
             />
           )}
 
-          {userView.page === 'abrir-chamado' && (
-            <OpenTicket
-              onSubmit={handleSubmitTicket}
-              onNavigate={navigate}
-            />
+          {userView.page === 'abrir-chamado' && (<OpenTicket
+            onSubmit={handleSubmitTicket}
+            onNavigate={navigate}
+          />
           )}
 
-          {userView.page === 'meus-chamados' && (
-            <MyTickets
-              tickets={tickets}
-              onNavigate={navigate}
-              onOpenTicket={openTicket}
-            />
+          {userView.page === 'meus-chamados' && (<MyTickets
+            tickets={tickets}
+            onNavigate={navigate}
+            onOpenTicket={openTicket}
+          />
           )}
 
           {userView.page === 'perfil' && <Profile user={activeUser} />}
 
           {userView.page === 'ticket-detail' && currentTicket && (
-                          <TicketDetail
-                ticket={currentTicket}
-                onReply={(msg) => handleUserReply(currentTicket.id, msg)}
-                onNavigate={navigate}
-                onRateTicket={handleRateTicket}
-              />
-          )}
-        </PageContainer>
+            <TicketDetail
+              ticket={currentTicket}
+              onReply={(msg) => handleUserReply(currentTicket.id, msg)}
+              onNavigate={navigate}
+              onRateTicket={handleRateTicket}
+            />
+          )} </PageContainer>
+
       </div>
     );
   }
@@ -587,19 +586,19 @@ const handleAddNote = (id: string, note: string) => {
 
     return (
       <div className="flex h-screen bg-slate-50">
-<TechSidebar
-            current={
-              techView.page === 'tech-ticket-detail'
-                ? 'tech-chamados'
-                : techView.page
-            }
-            onNavigate={navigate}
-            onLogout={handleLogout}
-            userName={activeUser.name}
-            activeUser={activeUser}
-            onSwitchRole={handleSwitchRole}
-            tickets={tickets}
-          />
+        <TechSidebar
+          current={
+            techView.page === 'tech-ticket-detail'
+              ? 'tech-chamados'
+              : techView.page
+          }
+          onNavigate={navigate}
+          onLogout={handleLogout}
+          userName={activeUser.name}
+          activeUser={activeUser}
+          onSwitchRole={handleSwitchRole}
+          tickets={tickets}
+        />
 
         <TechPageContainer>
           {techView.page === 'tech-inicio' && (
@@ -609,7 +608,7 @@ const handleAddNote = (id: string, note: string) => {
               onOpenTicket={openTicket}
               onAssume={handleAssume}
               techName={activeUser.name}
-                onFilterSelect={handleTechFilterSelect}
+              onFilterSelect={handleTechFilterSelect}
             />
           )}
 
@@ -619,7 +618,7 @@ const handleAddNote = (id: string, note: string) => {
               onNavigate={navigate}
               onOpenTicket={openTicket}
               onAssume={handleAssume}
-                initialStatus={techInitialStatus}
+              initialStatus={techInitialStatus}
             />
           )}
 
@@ -632,16 +631,16 @@ const handleAddNote = (id: string, note: string) => {
             />
           )}
 
-          
-            {techView.page === ('tech-feedbacks' as any) && (
-              <FeedbackCenter 
-                currentRole="tecnico" 
-                activeUserName={activeUser.name}
-                activeUserDepartment={activeUser.department}
-              />
-            )}
-  
-            {techView.page === 'tech-perfil' && (
+
+          {techView.page === ('tech-feedbacks' as any) && (
+            <FeedbackCenter
+              currentRole="tecnico"
+              activeUserName={activeUser.name}
+              activeUserDepartment={activeUser.department}
+            />
+          )}
+
+          {techView.page === 'tech-perfil' && (
             <Profile user={activeUser} />
           )}
 
@@ -663,8 +662,8 @@ const handleAddNote = (id: string, note: string) => {
                 handleAddNote(id, note)
               }
               techName={activeUser.name}
-                technicians={mockTechnicians}
-                onAssign={handleAssignTicket}
+              technicians={mockTechnicians}
+              onAssign={handleAssignTicket}
             />
           )}
         </TechPageContainer>
@@ -762,11 +761,10 @@ const handleAddNote = (id: string, note: string) => {
                           )}
                         </td>
                         <td>
-                          <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold ${
-                            t.status === 'resolvido' ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' :
-                            t.status === 'em_andamento' ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/30' :
-                            'bg-amber-500/20 text-amber-300 border border-amber-500/30'
-                          }`}>
+                          <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold ${t.status === 'resolvido' ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' :
+                              t.status === 'em_andamento' ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/30' :
+                                'bg-amber-500/20 text-amber-300 border border-amber-500/30'
+                            }`}>
                             {t.status.toUpperCase()}
                           </span>
                         </td>
@@ -787,16 +785,16 @@ const handleAddNote = (id: string, note: string) => {
             </div>
           )}
 
-          
-            {gestorView === ('gestor-feedbacks' as any) && (
-              <FeedbackCenter 
-                currentRole="gestor" 
-                activeUserName={activeUser.name}
-                activeUserDepartment={activeUser.department}
-              />
-            )}
-  
-            {gestorView === 'gestor-relatorios' && (
+
+          {gestorView === ('gestor-feedbacks' as any) && (
+            <FeedbackCenter
+              currentRole="gestor"
+              activeUserName={activeUser.name}
+              activeUserDepartment={activeUser.department}
+            />
+          )}
+
+          {gestorView === 'gestor-relatorios' && (
             <div className="space-y-4">
               <h2 className="text-xl font-bold text-white">Central de Relatórios Oficiais</h2>
               <p className="text-xs text-slate-400">Emissão de relatórios consolidados em PDF e CSV.</p>
