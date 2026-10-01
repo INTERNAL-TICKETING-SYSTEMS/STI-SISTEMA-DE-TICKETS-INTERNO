@@ -1,34 +1,28 @@
-import { ImgHTMLAttributes } from 'react';
-import logoImg from '../logo.png.jpeg';
+
+import type { ImgHTMLAttributes } from 'react';
+import logoSti from '../logo-sti.png';
 
 interface LogoProps extends ImgHTMLAttributes<HTMLImageElement> {
-  variant?: 'full' | 'compact' | string;
-  light?: boolean;
+  variant?: 'dashboard' | 'full' | 'compact';
 }
 
 export default function Logo({
-  variant,
-  light,
-  className = 'h-16',
+  variant = 'full',
+  className = '',
   ...rest
 }: LogoProps) {
-  const sizeClass =
-    variant === 'full'
-      ? 'h-28'
-      : variant === 'compact'
-        ? 'h-10'
-        : className;
+  const sizeClass = {
+    dashboard: 'w-full max-w-[760px]',
+    full: 'w-full max-w-[420px]',
+    compact: 'w-full max-w-[300px]',
+  }[variant];
 
   return (
-    <div className="flex items-center justify-start">
-      <img
-        src={logoImg}
-        alt="STI — Sistema de Tickets Interno"
-        className={`${sizeClass} w-auto object-contain ${
-          light ? 'brightness-110' : ''
-        }`.trim()}
-        {...rest}
-      />
-    </div>
+    <img
+      src={logoSti}
+      alt="STI — Sistema de Tickets Interno"
+      className={`${sizeClass} h-auto object-contain ${className}`}
+      {...rest}
+    />
   );
 }
