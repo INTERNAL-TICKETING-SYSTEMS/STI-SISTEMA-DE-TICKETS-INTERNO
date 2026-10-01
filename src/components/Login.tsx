@@ -1,7 +1,7 @@
 ﻿import { useState } from 'react';
 import Logo from '@/components/Logo';
 import { Field, Input } from '@/components/ui/Field';
-import { Lock, Mail, ShieldCheck, ArrowRight } from 'lucide-react';
+import { Lock, Mail, ShieldCheck, ArrowRight, TicketCheck, MessagesSquare } from 'lucide-react';
 
 interface LoginProps {
   onLogin: (email: string) => void;
@@ -25,7 +25,7 @@ export default function Login({ onLogin, onGoToRegister }: LoginProps) {
       {/* =====================================================
           LADO ESQUERDO
       ====================================================== */}
-      <section className="relative hidden overflow-hidden bg-[#0b1624] md:flex md:w-[46%] lg:w-[48%]">
+      <section className="relative hidden overflow-hidden bg-[#0b1624] md:flex md:w-[42%] lg:w-[43%]">
         {/* Brilhos decorativos */}
         <div className="absolute -left-32 -top-32 h-96 w-96 rounded-full bg-cyan-500/10 blur-3xl" />
         <div className="absolute -bottom-32 -right-32 h-96 w-96 rounded-full bg-teal-500/10 blur-3xl" />
@@ -33,7 +33,7 @@ export default function Login({ onLogin, onGoToRegister }: LoginProps) {
         {/* Linhas decorativas */}
         <div className="absolute right-0 top-0 h-full w-px bg-gradient-to-b from-transparent via-cyan-500/20 to-transparent" />
 
-        <div className="relative z-10 flex min-h-screen w-full flex-col justify-between px-10 py-10 lg:px-14">
+        <div className="relative z-10 flex min-h-screen w-full flex-col justify-between px-8 py-8 lg:px-10 lg:py-9">
           {/* Logo */}
           <div>
             <Logo variant="full" />
@@ -46,36 +46,60 @@ export default function Login({ onLogin, onGoToRegister }: LoginProps) {
           </div>
 
           {/* Texto principal */}
+
+          {/* Texto principal */}
           <div className="max-w-xl -translate-y-4">
-            <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-cyan-400/20 bg-cyan-400/10 px-3 py-1.5 text-xs font-medium text-cyan-300">
-              <span className="h-1.5 w-1.5 rounded-full bg-cyan-400" />
-              Central de suporte de TI
+            {/* Indicador de disponibilidade */}
+            <div className="inline-flex items-center gap-2 rounded-full border border-emerald-400/20 bg-emerald-400/[0.08] px-4 py-2">
+              <span className="relative flex h-2.5 w-2.5">
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-60" />
+                <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-emerald-400" />
+              </span>
+
+              <span className="text-xs font-semibold uppercase tracking-[0.12em] text-emerald-300">
+                Sistema online
+              </span>
             </div>
 
-            <h1 className="text-4xl font-bold leading-tight tracking-tight text-white lg:text-5xl">
+            {/* Chamada principal */}
+            <h1 className="mt-6 text-4xl font-bold leading-tight tracking-tight text-white lg:text-5xl">
               Suporte de TI,
               <br />
               <span className="text-cyan-400">simples e direto.</span>
             </h1>
 
-            <p className="mt-6 max-w-lg text-base leading-7 text-slate-400 lg:text-lg">
-              Abra chamados, acompanhe o andamento das solicitações
-              e converse com a equipe de TI em um único lugar.
+            <p className="mt-5 max-w-lg text-base leading-7 text-slate-400 lg:text-lg">
+              Abra chamados, acompanhe cada etapa e mantenha a comunicação
+              com a equipe de TI em um só lugar.
             </p>
 
-            {/* Mini informações */}
+            {/* Cartões informativos */}
             <div className="mt-8 grid max-w-md grid-cols-2 gap-3">
-              <div className="rounded-xl border border-white/5 bg-white/[0.04] p-4">
-                <p className="text-2xl font-bold text-white">24h</p>
-                <p className="mt-1 text-xs text-slate-500">
-                  Acompanhamento
+              <div className="rounded-xl border border-white/[0.08] bg-white/[0.04] p-4 transition-colors hover:border-teal-400/30">
+                <div className="mb-3 flex h-9 w-9 items-center justify-center rounded-lg bg-teal-400/10 text-teal-300">
+                  <TicketCheck className="h-5 w-5" />
+                </div>
+
+                <h3 className="text-sm font-semibold text-white">
+                  Seus chamados
+                </h3>
+
+                <p className="mt-1 text-xs leading-relaxed text-slate-400">
+                  Abra e acompanhe suas solicitações.
                 </p>
               </div>
 
-              <div className="rounded-xl border border-white/5 bg-white/[0.04] p-4">
-                <p className="text-2xl font-bold text-white">STI</p>
-                <p className="mt-1 text-xs text-slate-500">
-                  Suporte interno
+              <div className="rounded-xl border border-white/[0.08] bg-white/[0.04] p-4 transition-colors hover:border-teal-400/30">
+                <div className="mb-3 flex h-9 w-9 items-center justify-center rounded-lg bg-teal-400/10 text-teal-300">
+                  <MessagesSquare className="h-5 w-5" />
+                </div>
+
+                <h3 className="text-sm font-semibold text-white">
+                  Suporte conectado
+                </h3>
+
+                <p className="mt-1 text-xs leading-relaxed text-slate-400">
+                  Converse com a equipe de TI em um só lugar.
                 </p>
               </div>
             </div>
@@ -113,20 +137,20 @@ export default function Login({ onLogin, onGoToRegister }: LoginProps) {
               </h2>
 
               <p className="mt-2 text-sm leading-6 text-slate-500">
-                Use seu e-mail corporativo para acessar o STI.
+                Use seu e-mail pessoal para acessar o STI.
               </p>
             </div>
 
             {/* Formulário */}
             <form onSubmit={handleSubmit} className="space-y-5">
-              <Field label="E-mail corporativo">
+              <Field label="E-mail Pessoal">
                 <div className="relative">
                   <Mail className="pointer-events-none absolute left-3.5 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
 
                   <Input
                     type="email"
                     required
-                    placeholder="seu.nome@empresa.com.br"
+                    placeholder="Digite seu e-mail"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     className="h-12 rounded-xl border-slate-200 bg-slate-50 pl-11 transition-all focus:border-cyan-500 focus:bg-white focus:ring-4 focus:ring-cyan-500/10"
@@ -193,19 +217,7 @@ export default function Login({ onLogin, onGoToRegister }: LoginProps) {
             {/* Separador */}
             <div className="my-7 h-px bg-slate-100" />
 
-            {/* Ajuda */}
-            <div className="text-center">
-              <p className="text-xs text-slate-400">
-                Precisa de ajuda?
-              </p>
 
-              <p className="mt-1 text-xs text-slate-500">
-                Contate o setor de TI pelo ramal{' '}
-                <span className="font-semibold text-slate-700">
-                  4001
-                </span>
-              </p>
-            </div>
           </div>
 
           {/* Texto inferior */}
