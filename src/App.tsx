@@ -1,3 +1,7 @@
+import { AuditCompliancePanel } from './components/tech/AuditCompliancePanel';
+import OfficialReportModal from '@/components/gestor/OfficialReportModal';
+import GestorAuditTable from '@/components/gestor/GestorAuditTable';
+import { registrarAuditoria } from './services/auditService';
 import FeedbackCenter from '@/components/FeedbackCenter';
 import GestorSidebar, { GestorPage, GestorPageContainer } from '@/components/gestor/GestorSidebar';
 import GestorDashboard from '@/components/gestor/GestorDashboard';
@@ -175,6 +179,8 @@ export default function App() {
   const [techView, setTechView] = useState<TechView>({ page: 'tech-inicio' });
   const [techInitialStatus, setTechInitialStatus] = useState<TicketStatus | 'todos'>('todos');
   const [gestorView, setGestorView] = useState<GestorPage>('gestor-dashboard');
+  const [reportModalOpen, setReportModalOpen] = useState(false);
+  const [selectedReportType, setSelectedReportType] = useState<'SEMANAL' | 'MENSAL' | 'PATRIMONIO'>('SEMANAL');
 
   const handleTechFilterSelect = (status: TicketStatus) => {
     setTechInitialStatus(status);
@@ -217,9 +223,29 @@ export default function App() {
     }
 
     setAuthed(true);
+
+    // Auditoria de autenticação imutável
+    registrarAuditoria({
+      entidade: 'AUTENTICACAO',
+      idEntidade: user.email || email,
+      tipoOperacao: 'LOGIN',
+      autor: email,
+      estadoAtual: { role: finalRole, nome: user.name, departamento: user.department },
+      metadados: { origem: 'Login Form STI' }
+    }).catch(err => console.error('[Auditoria] Falha silenciosa no login:', err));
   };
 
   const handleLogout = () => {
+    if (activeUser?.email) {
+      registrarAuditoria({
+        entidade: 'AUTENTICACAO',
+        idEntidade: activeUser.email,
+        tipoOperacao: 'LOGOUT',
+        autor: activeUser.email,
+        estadoAnterior: { role, nome: activeUser.name },
+        metadados: { motivo: 'Logout manual pelo usuário' }
+      }).catch(err => console.error('[Auditoria] Falha silenciosa no logout:', err));
+    }
     setAuthed(false);
     setAuthScreen('login');
     setRole('usuario');
@@ -270,6 +296,22 @@ export default function App() {
     };
 
     setTickets((prev) => [newTicket, ...prev]);
+
+    // Auditoria imutável na criação do chamado
+    registrarAuditoria({
+      entidade: 'CHAMADO',
+      idEntidade: newTicket.id,
+      tipoOperacao: 'CRIACAO',
+      autor: activeUser?.email || (newTicket as any).userEmail || (newTicket as any).creatorName || 'solicitante@sti.chamados.com',
+      estadoAtual: {
+        assunto: newTicket.title,
+        categoria: newTicket.category,
+        prioridade: newTicket.priority,
+        status: newTicket.status,
+        setor: (newTicket as any).location || activeUser?.department || "Geral"
+      },
+      metadados: { origem: 'Abertura de Chamado STI' }
+    }).catch(err => console.error('[Auditoria] Falha ao registrar criação do chamado:', err));
     // Deixa o OpenTicket exibir o comprovante e a animacao de sucesso
   };
 
@@ -297,6 +339,16 @@ export default function App() {
           : t
       )
     );
+
+    // Auditoria imutável: Réplica enviada pelo usuário solicitante
+    registrarAuditoria({
+      entidade: 'CHAMADO',
+      idEntidade: id,
+      tipoOperacao: 'MENSAGEM_USUARIO',
+      autor: activeUser?.email || 'solicitante@sti.chamados.com',
+      estadoAtual: { mensagem: message },
+      metadados: { origem: 'Chat do Chamado - Solicitante' }
+    }).catch(err => console.error('[Auditoria] Falha ao registrar mensagem do usuário:', err));
   };
 
   // ---- Tech mutations ----
@@ -316,6 +368,19 @@ export default function App() {
           : t
       )
     );
+
+    // Auditoria imutável: Técnico assumiu o atendimento
+    registrarAuditoria({
+      entidade: 'CHAMADO',
+      idEntidade: id,
+      tipoOperacao: 'ATRIBUICAO',
+      autor: activeUser?.email || 'tecnico@sti.chamados.com',
+      estadoAtual: {
+        tecnico: activeUser?.name || 'Técnico STI',
+        status: 'em_andamento'
+      },
+      metadados: { acao: 'Técnico assumiu o chamado' }
+    }).catch(err => console.error('[Auditoria] Falha ao registrar atribuição:', err));
 
     setTechView({ page: 'tech-ticket-detail', ticketId: id });
   };
@@ -351,7 +416,36 @@ export default function App() {
         };
       })
     );
+
+    // Auditoria imutável: Atribuição ou Transferência de chamado
+    const targetTicket = tickets.find((t) => t.id === id);
+    const isReassign = Boolean(targetTicket?.assignee && targetTicket.assignee !== assigneeName);
+    registrarAuditoria({
+      entidade: 'CHAMADO',
+      idEntidade: id,
+      tipoOperacao: isReassign ? 'TRANSFERENCIA' : 'ATRIBUICAO',
+      autor: activeUser?.email || 'sistema@sti.chamados.com',
+      estadoAnterior: { responsavel: targetTicket?.assignee || null },
+      estadoAtual: { responsavel: assigneeName },
+      metadados: {
+        acao: isReassign ? 'Transferência entre técnicos' : 'Atribuição de chamado',
+        transferidoPor: activeUser?.name || 'Sistema'
+      }
+    }).catch((err) => console.error('[Auditoria] Falha ao registrar atribuição/transferência:', err));
   };
+
+  const handlePrintReport = (tipoRelatorio: string) => {
+    registrarAuditoria({
+      entidade: 'RELATORIO',
+      idEntidade: tipoRelatorio.toUpperCase().replace(/s+/g, '_'),
+      tipoOperacao: 'EMISSAO_RELATORIO',
+      autor: activeUser?.email || 'gestor@sti.chamados.com',
+      estadoAtual: { relatorio: tipoRelatorio, impressoEm: new Date().toISOString() },
+      metadados: { formato: 'PDF_PRINT', solicitante: activeUser?.name || 'Gestor' }
+    }).catch(err => console.error('[Auditoria] Falha ao registrar emissão de relatório:', err));
+    window.print();
+  };
+
 
   const handleTechMessage = (id: string, message: string) => {
     const now = new Date().toISOString();
@@ -376,6 +470,16 @@ export default function App() {
           : t
       )
     );
+
+    // Auditoria imutável: Resposta técnica no chat do chamado
+    registrarAuditoria({
+      entidade: 'CHAMADO',
+      idEntidade: id,
+      tipoOperacao: 'MENSAGEM_TECNICO',
+      autor: activeUser?.email || 'tecnico@sti.chamados.com',
+      estadoAtual: { mensagem: message },
+      metadados: { origem: 'Chat Técnico' }
+    }).catch(err => console.error('[Auditoria] Falha ao registrar mensagem técnica:', err));
   };
 
   const handleRequestInfo = (id: string, question: string) => {
@@ -402,6 +506,16 @@ export default function App() {
           : t
       )
     );
+
+    // Auditoria imutável: Técnico solicitou informações adicionais ao usuário
+    registrarAuditoria({
+      entidade: 'CHAMADO',
+      idEntidade: id,
+      tipoOperacao: 'SOLICITACAO_INFORMACOES',
+      autor: activeUser?.email || 'tecnico@sti.chamados.com',
+      estadoAtual: { status: 'aguardando', pergunta: question },
+      metadados: { acao: 'Aguardando retorno do solicitante' }
+    }).catch(err => console.error('[Auditoria] Falha ao registrar solicitação de informações:', err));
   };
 
   const handleChangeStatus = (id: string, status: TicketStatus) => {
@@ -418,6 +532,16 @@ export default function App() {
           : t
       )
     );
+
+    // Auditoria imutável: Alteração manual de status pelo técnico
+    registrarAuditoria({
+      entidade: 'CHAMADO',
+      idEntidade: id,
+      tipoOperacao: 'ATUALIZACAO_STATUS',
+      autor: activeUser?.email || 'tecnico@sti.chamados.com',
+      estadoAtual: { status },
+      metadados: { acao: 'Mudança manual de status pelo técnico' }
+    }).catch(err => console.error('[Auditoria] Falha ao registrar alteração de status:', err));
   };
 
   const handleResolve = (id: string, solution: string, assetTag?: string, replacedParts?: string) => {
@@ -446,6 +570,21 @@ export default function App() {
           : t
       )
     );
+
+    // Auditoria imutável: Resolução técnica do chamado
+    registrarAuditoria({
+      entidade: 'CHAMADO',
+      idEntidade: id,
+      tipoOperacao: 'RESOLUCAO',
+      autor: activeUser?.email || 'tecnico@sti.chamados.com',
+      estadoAtual: {
+        status: 'resolvido',
+        solucao: solution,
+        patrimonio: assetTag || null,
+        pecasTrocadas: replacedParts || null
+      },
+      metadados: { acao: 'Resolução técnica concluída' }
+    }).catch(err => console.error('[Auditoria] Falha ao registar resolução:', err));
   };
 
 
@@ -473,6 +612,20 @@ export default function App() {
         };
       })
     );
+
+    // Auditoria imutável: Avaliação e Fechamento formal pelo solicitante
+    registrarAuditoria({
+      entidade: 'CHAMADO',
+      idEntidade: id,
+      tipoOperacao: 'AVALIACAO',
+      autor: activeUser?.email || 'solicitante@sti.chamados.com',
+      estadoAtual: {
+        status: 'fechado',
+        nota: rating,
+        comentario: comment || null
+      },
+      metadados: { acao: 'Encerramento formal com avaliação de satisfação' }
+    }).catch(err => console.error('[Auditoria] Falha ao registrar avaliação:', err));
   };
   const handleAddNote = (id: string, note: string) => {
     const now = new Date().toISOString();
@@ -602,6 +755,9 @@ export default function App() {
 
         <TechPageContainer>
           {techView.page === 'tech-inicio' && (
+            techView.page === ('auditoria' as any) ? (
+            <AuditCompliancePanel />
+          ) : (
             <TechDashboard
               tickets={tickets}
               onNavigate={navigate}
@@ -610,6 +766,7 @@ export default function App() {
               techName={activeUser.name}
               onFilterSelect={handleTechFilterSelect}
             />
+          )
           )}
 
           {techView.page === 'tech-chamados' && (
@@ -729,62 +886,8 @@ export default function App() {
           )}
 
           {gestorView === 'gestor-auditoria' && (
-            <div className="space-y-4">
-              <h2 className="text-xl font-bold text-white">Trilha de Auditoria & Conformidade SLA</h2>
-              <p className="text-xs text-slate-400">Inspeção detalhada de prazos e patrimônios alocados.</p>
-              <div className="rounded-2xl border border-white/10 bg-[#0b1624] p-4 overflow-x-auto">
-                <table className="w-full text-left text-xs">
-                  <thead className="border-b border-white/10 text-slate-400 uppercase tracking-wider text-[10px]">
-                    <tr>
-                      <th className="py-2.5">Código</th>
-                      <th>Solicitante / Setor</th>
-                      <th>Técnico Responsável</th>
-                      <th>Patrimônio / Peça</th>
-                      <th>Estado</th>
-                      <th>Avaliação</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-white/5 text-slate-300">
-                    {tickets.map((t) => (
-                      <tr key={t.id} className="hover:bg-white/[0.02]">
-                        <td className="py-3 font-mono text-cyan-400">{t.id}</td>
-                        <td>
-                          <div className="font-semibold text-white">{t.requesterName}</div>
-                          <div className="text-[10px] text-slate-500">{t.requesterDepartment}</div>
-                        </td>
-                        <td>{t.assignee || <span className="text-slate-500 italic">Pendente</span>}</td>
-                        <td className="font-mono text-amber-300">
-                          {t.assetTag || t.replacedParts ? (
-                            <span>{t.assetTag || 'S/P'} - {t.replacedParts || 'Manutenção'}</span>
-                          ) : (
-                            <span className="text-slate-600">-</span>
-                          )}
-                        </td>
-                        <td>
-                          <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold ${t.status === 'resolvido' ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' :
-                              t.status === 'em_andamento' ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/30' :
-                                'bg-amber-500/20 text-amber-300 border border-amber-500/30'
-                            }`}>
-                            {t.status.toUpperCase()}
-                          </span>
-                        </td>
-                        <td>
-                          {t.rating ? (
-                            <span className="text-amber-400 font-bold flex items-center gap-1">
-                              ★ {t.rating}.0
-                            </span>
-                          ) : (
-                            <span className="text-slate-600 text-[10px]">Pendente</span>
-                          )}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
+            <GestorAuditTable />
           )}
-
 
           {gestorView === ('gestor-feedbacks' as any) && (
             <FeedbackCenter
@@ -795,37 +898,63 @@ export default function App() {
           )}
 
           {gestorView === 'gestor-relatorios' && (
-            <div className="space-y-4">
-              <h2 className="text-xl font-bold text-white">Central de Relatórios Oficiais</h2>
-              <p className="text-xs text-slate-400">Emissão de relatórios consolidados em PDF e CSV.</p>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
-                <div className="rounded-2xl border border-white/10 bg-[#0b1624] p-5">
-                  <h4 className="font-bold text-white text-sm">Relatório Semanal de Atendimentos</h4>
-                  <p className="text-xs text-slate-400 mt-1">Consolidado das demandas e tempos de resolução da semana corrente.</p>
-                  <button onClick={() => window.print()} className="mt-4 w-full rounded-xl bg-cyan-500 py-2 text-xs font-bold text-slate-950 hover:bg-cyan-400">
-                    Gerar PDF Semanal
-                  </button>
+              <div className="space-y-4">
+                <h2 className="text-xl font-bold text-white">Central de Relatórios Oficiais</h2>
+                <p className="text-xs text-slate-400">Emissão de relatórios consolidados em PDF e CSV.</p>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
+                  <div className="rounded-2xl border border-white/10 bg-[#0b1624] p-5">
+                    <h4 className="font-bold text-white text-sm">Relatório Semanal de Atendimentos</h4>
+                    <p className="text-xs text-slate-400 mt-1">Consolidado das demandas e tempos de resolução da semana corrente.</p>
+                    <button 
+                      onClick={() => {
+                        setSelectedReportType('SEMANAL');
+                        setReportModalOpen(true);
+                      }} 
+                      className="mt-4 w-full rounded-xl bg-cyan-500 py-2 text-xs font-bold text-slate-950 hover:bg-cyan-400 cursor-pointer"
+                    >
+                      Gerar PDF Semanal
+                    </button>
+                  </div>
+                  <div className="rounded-2xl border border-white/10 bg-[#0b1624] p-5">
+                    <h4 className="font-bold text-white text-sm">Relatório Mensal de Produtividade</h4>
+                    <p className="text-xs text-slate-400 mt-1">Balanço mensal de horas gastas por técnico e peças substituídas.</p>
+                    <button 
+                      onClick={() => {
+                        setSelectedReportType('MENSAL');
+                        setReportModalOpen(true);
+                      }} 
+                      className="mt-4 w-full rounded-xl bg-[#00A896] py-2 text-xs font-bold text-white hover:bg-teal-500 cursor-pointer"
+                    >
+                      Gerar PDF Mensal
+                    </button>
+                  </div>
+                  <div className="rounded-2xl border border-white/10 bg-[#0b1624] p-5">
+                    <h4 className="font-bold text-white text-sm">Auditoria Anual de Patrimônio</h4>
+                    <p className="text-xs text-slate-400 mt-1">Histórico completo de equipamentos intervencionados.</p>
+                    <button 
+                      onClick={() => {
+                        setSelectedReportType('PATRIMONIO');
+                        setReportModalOpen(true);
+                      }} 
+                      className="mt-4 w-full rounded-xl border border-white/15 bg-white/5 py-2 text-xs font-bold text-white hover:bg-white/10 cursor-pointer"
+                    >
+                      Exportar Auditoria Patrimonial
+                    </button>
+                  </div>
                 </div>
-                <div className="rounded-2xl border border-white/10 bg-[#0b1624] p-5">
-                  <h4 className="font-bold text-white text-sm">Relatório Mensal de Produtividade</h4>
-                  <p className="text-xs text-slate-400 mt-1">Balanço mensal de horas gastas por técnico e peças substituídas.</p>
-                  <button onClick={() => window.print()} className="mt-4 w-full rounded-xl bg-[#00A896] py-2 text-xs font-bold text-white hover:bg-teal-500">
-                    Gerar PDF Mensal
-                  </button>
-                </div>
-                <div className="rounded-2xl border border-white/10 bg-[#0b1624] p-5">
-                  <h4 className="font-bold text-white text-sm">Auditoria Anual de Patrimônio</h4>
-                  <p className="text-xs text-slate-400 mt-1">Histórico completo de equipamentos intervencionados.</p>
-                  <button onClick={() => window.print()} className="mt-4 w-full rounded-xl border border-white/15 bg-white/5 py-2 text-xs font-bold text-white hover:bg-white/10">
-                    Exportar Tabela
-                  </button>
-                </div>
+
+                <OfficialReportModal
+                  isOpen={reportModalOpen}
+                  onClose={() => setReportModalOpen(false)}
+                  tipoRelatorio={selectedReportType}
+                  tickets={tickets}
+                  gestorName={activeUser.name}
+                />
               </div>
-            </div>
-          )}
-        </GestorPageContainer>
-      </div>
-    );
+            )}
+          </GestorPageContainer>
+        </div>
+      );
   }
 
   return null;

@@ -1,4 +1,5 @@
-﻿import React, { useState } from 'react';
+﻿import { registrarAuditoria } from '../services/auditService';
+import React, { useState } from 'react';
 import Logo from '@/components/Logo';
 import Button from '@/components/ui/Button';
 import { Field, Input, Select } from '@/components/ui/Field';
@@ -41,6 +42,7 @@ export default function Register({ onBackToLogin }: RegisterProps) {
   const [name, setName] = useState('');
   const [cpf, setCpf] = useState('');
   const [birthDate, setBirthDate] = useState('');
+  const [birthDateInput, setBirthDateInput] = useState('');
   const [gender, setGender] = useState<GenderOption | ''>('');
   const [sector, setSector] = useState('');
   const [sectorSearch, setSectorSearch] = useState('');
@@ -67,6 +69,32 @@ export default function Register({ onBackToLogin }: RegisterProps) {
       s.nome.toLowerCase().includes(search)
     );
   });
+
+  const handleBirthDateChange = (
+    e: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const digits = e.target.value.replace(/\D/g, '').slice(0, 8);
+
+    let formatted = digits;
+
+    if (digits.length > 4) {
+      formatted = `${digits.slice(0, 2)}/${digits.slice(2, 4)}/${digits.slice(4)}`;
+    } else if (digits.length > 2) {
+      formatted = `${digits.slice(0, 2)}/${digits.slice(2)}`;
+    }
+
+    setBirthDateInput(formatted);
+
+    if (digits.length === 8) {
+      const day = digits.slice(0, 2);
+      const month = digits.slice(2, 4);
+      const year = digits.slice(4, 8);
+
+      setBirthDate(`${year}-${month}-${day}`);
+    } else {
+      setBirthDate('');
+    }
+  };
 
   const handleSectorSelect = (sigla: string, nome: string) => {
     const value = `${sigla} - ${nome}`;
@@ -114,6 +142,32 @@ export default function Register({ onBackToLogin }: RegisterProps) {
       return;
     }
 
+    const birthDateMatch = birthDate.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+
+    if (!birthDateMatch) {
+      setError('Informe uma data com o ano contendo exatamente 4 números.');
+      return;
+    }
+
+    const [, year, month, day] = birthDateMatch;
+    const parsedBirthDate = new Date(
+      Number(year),
+      Number(month) - 1,
+      Number(day)
+    );
+
+    if (
+      year.length !== 4 ||
+      Number(year) < 1900 ||
+      parsedBirthDate.getFullYear() !== Number(year) ||
+      parsedBirthDate.getMonth() !== Number(month) - 1 ||
+      parsedBirthDate.getDate() !== Number(day) ||
+      parsedBirthDate > new Date()
+    ) {
+      setError('Informe uma data de nascimento válida, com ano de 4 números.');
+      return;
+    }
+
     if (!gender) {
       setError('Selecione seu gênero.');
       return;
@@ -136,7 +190,7 @@ export default function Register({ onBackToLogin }: RegisterProps) {
 
     setLoading(true);
     setTimeout(() => {
-      
+
       try {
         const currentList = JSON.parse(localStorage.getItem('sti_registered_users') || '[]');
         const formattedEmail = email.includes('@') ? email : `${email}@sti.chamados.com`;
@@ -148,7 +202,22 @@ export default function Register({ onBackToLogin }: RegisterProps) {
           password
         });
         localStorage.setItem('sti_registered_users', JSON.stringify(currentList));
-      } catch (err) {}
+
+        // Auditoria imutável: Novo usuário cadastrado no sistema
+        registrarAuditoria({
+          entidade: 'USUARIO',
+          idEntidade: cpf.replace(/\D/g, '') || formattedEmail,
+          tipoOperacao: 'CADASTRO_USUARIO',
+          autor: formattedEmail,
+          estadoAtual: {
+            nome: name,
+            email: formattedEmail,
+            secretaria: sectorSearch || 'Administrativo',
+            telefone: phone
+          },
+          metadados: { origem: 'Tela de Autocadastro' }
+        }).catch(err => console.error('[Auditoria] Falha no log de cadastro:', err));
+      } catch (err) { }
       setLoading(false);
       setDone(true);
     }, 600);
@@ -249,9 +318,12 @@ export default function Register({ onBackToLogin }: RegisterProps) {
 
               <Field label="Data de Nascimento">
                 <Input
-                  type="date"
-                  value={birthDate}
-                  onChange={(e) => setBirthDate(e.target.value)}
+                  type="text"
+                  inputMode="numeric"
+                  placeholder="dd/mm/aaaa"
+                  value={birthDateInput}
+                  onChange={handleBirthDateChange}
+                  maxLength={10}
                   required
                 />
               </Field>

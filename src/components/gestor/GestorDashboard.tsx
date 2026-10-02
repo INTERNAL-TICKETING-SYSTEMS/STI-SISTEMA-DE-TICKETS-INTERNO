@@ -1,3 +1,4 @@
+import { registrarAuditoria } from '../../services/auditService';
 ﻿import { useState, useMemo } from 'react';
 import { Ticket } from '@/types';
 import { 
@@ -56,6 +57,23 @@ export default function GestorDashboard({ tickets, onNavigate }: GestorDashboard
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+
+    // Auditoria imutável: Exportação de base analítica BI
+    registrarAuditoria({
+      entidade: 'RELATORIO',
+      idEntidade: 'BI_TICKETS_CSV',
+      tipoOperacao: 'EXPORTACAO_RELATORIO',
+      autor: (() => {
+        try {
+          const raw = localStorage.getItem('sti_user') || localStorage.getItem('sti_active_user');
+          return raw ? JSON.parse(raw).email : 'gestor@sti.chamados.com';
+        } catch {
+          return 'gestor@sti.chamados.com';
+        }
+      })(),
+      estadoAtual: { totalRegistros: tickets.length, formato: 'CSV' },
+      metadados: { motivo: 'Exportação Analítica BI - Gestão', exportadoEm: new Date().toISOString() }
+    }).catch(err => console.error('[Auditoria] Falha ao registrar exportação de relatório:', err));
   };
   const [period, setPeriod] = useState<'7d' | '30d' | 'ano'>('30d');
 
