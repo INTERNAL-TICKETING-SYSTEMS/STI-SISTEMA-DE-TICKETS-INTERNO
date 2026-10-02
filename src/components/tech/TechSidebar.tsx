@@ -15,7 +15,7 @@ export type TechPage =
   | 'tech-inicio'
   | 'tech-chamados'
   | 'tech-atendimentos'
-  | 'tech-perfil';
+  | 'tech-perfil' | 'auditoria';
 
 interface TechSidebarProps {
   current: TechPage;

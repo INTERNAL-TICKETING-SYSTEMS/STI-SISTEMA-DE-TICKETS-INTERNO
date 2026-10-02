@@ -1,3 +1,5 @@
+import { dbRepository } from '../services/dbRepository';
+import { enviarOtpMetaWhatsApp } from '../services/metaWhatsappService';
 ﻿import React, { useState } from 'react';
 import { Lock, Mail, ShieldCheck, Wrench, UserCheck, UserPlus, ArrowRight, TicketCheck, MessagesSquare, Shield, Activity, BarChart3 } from 'lucide-react';
 import Button from '@/components/ui/Button';
@@ -43,6 +45,16 @@ interface LoginProps {
 export default function Login({ onLogin, onGoToRegister }: LoginProps) {
   const [isForgotOpen, setIsForgotOpen] = useState(false);
   const [forgotInput, setForgotInput] = useState('');
+  const [forgotPhone, setForgotPhone] = useState('');
+  const [forgotStep, setForgotStep] = useState<'IDENTIFY' | 'VERIFY'>('IDENTIFY');
+  const [generatedOtp, setGeneratedOtp] = useState('');
+  const [userOtpInput, setUserOtpInput] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [forgotTargetAccount, setForgotTargetAccount] = useState<string>('');
+  const [forgotSuccessMessage, setForgotSuccessMessage] = useState('');
+  const [forgotErrorMessage, setForgotErrorMessage] = useState('');
+
   const [email, setEmail] = useState('');
   const [senha, setSenha] = useState('');
   const [multiRoleData, setMultiRoleData] = useState<{
@@ -50,6 +62,104 @@ export default function Login({ onLogin, onGoToRegister }: LoginProps) {
     name: string;
     roles: { id: UserRole; title: string; desc: string; icon: any }[];
   } | null>(null);
+
+  
+  const [sendingOtp, setSendingOtp] = useState(false);
+
+  const handleGenerateRecoveryCode = async () => {
+    setForgotErrorMessage('');
+    const input = forgotInput.trim().toLowerCase();
+    const rawPhone = forgotPhone.replace(/\D/g, '');
+
+    if (!input) {
+      setForgotErrorMessage('Informe seu e-mail cadastrado ou matrícula.');
+      return;
+    }
+
+    if (rawPhone.length < 10) {
+      setForgotErrorMessage('Informe seu número de WhatsApp com DDD (ex: 63984000000).');
+      return;
+    }
+
+    setSendingOtp(true);
+
+    try {
+      // Gera token seguro de 6 dígitos
+      const code = Math.floor(100000 + Math.random() * 900000).toString();
+      setGeneratedOtp(code);
+      setForgotTargetAccount(input);
+
+      // Salva referência do telefone do usuário
+      // 1. Dispara primeiro pela Meta API
+      const result = await enviarOtpMetaWhatsApp({
+        phoneNumber: rawPhone,
+        otpCode: code,
+        accountEmail: input
+      });
+
+      // 2. Registra a recuperação no repositório com o ID oficial retornado
+      const user = await dbRepository.buscarUsuarioPorLogin(input);
+      const userId = user ? user.id : 'b0000000-0000-0000-0000-000000000003';
+      await dbRepository.salvarRecuperacaoOtp(userId, code, result.messageId);
+
+      if (!result.success) {
+        setForgotErrorMessage(`Erro Meta: ${result.error}`);
+        console.error('Detalhes do erro Meta:', result.metaDetails);
+        return;
+      }
+
+      setForgotStep('VERIFY');
+    } catch (err: any) {
+      setForgotErrorMessage(err?.message || 'Erro de conexão ao solicitar recuperação.');
+    } finally {
+      setSendingOtp(false);
+    }
+  };
+
+  const handleConfirmNewPassword = (e: React.FormEvent) => {
+    e.preventDefault();
+    setForgotErrorMessage('');
+
+    if (userOtpInput.trim() !== generatedOtp) {
+      setForgotErrorMessage('Código de segurança incorreto ou expirado.');
+      return;
+    }
+
+    if (newPassword.length < 4) {
+      setForgotErrorMessage('A nova senha deve ter no mínimo 4 caracteres.');
+      return;
+    }
+
+    if (newPassword !== confirmPassword) {
+      setForgotErrorMessage('As senhas não coincidem.');
+      return;
+    }
+
+    // Atualiza senhas customizadas no localStorage (para técnicos, gestores e usuários)
+    const customPasswords = JSON.parse(localStorage.getItem('sti_custom_passwords') || '{}');
+    customPasswords[forgotTargetAccount] = newPassword;
+    localStorage.setItem('sti_custom_passwords', JSON.stringify(customPasswords));
+
+    // Se for solicitante cadastrado, atualiza no array de usuários
+    const registeredUsers = JSON.parse(localStorage.getItem('sti_registered_users') || '[]');
+    const updatedUsers = registeredUsers.map((u: any) => {
+      if (u.email.toLowerCase() === forgotTargetAccount) {
+        return { ...u, password: newPassword };
+      }
+      return u;
+    });
+    localStorage.setItem('sti_registered_users', JSON.stringify(updatedUsers));
+
+    setForgotSuccessMessage('Senha redefinida com sucesso! Você já pode entrar com a nova credencial.');
+    setTimeout(() => {
+      setIsForgotOpen(false);
+      setForgotStep('IDENTIFY');
+      setForgotSuccessMessage('');
+      setForgotErrorMessage('');
+      setSenha(newPassword);
+      setEmail(forgotTargetAccount);
+    }, 2000);
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -63,7 +173,9 @@ export default function Login({ onLogin, onGoToRegister }: LoginProps) {
       'wanderson.maior@sti.chamados.com'
     ].includes(cleanEmail);
 
-    if (isTechEmail && senha && senha !== '.\\ati@!#$%2020' && senha !== 'ati2020') {
+    const customPasswords = JSON.parse(localStorage.getItem('sti_custom_passwords') || '{}');
+    const customPass = customPasswords[cleanEmail];
+    if (isTechEmail && senha && senha !== '.\\ati@!#$%2020' && senha !== 'ati2020' && (!customPass || customPass !== senha)) {
       alert('Senha incorreta para perfil técnico de suporte STI. Use a credencial operacional autorizada.');
       return;
     }
@@ -235,6 +347,20 @@ export default function Login({ onLogin, onGoToRegister }: LoginProps) {
                   />
                 </div>
               </Field>
+                <div className="flex justify-end -mt-2 mb-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setForgotErrorMessage('');
+                      setForgotSuccessMessage('');
+                      setForgotStep('IDENTIFY');
+                      setIsForgotOpen(true);
+                    }}
+                    className="text-xs font-semibold text-cyan-400 hover:text-cyan-300 transition-colors cursor-pointer"
+                  >
+                    Esqueceu sua senha?
+                  </button>
+                </div>
 
               <Button
                 type="submit"
@@ -272,75 +398,151 @@ export default function Login({ onLogin, onGoToRegister }: LoginProps) {
             </p>
 
             {isForgotOpen && (
-              <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 p-4 backdrop-blur-sm">
-                <div className="w-full max-w-md rounded-2xl border border-white/10 bg-[#0b1624] p-6 text-white shadow-2xl">
-                  <div className="flex items-center justify-between border-b border-white/10 pb-4">
-                    <div className="flex items-center gap-2.5">
-                      <div className="rounded-xl bg-cyan-500/20 p-2 text-cyan-400">
-                        <Shield className="h-5 w-5" />
-                      </div>
-                      <div>
-                        <h3 className="text-base font-bold text-white">Recuperação de Acesso</h3>
-                        <p className="text-xs text-slate-400">Central de Segurança STI</p>
-                      </div>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => setIsForgotOpen(false)}
-                      className="rounded-lg p-1.5 text-slate-400 hover:bg-white/10 hover:text-white"
-                    >
-                      ✕
-                    </button>
-                  </div>
+  <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 p-4 backdrop-blur-sm">
+    <div className="w-full max-w-md rounded-2xl border border-white/10 bg-[#0b1624] p-6 text-white shadow-2xl">
+      <div className="flex items-center justify-between border-b border-white/10 pb-4">
+        <div className="flex items-center gap-2.5">
+          <div className="rounded-xl bg-cyan-500/20 p-2 text-cyan-400">
+            <Shield className="h-5 w-5" />
+          </div>
+          <div>
+            <h3 className="text-base font-bold text-white">Recuperar Senha</h3>
+            <p className="text-xs text-slate-400">Validação Rápida via WhatsApp</p>
+          </div>
+        </div>
+        <button
+          type="button"
+          onClick={() => setIsForgotOpen(false)}
+          className="rounded-lg p-1.5 text-slate-400 hover:bg-white/10 hover:text-white cursor-pointer"
+        >
+          ✕
+        </button>
+      </div>
 
-                  <div className="mt-4 space-y-4">
-                    <p className="text-xs text-slate-300 leading-relaxed">
-                      Por políticas de segurança de dados internos, a redefinição de credenciais requer validação com o operador de plantão.
-                    </p>
+      <div className="mt-4 space-y-4">
+        {forgotSuccessMessage ? (
+          <div className="p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-semibold text-center">
+            {forgotSuccessMessage}
+          </div>
+        ) : forgotStep === 'IDENTIFY' ? (
+          <div className="space-y-3">
+            <p className="text-xs text-slate-300 leading-relaxed">
+              Informe seu e-mail e o número do seu WhatsApp com DDD para receber o código de segurança:
+            </p>
 
-                    <div>
-                      <label className="block text-xs font-medium text-slate-300 mb-1.5">
-                        Informe sua matrícula ou e-mail cadastrado
-                      </label>
-                      <input
-                        type="text"
-                        value={forgotInput}
-                        onChange={(e) => setForgotInput(e.target.value)}
-                        placeholder="Ex: carlos.daniel@sti.chamados.com ou matrícula"
-                        className="w-full rounded-xl border border-white/10 bg-white/5 p-3 text-xs text-white placeholder-slate-500 focus:border-cyan-500 focus:outline-none focus:ring-1 focus:ring-cyan-500"
-                      />
-                    </div>
+            <div>
+              <label className="block text-xs font-medium text-slate-300 mb-1">E-mail ou Matrícula</label>
+              <input
+                type="text"
+                value={forgotInput}
+                onChange={(e) => setForgotInput(e.target.value)}
+                placeholder="Ex: wanderson.maior@sti.chamados.com"
+                className="w-full rounded-xl border border-white/10 bg-white/5 p-2.5 text-xs text-white placeholder-slate-500 focus:border-cyan-500 focus:outline-none"
+              />
+            </div>
 
-                    <div className="rounded-xl border border-cyan-500/20 bg-cyan-500/5 p-3 text-xs space-y-2">
-                      <p className="font-semibold text-cyan-300">Canais Autorizados de Atendimento:</p>
-                      <div className="text-[11px] text-slate-400 space-y-1">
-                        <p>• <strong>Plantão WhatsApp STI:</strong> Envie o protocolo direto para redefinição imediata.</p>
-                        <p>• <strong>Atendimento Presencial:</strong> Sala do STI (Ramal 1234 / 2030).</p>
-                      </div>
-                    </div>
+            <div>
+              <label className="block text-xs font-medium text-slate-300 mb-1">Seu WhatsApp (com DDD)</label>
+              <input
+                type="text"
+                value={forgotPhone}
+                onChange={(e) => setForgotPhone(e.target.value)}
+                placeholder="Ex: (63) 98400-0000"
+                className="w-full rounded-xl border border-white/10 bg-white/5 p-2.5 text-xs text-white placeholder-slate-500 focus:border-cyan-500 focus:outline-none"
+              />
+            </div>
 
-                    <div className="flex items-center justify-between pt-2">
-                      <button
-                        type="button"
-                        onClick={() => setIsForgotOpen(false)}
-                        className="px-3 py-2 text-xs font-medium text-slate-400 hover:text-white"
-                      >
-                        Fechar
-                      </button>
-                      <a
-                        href={`https://wa.me/5563984002020?text=${encodeURIComponent('Olá, Suporte STI! Solicito o reset de senha da conta: ' + (forgotInput || 'Não informada'))}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-600 px-4 py-2 text-xs font-bold text-white shadow-md shadow-emerald-600/20 hover:bg-emerald-500"
-                      >
-                        <span>Solicitar via WhatsApp</span>
-                        <span>&rarr;</span>
-                      </a>
-                    </div>
-                  </div>
-                </div>
-              </div>
+            {forgotErrorMessage && (
+              <p className="text-rose-400 text-xs font-medium">{forgotErrorMessage}</p>
             )}
+
+            <div className="flex items-center justify-end gap-2 pt-2">
+              <button
+                type="button"
+                onClick={() => setIsForgotOpen(false)}
+                className="px-3 py-2 text-xs font-medium text-slate-400 hover:text-white cursor-pointer"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                disabled={sendingOtp}
+                onClick={handleGenerateRecoveryCode}
+                className="flex items-center gap-1.5 rounded-xl bg-emerald-600 px-4 py-2 text-xs font-bold text-white hover:bg-emerald-500 cursor-pointer shadow-md shadow-emerald-600/20 disabled:opacity-50"
+              >
+                {sendingOtp ? 'Enviando via Meta API...' : 'Enviar Código via WhatsApp Oficial →'}
+              </button>
+            </div>
+          </div>
+        ) : (
+          <form onSubmit={handleConfirmNewPassword} className="space-y-3">
+            <div className="rounded-xl bg-emerald-500/10 border border-emerald-500/20 p-3 text-xs text-emerald-300">
+              <span className="block font-semibold">Código de segurança enviado!</span>
+              <span className="text-[11px] text-slate-300">Verifique a mensagem oficial recebida no WhatsApp do número informado.</span>
+            </div>
+
+            <div>
+              <label className="block text-[11px] font-medium text-slate-300 mb-1">Código de 6 Dígitos</label>
+              <input
+                type="text"
+                maxLength={6}
+                value={userOtpInput}
+                onChange={(e) => setUserOtpInput(e.target.value)}
+                placeholder="Ex: 849201"
+                required
+                className="w-full text-center tracking-widest font-mono font-bold rounded-xl border border-white/10 bg-white/5 p-2 text-base text-cyan-400 focus:border-cyan-500 focus:outline-none"
+              />
+            </div>
+
+            <div>
+              <label className="block text-[11px] font-medium text-slate-300 mb-1">Nova Senha</label>
+              <input
+                type="password"
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                placeholder="••••••••"
+                required
+                className="w-full rounded-xl border border-white/10 bg-white/5 p-2 text-xs text-white focus:border-cyan-500 focus:outline-none"
+              />
+            </div>
+
+            <div>
+              <label className="block text-[11px] font-medium text-slate-300 mb-1">Confirmar Nova Senha</label>
+              <input
+                type="password"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                placeholder="••••••••"
+                required
+                className="w-full rounded-xl border border-white/10 bg-white/5 p-2 text-xs text-white focus:border-cyan-500 focus:outline-none"
+              />
+            </div>
+
+            {forgotErrorMessage && (
+              <p className="text-rose-400 text-xs font-medium">{forgotErrorMessage}</p>
+            )}
+
+            <div className="flex items-center justify-between pt-2">
+              <button
+                type="button"
+                onClick={() => setForgotStep('IDENTIFY')}
+                className="text-xs text-slate-400 hover:text-white cursor-pointer"
+              >
+                &larr; Voltar
+              </button>
+              <button
+                type="submit"
+                className="rounded-xl bg-cyan-500 px-4 py-2 text-xs font-bold text-slate-950 hover:bg-cyan-400 cursor-pointer"
+              >
+                Redefinir Senha
+              </button>
+            </div>
+          </form>
+        )}
+      </div>
+    </div>
+  </div>
+)}
 
           </div>
         </div>
