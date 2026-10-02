@@ -1,3 +1,4 @@
+import { AuditCompliancePanel } from './AuditCompliancePanel';
 ﻿import React from 'react';
 import {
   Inbox,

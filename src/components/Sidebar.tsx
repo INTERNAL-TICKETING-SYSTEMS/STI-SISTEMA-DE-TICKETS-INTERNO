@@ -1,3 +1,4 @@
+import { registrarAuditoria } from '../services/auditService';
 ﻿import React, { useState } from 'react';
 import { 
   LayoutDashboard, 
@@ -73,6 +74,27 @@ export default function Sidebar({
         priority: feedbackType === 'falha' ? 'alta' : 'media'
       };
       localStorage.setItem('sti_feedbacks', JSON.stringify([newEntry, ...existing]));
+
+      // Auditoria imutável: Relato de falha ou melhoria institucional
+      registrarAuditoria({
+        entidade: 'CONFORMIDADE',
+        idEntidade: newEntry.id,
+        tipoOperacao: 'REGISTRO_FEEDBACK',
+        autor: (() => {
+          try {
+            const raw = localStorage.getItem('sti_user') || localStorage.getItem('sti_active_user');
+            return raw ? JSON.parse(raw).email : 'servidor@sti.chamados.com';
+          } catch {
+            return 'servidor@sti.chamados.com';
+          }
+        })(),
+        estadoAtual: {
+          tipo: feedbackType,
+          titulo: newEntry.title,
+          descricao: feedbackText.trim()
+        },
+        metadados: { origem: 'Ouvidoria / Feedback Sidebar' }
+      }).catch(err => console.error('[Auditoria] Falha ao registrar feedback:', err));
     } catch (err) {
       console.error(err);
     }

@@ -1,3 +1,4 @@
+import { registrarAuditoria } from '../services/auditService';
 ﻿import React, { useState } from 'react';
 import { User } from '@/types';
 import Button from '@/components/ui/Button';
@@ -51,6 +52,20 @@ export default function Profile({ user }: ProfileProps) {
     e.preventDefault();
     setSaved(true);
     setTimeout(() => setSaved(false), 2500);
+
+    // Auditoria imutável: Atualização de perfil de usuário
+    registrarAuditoria({
+      entidade: 'USUARIO',
+      idEntidade: user.email,
+      tipoOperacao: 'ATUALIZACAO_PERFIL',
+      autor: user.email,
+      estadoAtual: {
+        nome: form.name,
+        telefone: form.phone,
+        departamento: form.department
+      },
+      metadados: { alteradoEm: new Date().toISOString() }
+    }).catch(err => console.error('[Auditoria] Falha no log de perfil:', err));
   };
 
   return (

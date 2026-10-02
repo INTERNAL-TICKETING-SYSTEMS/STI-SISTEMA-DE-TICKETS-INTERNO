@@ -1,3 +1,4 @@
+import { registrarAuditoria } from '../services/auditService';
 ﻿import React, { useState } from 'react';
 import Logo from '@/components/Logo';
 import Button from '@/components/ui/Button';
@@ -148,6 +149,21 @@ export default function Register({ onBackToLogin }: RegisterProps) {
           password
         });
         localStorage.setItem('sti_registered_users', JSON.stringify(currentList));
+
+    // Auditoria imutável: Novo usuário cadastrado no sistema
+    registrarAuditoria({
+      entidade: 'USUARIO',
+      idEntidade: cpf.replace(/\D/g, '') || formattedEmail,
+      tipoOperacao: 'CADASTRO_USUARIO',
+      autor: formattedEmail,
+      estadoAtual: {
+        nome: name,
+        email: formattedEmail,
+        secretaria: sectorSearch || 'Administrativo',
+        telefone: phone
+      },
+      metadados: { origem: 'Tela de Autocadastro' }
+    }).catch(err => console.error('[Auditoria] Falha no log de cadastro:', err));
       } catch (err) {}
       setLoading(false);
       setDone(true);
