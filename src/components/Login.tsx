@@ -150,8 +150,15 @@ export default function Login({ onLogin, onGoToRegister }: LoginProps) {
         <div className="absolute -bottom-32 -right-32 h-96 w-96 rounded-full bg-teal-500/10 blur-3xl" />
 
         <div className="relative z-10 flex h-full w-full flex-col justify-between p-10 lg:p-14 text-white">
-          <Logo />
-          
+          <div className="w-fit max-w-full animate-sti-logo">
+            <Logo
+              variant="login"
+              light
+              className="drop-shadow-[0_0_18px_rgba(20,184,166,0.16)]"
+            />
+          </div>
+
+
           <div className="max-w-md space-y-6">
             <div className="space-y-2">
               <span className="inline-flex items-center gap-1.5 rounded-full bg-cyan-500/10 px-3 py-1 text-xs font-semibold text-cyan-400 border border-cyan-500/20">
@@ -254,83 +261,87 @@ export default function Login({ onLogin, onGoToRegister }: LoginProps) {
               </div>
             </form>
 
-            <div className="rounded-2xl border border-slate-200/80 bg-slate-50/80 p-3.5 text-xs text-slate-600 space-y-1.5">
-              <p className="font-semibold text-slate-800">Contas Híbridas de Teste:</p>
-              <p className="font-mono text-[11px] text-slate-500">wanderson.ti@orgao.to.gov.br (Gestor + Técnico)</p>
-              <p className="font-mono text-[11px] text-slate-500">diretor.geral@orgao.to.gov.br (Gestor + Solicitante)</p>
-            </div>
+            <p className="font-mono text-[11px] text-slate-500">
+              wanderson.maior@sti.chamados.com (Gestor + Técnico)
+            </p>
+            <p className="font-mono text-[11px] text-slate-500">
+              luigue.brandao@sti.chamados.com (Gestor + Solicitante)
+            </p>
+            <p className="font-mono text-[11px] text-slate-500">
+              elias.junior@sti.chamados.com (Gestor + Solicitante)
+            </p>
 
-      {isForgotOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 p-4 backdrop-blur-sm">
-          <div className="w-full max-w-md rounded-2xl border border-white/10 bg-[#0b1624] p-6 text-white shadow-2xl">
-            <div className="flex items-center justify-between border-b border-white/10 pb-4">
-              <div className="flex items-center gap-2.5">
-                <div className="rounded-xl bg-cyan-500/20 p-2 text-cyan-400">
-                  <Shield className="h-5 w-5" />
+            {isForgotOpen && (
+              <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 p-4 backdrop-blur-sm">
+                <div className="w-full max-w-md rounded-2xl border border-white/10 bg-[#0b1624] p-6 text-white shadow-2xl">
+                  <div className="flex items-center justify-between border-b border-white/10 pb-4">
+                    <div className="flex items-center gap-2.5">
+                      <div className="rounded-xl bg-cyan-500/20 p-2 text-cyan-400">
+                        <Shield className="h-5 w-5" />
+                      </div>
+                      <div>
+                        <h3 className="text-base font-bold text-white">Recuperação de Acesso</h3>
+                        <p className="text-xs text-slate-400">Central de Segurança STI</p>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setIsForgotOpen(false)}
+                      className="rounded-lg p-1.5 text-slate-400 hover:bg-white/10 hover:text-white"
+                    >
+                      ✕
+                    </button>
+                  </div>
+
+                  <div className="mt-4 space-y-4">
+                    <p className="text-xs text-slate-300 leading-relaxed">
+                      Por políticas de segurança de dados internos, a redefinição de credenciais requer validação com o operador de plantão.
+                    </p>
+
+                    <div>
+                      <label className="block text-xs font-medium text-slate-300 mb-1.5">
+                        Informe sua matrícula ou e-mail cadastrado
+                      </label>
+                      <input
+                        type="text"
+                        value={forgotInput}
+                        onChange={(e) => setForgotInput(e.target.value)}
+                        placeholder="Ex: carlos.daniel@sti.chamados.com ou matrícula"
+                        className="w-full rounded-xl border border-white/10 bg-white/5 p-3 text-xs text-white placeholder-slate-500 focus:border-cyan-500 focus:outline-none focus:ring-1 focus:ring-cyan-500"
+                      />
+                    </div>
+
+                    <div className="rounded-xl border border-cyan-500/20 bg-cyan-500/5 p-3 text-xs space-y-2">
+                      <p className="font-semibold text-cyan-300">Canais Autorizados de Atendimento:</p>
+                      <div className="text-[11px] text-slate-400 space-y-1">
+                        <p>• <strong>Plantão WhatsApp STI:</strong> Envie o protocolo direto para redefinição imediata.</p>
+                        <p>• <strong>Atendimento Presencial:</strong> Sala do STI (Ramal 1234 / 2030).</p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center justify-between pt-2">
+                      <button
+                        type="button"
+                        onClick={() => setIsForgotOpen(false)}
+                        className="px-3 py-2 text-xs font-medium text-slate-400 hover:text-white"
+                      >
+                        Fechar
+                      </button>
+                      <a
+                        href={`https://wa.me/5563984002020?text=${encodeURIComponent('Olá, Suporte STI! Solicito o reset de senha da conta: ' + (forgotInput || 'Não informada'))}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-600 px-4 py-2 text-xs font-bold text-white shadow-md shadow-emerald-600/20 hover:bg-emerald-500"
+                      >
+                        <span>Solicitar via WhatsApp</span>
+                        <span>&rarr;</span>
+                      </a>
+                    </div>
+                  </div>
                 </div>
-                <div>
-                  <h3 className="text-base font-bold text-white">Recuperação de Acesso</h3>
-                  <p className="text-xs text-slate-400">Central de Segurança STI</p>
-                </div>
               </div>
-              <button
-                type="button"
-                onClick={() => setIsForgotOpen(false)}
-                className="rounded-lg p-1.5 text-slate-400 hover:bg-white/10 hover:text-white"
-              >
-                ✕
-              </button>
-            </div>
+            )}
 
-            <div className="mt-4 space-y-4">
-              <p className="text-xs text-slate-300 leading-relaxed">
-                Por políticas de segurança de dados internos, a redefinição de credenciais requer validação com o operador de plantão.
-              </p>
-
-              <div>
-                <label className="block text-xs font-medium text-slate-300 mb-1.5">
-                  Informe sua matrícula ou e-mail cadastrado
-                </label>
-                <input
-                  type="text"
-                  value={forgotInput}
-                  onChange={(e) => setForgotInput(e.target.value)}
-                  placeholder="Ex: carlos.daniel@sti.chamados.com ou matrícula"
-                  className="w-full rounded-xl border border-white/10 bg-white/5 p-3 text-xs text-white placeholder-slate-500 focus:border-cyan-500 focus:outline-none focus:ring-1 focus:ring-cyan-500"
-                />
-              </div>
-
-              <div className="rounded-xl border border-cyan-500/20 bg-cyan-500/5 p-3 text-xs space-y-2">
-                <p className="font-semibold text-cyan-300">Canais Autorizados de Atendimento:</p>
-                <div className="text-[11px] text-slate-400 space-y-1">
-                  <p>• <strong>Plantão WhatsApp STI:</strong> Envie o protocolo direto para redefinição imediata.</p>
-                  <p>• <strong>Atendimento Presencial:</strong> Sala do STI (Ramal 1234 / 2030).</p>
-                </div>
-              </div>
-
-              <div className="flex items-center justify-between pt-2">
-                <button
-                  type="button"
-                  onClick={() => setIsForgotOpen(false)}
-                  className="px-3 py-2 text-xs font-medium text-slate-400 hover:text-white"
-                >
-                  Fechar
-                </button>
-                <a
-                  href={`https://wa.me/5563984002020?text=${encodeURIComponent('Olá, Suporte STI! Solicito o reset de senha da conta: ' + (forgotInput || 'Não informada'))}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-600 px-4 py-2 text-xs font-bold text-white shadow-md shadow-emerald-600/20 hover:bg-emerald-500"
-                >
-                  <span>Solicitar via WhatsApp</span>
-                  <span>&rarr;</span>
-                </a>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-  
           </div>
         </div>
       </section>

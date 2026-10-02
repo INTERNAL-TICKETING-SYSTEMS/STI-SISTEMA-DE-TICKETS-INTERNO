@@ -1,14 +1,15 @@
 ﻿import React from 'react';
-import { 
-  BarChart3, 
-  ShieldCheck, 
-  Users, 
-  FileSpreadsheet, 
-  LogOut, 
+import {
+  BarChart3,
+  ShieldCheck,
+  Users,
+  FileSpreadsheet,
+  LogOut,
   Activity,
   UserCheck,
   User
-, MessageSquareHeart } from 'lucide-react';
+  , MessageSquareHeart
+} from 'lucide-react';
 import { User as UserType, UserRole } from '@/types';
 
 export type GestorPage = 'gestor-dashboard' | 'gestor-equipe' | 'gestor-auditoria' | 'gestor-relatorios' | 'gestor-perfil';
@@ -43,15 +44,14 @@ export default function GestorSidebar({
 
   return (
     <aside className="fixed left-0 top-0 z-30 flex h-screen w-64 flex-col bg-[#0b1624] border-r border-white/5 text-slate-200">
+
       {/* Topo / Marca Executiva */}
       <div className="flex h-16 items-center gap-3 border-b border-white/5 px-6">
-        <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-tr from-amber-500 to-amber-700 shadow-md shadow-amber-500/20 text-white">
-          <ShieldCheck className="h-5 w-5" />
-        </div>
-        <div>
-          <span className="font-bold text-white tracking-wide text-sm block">STI GESTÃO</span>
-          <span className="text-[10px] text-amber-400 font-medium block">Inteligência & Auditoria</span>
-        </div>
+        <img
+          src="/src/logo-sti.png"
+          alt="STI — Sistema de Tickets Interno"
+          className="w-auto max-w-[260px] max-h-14 h-auto object-contain brightness-110 h-8"
+        />
       </div>
 
       {/* Switcher Rápido de Perfil */}
@@ -83,11 +83,10 @@ export default function GestorSidebar({
       <nav className="mt-3 flex flex-col gap-1.5 px-3 flex-1">
         <button
           onClick={() => onNavigate('gestor-dashboard')}
-          className={`flex items-center justify-between rounded-xl px-3.5 py-2.5 text-xs font-medium transition-all ${
-            current === 'gestor-dashboard'
+          className={`flex items-center justify-between rounded-xl px-3.5 py-2.5 text-xs font-medium transition-all ${current === 'gestor-dashboard'
               ? 'bg-[#00A896] text-white font-semibold shadow-md shadow-teal-500/20'
               : 'text-slate-400 hover:bg-white/5 hover:text-white'
-          }`}
+            }`}
         >
           <div className="flex items-center gap-3">
             <BarChart3 className="h-4 w-4 shrink-0" />
@@ -97,11 +96,10 @@ export default function GestorSidebar({
 
         <button
           onClick={() => onNavigate('gestor-equipe')}
-          className={`flex items-center justify-between rounded-xl px-3.5 py-2.5 text-xs font-medium transition-all ${
-            current === 'gestor-equipe'
+          className={`flex items-center justify-between rounded-xl px-3.5 py-2.5 text-xs font-medium transition-all ${current === 'gestor-equipe'
               ? 'bg-[#00A896] text-white font-semibold shadow-md shadow-teal-500/20'
               : 'text-slate-400 hover:bg-white/5 hover:text-white'
-          }`}
+            }`}
         >
           <div className="flex items-center gap-3">
             <Users className="h-4 w-4 shrink-0" />
@@ -111,11 +109,10 @@ export default function GestorSidebar({
 
         <button
           onClick={() => onNavigate('gestor-auditoria')}
-          className={`flex items-center justify-between rounded-xl px-3.5 py-2.5 text-xs font-medium transition-all ${
-            current === 'gestor-auditoria'
+          className={`flex items-center justify-between rounded-xl px-3.5 py-2.5 text-xs font-medium transition-all ${current === 'gestor-auditoria'
               ? 'bg-[#00A896] text-white font-semibold shadow-md shadow-teal-500/20'
               : 'text-slate-400 hover:bg-white/5 hover:text-white'
-          }`}
+            }`}
         >
           <div className="flex items-center gap-3">
             <ShieldCheck className="h-4 w-4 shrink-0" />
@@ -125,11 +122,10 @@ export default function GestorSidebar({
 
         <button
           onClick={() => onNavigate('gestor-relatorios')}
-          className={`flex items-center justify-between rounded-xl px-3.5 py-2.5 text-xs font-medium transition-all ${
-            current === 'gestor-relatorios'
+          className={`flex items-center justify-between rounded-xl px-3.5 py-2.5 text-xs font-medium transition-all ${current === 'gestor-relatorios'
               ? 'bg-[#00A896] text-white font-semibold shadow-md shadow-teal-500/20'
               : 'text-slate-400 hover:bg-white/5 hover:text-white'
-          }`}
+            }`}
         >
           <div className="flex items-center gap-3">
             <FileSpreadsheet className="h-4 w-4 shrink-0" />
@@ -137,20 +133,19 @@ export default function GestorSidebar({
           </div>
         </button>
 
-          <button
-            onClick={() => onNavigate('gestor-feedbacks' as any)}
-            className={`flex items-center justify-between rounded-xl px-3.5 py-2.5 text-xs font-medium transition-all ${
-              (current as string) === 'gestor-feedbacks'
-                ? 'bg-[#00A896] text-white font-semibold shadow-md shadow-teal-500/20'
-                : 'text-slate-400 hover:bg-white/5 hover:text-white'
+        <button
+          onClick={() => onNavigate('gestor-feedbacks' as any)}
+          className={`flex items-center justify-between rounded-xl px-3.5 py-2.5 text-xs font-medium transition-all ${(current as string) === 'gestor-feedbacks'
+              ? 'bg-[#00A896] text-white font-semibold shadow-md shadow-teal-500/20'
+              : 'text-slate-400 hover:bg-white/5 hover:text-white'
             }`}
-          >
-            <div className="flex items-center gap-3">
-              <MessageSquareHeart className="h-4 w-4 shrink-0 text-amber-400" />
-              <span>Feedbacks & Demandas</span>
-            </div>
-          </button>
-  
+        >
+          <div className="flex items-center gap-3">
+            <MessageSquareHeart className="h-4 w-4 shrink-0 text-amber-400" />
+            <span>Feedbacks & Demandas</span>
+          </div>
+        </button>
+
       </nav>
 
       {/* Rodapé / Perfil do Gestor Interativo */}
@@ -158,9 +153,8 @@ export default function GestorSidebar({
         <button
           onClick={() => onNavigate('gestor-perfil')}
           title="Clique para editar seu perfil de gestor"
-          className={`flex w-full items-center gap-3 rounded-xl p-2 text-left transition-colors ${
-            current === 'gestor-perfil' ? 'bg-white/10 ring-1 ring-cyan-500/40' : 'hover:bg-white/5'
-          }`}
+          className={`flex w-full items-center gap-3 rounded-xl p-2 text-left transition-colors ${current === 'gestor-perfil' ? 'bg-white/10 ring-1 ring-cyan-500/40' : 'hover:bg-white/5'
+            }`}
         >
           <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-tr from-amber-500 to-amber-700 text-sm font-bold text-white shadow-sm">
             {activeUser.name.charAt(0)}
