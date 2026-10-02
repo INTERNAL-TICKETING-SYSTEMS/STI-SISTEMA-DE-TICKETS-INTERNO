@@ -33,7 +33,8 @@ export function TechPageContainer({
   children: React.ReactNode;
 }) {
   return (
-    <main className="ml-64 flex-1 overflow-y-auto bg-slate-100 p-6 lg:p-8 min-h-screen text-slate-800">
+
+    <main className="ml-64 flex-1 overflow-y-auto bg-[#070e17] p-6 lg:p-8 min-h-screen text-slate-100">
       <div className="mx-auto max-w-7xl space-y-6">
         {children}
       </div>
@@ -72,11 +73,11 @@ export default function TechSidebar({
   return (
     <aside className="fixed left-0 top-0 z-30 flex h-screen w-64 flex-col border-r border-white/5 bg-[#0b1624] text-slate-200">
       {/* Logo centralizado */}
-      <div className="flex h-24 shrink-0 items-center justify-center border-b border-white/5 px-4 py-3">
+
+      <div className="flex h-16 shrink-0 items-center border-b border-white/5 px-6">
         <Logo
           variant="dashboard"
           light={true}
-          className="max-h-16 max-w-[210px] object-contain"
         />
       </div>
 
@@ -115,11 +116,10 @@ export default function TechSidebar({
         <button
           type="button"
           onClick={() => onNavigate('tech-inicio')}
-          className={`flex items-center justify-between rounded-xl px-3.5 py-2.5 text-xs font-medium transition-all ${
-            current === 'tech-inicio'
-              ? 'bg-[#00A896] font-semibold text-white shadow-md shadow-teal-500/20'
-              : 'text-slate-400 hover:bg-white/5 hover:text-white'
-          }`}
+          className={`flex items-center justify-between rounded-xl px-3.5 py-2.5 text-xs font-medium transition-all ${current === 'tech-inicio'
+            ? 'bg-[#00A896] font-semibold text-white shadow-md shadow-teal-500/20'
+            : 'text-slate-400 hover:bg-white/5 hover:text-white'
+            }`}
         >
           <div className="flex items-center gap-3">
             <LayoutDashboard className="h-4 w-4 shrink-0" />
@@ -130,11 +130,10 @@ export default function TechSidebar({
         <button
           type="button"
           onClick={() => onNavigate('tech-chamados')}
-          className={`flex items-center justify-between rounded-xl px-3.5 py-2.5 text-xs font-medium transition-all ${
-            current === 'tech-chamados'
-              ? 'bg-[#00A896] font-semibold text-white shadow-md shadow-teal-500/20'
-              : 'text-slate-400 hover:bg-white/5 hover:text-white'
-          }`}
+          className={`flex items-center justify-between rounded-xl px-3.5 py-2.5 text-xs font-medium transition-all ${current === 'tech-chamados'
+            ? 'bg-[#00A896] font-semibold text-white shadow-md shadow-teal-500/20'
+            : 'text-slate-400 hover:bg-white/5 hover:text-white'
+            }`}
         >
           <div className="flex items-center gap-3">
             <Inbox className="h-4 w-4 shrink-0" />
@@ -151,11 +150,10 @@ export default function TechSidebar({
         <button
           type="button"
           onClick={() => onNavigate('tech-atendimentos')}
-          className={`flex items-center justify-between rounded-xl px-3.5 py-2.5 text-xs font-medium transition-all ${
-            current === 'tech-atendimentos'
-              ? 'bg-[#00A896] font-semibold text-white shadow-md shadow-teal-500/20'
-              : 'text-slate-400 hover:bg-white/5 hover:text-white'
-          }`}
+          className={`flex items-center justify-between rounded-xl px-3.5 py-2.5 text-xs font-medium transition-all ${current === 'tech-atendimentos'
+            ? 'bg-[#00A896] font-semibold text-white shadow-md shadow-teal-500/20'
+            : 'text-slate-400 hover:bg-white/5 hover:text-white'
+            }`}
         >
           <div className="flex items-center gap-3">
             <Clock className="h-4 w-4 shrink-0" />
@@ -172,11 +170,10 @@ export default function TechSidebar({
         <button
           type="button"
           onClick={() => onNavigate('tech-feedbacks' as any)}
-          className={`flex items-center justify-between rounded-xl px-3.5 py-2.5 text-xs font-medium transition-all ${
-            (current as string) === 'tech-feedbacks'
-              ? 'bg-[#00A896] font-semibold text-white shadow-md shadow-teal-500/20'
-              : 'text-slate-400 hover:bg-white/5 hover:text-white'
-          }`}
+          className={`flex items-center justify-between rounded-xl px-3.5 py-2.5 text-xs font-medium transition-all ${(current as string) === 'tech-feedbacks'
+            ? 'bg-[#00A896] font-semibold text-white shadow-md shadow-teal-500/20'
+            : 'text-slate-400 hover:bg-white/5 hover:text-white'
+            }`}
         >
           <div className="flex items-center gap-3">
             <MessageSquareHeart className="h-4 w-4 shrink-0 text-cyan-400" />
@@ -205,28 +202,25 @@ export default function TechSidebar({
             return (
               <div
                 key={tech.email || tech.name}
-                className={`flex items-center justify-between rounded-lg p-2 text-xs transition-colors ${
-                  isMe
-                    ? 'border border-cyan-500/20 bg-cyan-500/10'
-                    : 'bg-white/[0.02]'
-                }`}
+                className={`flex items-center justify-between rounded-lg p-2 text-xs transition-colors ${isMe
+                  ? 'border border-cyan-500/20 bg-cyan-500/10'
+                  : 'bg-white/[0.02]'
+                  }`}
               >
                 <div className="flex min-w-0 items-center gap-2">
                   <div
-                    className={`h-2 w-2 shrink-0 rounded-full ${
-                      (tech as any).status === 'disponivel' ||
+                    className={`h-2 w-2 shrink-0 rounded-full ${(tech as any).status === 'disponivel' ||
                       (tech as any).available !== false
-                        ? 'bg-emerald-400 shadow-sm shadow-emerald-400/50'
-                        : 'bg-slate-600'
-                    }`}
+                      ? 'bg-emerald-400 shadow-sm shadow-emerald-400/50'
+                      : 'bg-slate-600'
+                      }`}
                   />
 
                   <span
-                    className={`truncate ${
-                      isMe
-                        ? 'font-semibold text-cyan-300'
-                        : 'text-slate-300'
-                    }`}
+                    className={`truncate ${isMe
+                      ? 'font-semibold text-cyan-300'
+                      : 'text-slate-300'
+                      }`}
                   >
                     {tech.name} {isMe && '(Você)'}
                   </span>
@@ -247,11 +241,10 @@ export default function TechSidebar({
           type="button"
           onClick={() => onNavigate('tech-perfil')}
           title="Clique para gerenciar seu perfil"
-          className={`flex w-full items-center gap-3 rounded-xl p-2 text-left transition-colors ${
-            current === 'tech-perfil'
-              ? 'bg-white/10 ring-1 ring-cyan-500/40'
-              : 'hover:bg-white/5'
-          }`}
+          className={`flex w-full items-center gap-3 rounded-xl p-2 text-left transition-colors ${current === 'tech-perfil'
+            ? 'bg-white/10 ring-1 ring-cyan-500/40'
+            : 'hover:bg-white/5'
+            }`}
         >
           <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-tr from-[#00A896] to-cyan-500 text-sm font-bold text-white shadow-sm">
             {userName.charAt(0)}
