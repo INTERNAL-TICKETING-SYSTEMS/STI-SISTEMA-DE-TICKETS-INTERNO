@@ -1,11 +1,11 @@
 import { registrarAuditoria } from '../services/auditService';
-﻿import React, { useState } from 'react';
-import { 
-  LayoutDashboard, 
-  TicketCheck, 
-  PlusCircle, 
-  User as UserIcon, 
-  LogOut, 
+import React, { useState } from 'react';
+import {
+  LayoutDashboard,
+  TicketCheck,
+  PlusCircle,
+  User as UserIcon,
+  LogOut,
   ShieldCheck,
   Bug,
   PhoneCall,
@@ -107,8 +107,8 @@ export default function Sidebar({
     }, 1800);
   };
 
-  const myTickets = tickets.filter((t) => 
-    t.requesterName === userName || 
+  const myTickets = tickets.filter((t) =>
+    t.requesterName === userName ||
     t.requesterName === activeUser?.name ||
     (t as any).requesterEmail === activeUser?.email
   );
@@ -118,17 +118,19 @@ export default function Sidebar({
   const displayName = activeUser?.name || userName || 'Servidor';
   const displayRole = activeUser?.department || userRole || 'Colaborador';
 
-  const canSwitchToGestor = activeUser?.roles?.includes('gestor') || 
+  const canSwitchToGestor = activeUser?.roles?.includes('gestor') ||
     (activeUser as any)?.userRole === 'gestor' ||
-    displayName.includes('Diretor') || 
+    displayName.includes('Diretor') ||
     displayName.includes('Roberto') ||
     displayName.includes('Wanderson');
 
   return (
     <>
       <aside className="fixed left-0 top-0 z-30 flex h-screen w-64 flex-col bg-[#0b1624] border-r border-white/5 text-slate-200">
-        <div className="flex h-16 items-center px-6 border-b border-white/5">
-          <Logo variant="full" light className="h-8" />
+
+
+        <div className="flex h-20 shrink-0 items-center border-b border-white/5 px-6">
+          <Logo variant="dashboard" light />
         </div>
 
         {canSwitchToGestor && onSwitchRole && (

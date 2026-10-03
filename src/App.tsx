@@ -522,30 +522,51 @@ export default function App() {
     const now = new Date().toISOString();
 
     setTickets((prev) =>
-      prev.map((t) =>
-        t.id === id
-          ? {
-            ...t,
-            status,
-            updatedAt: now,
-          }
-          : t
-      )
+      prev.map((t) => {
+        if (t.id !== id) return t;
+
+        const resolvedAt =
+          status === 'resolvido'
+            ? t.resolvedAt || now
+            : status === 'fechado'
+              ? t.resolvedAt || null
+              : null;
+
+        return {
+          ...t,
+          status,
+          resolvedAt,
+          updatedAt: now,
+        };
+      })
     );
 
-    // Auditoria imutável: Alteração manual de status pelo técnico
     registrarAuditoria({
       entidade: 'CHAMADO',
       idEntidade: id,
       tipoOperacao: 'ATUALIZACAO_STATUS',
       autor: activeUser?.email || 'tecnico@sti.chamados.com',
       estadoAtual: { status },
-      metadados: { acao: 'Mudança manual de status pelo técnico' }
-    }).catch(err => console.error('[Auditoria] Falha ao registrar alteração de status:', err));
+      metadados: {
+        acao: 'Mudança manual de status pelo técnico',
+      },
+    }).catch((err) =>
+      console.error(
+        '[Auditoria] Falha ao registrar alteração de status:',
+        err
+      )
+    );
   };
 
-  const handleResolve = (id: string, solution: string, assetTag?: string, replacedParts?: string) => {
+
+  const handleResolve = (
+    id: string,
+    solution: string,
+    assetTag?: string,
+    replacedParts?: string
+  ) => {
     const now = new Date().toISOString();
+
     setTickets((prev) =>
       prev.map((t) =>
         t.id === id
@@ -555,6 +576,7 @@ export default function App() {
             solution,
             assetTag: assetTag || t.assetTag,
             replacedParts: replacedParts || t.replacedParts,
+            resolvedAt: t.resolvedAt || now,
             updatedAt: now,
             updates: [
               ...t.updates,
@@ -581,7 +603,8 @@ export default function App() {
         status: 'resolvido',
         solucao: solution,
         patrimonio: assetTag || null,
-        pecasTrocadas: replacedParts || null
+        pecasTrocadas: replacedParts || null,
+        resolvedAt: now,
       },
       metadados: { acao: 'Resolução técnica concluída' }
     }).catch(err => console.error('[Auditoria] Falha ao registar resolução:', err));
@@ -756,17 +779,17 @@ export default function App() {
         <TechPageContainer>
           {techView.page === 'tech-inicio' && (
             techView.page === ('auditoria' as any) ? (
-            <AuditCompliancePanel />
-          ) : (
-            <TechDashboard
-              tickets={tickets}
-              onNavigate={navigate}
-              onOpenTicket={openTicket}
-              onAssume={handleAssume}
-              techName={activeUser.name}
-              onFilterSelect={handleTechFilterSelect}
-            />
-          )
+              <AuditCompliancePanel />
+            ) : (
+              <TechDashboard
+                tickets={tickets}
+                onNavigate={navigate}
+                onOpenTicket={openTicket}
+                onAssume={handleAssume}
+                techName={activeUser.name}
+                onFilterSelect={handleTechFilterSelect}
+              />
+            )
           )}
 
           {techView.page === 'tech-chamados' && (
@@ -898,63 +921,63 @@ export default function App() {
           )}
 
           {gestorView === 'gestor-relatorios' && (
-              <div className="space-y-4">
-                <h2 className="text-xl font-bold text-white">Central de Relatórios Oficiais</h2>
-                <p className="text-xs text-slate-400">Emissão de relatórios consolidados em PDF e CSV.</p>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
-                  <div className="rounded-2xl border border-white/10 bg-[#0b1624] p-5">
-                    <h4 className="font-bold text-white text-sm">Relatório Semanal de Atendimentos</h4>
-                    <p className="text-xs text-slate-400 mt-1">Consolidado das demandas e tempos de resolução da semana corrente.</p>
-                    <button 
-                      onClick={() => {
-                        setSelectedReportType('SEMANAL');
-                        setReportModalOpen(true);
-                      }} 
-                      className="mt-4 w-full rounded-xl bg-cyan-500 py-2 text-xs font-bold text-slate-950 hover:bg-cyan-400 cursor-pointer"
-                    >
-                      Gerar PDF Semanal
-                    </button>
-                  </div>
-                  <div className="rounded-2xl border border-white/10 bg-[#0b1624] p-5">
-                    <h4 className="font-bold text-white text-sm">Relatório Mensal de Produtividade</h4>
-                    <p className="text-xs text-slate-400 mt-1">Balanço mensal de horas gastas por técnico e peças substituídas.</p>
-                    <button 
-                      onClick={() => {
-                        setSelectedReportType('MENSAL');
-                        setReportModalOpen(true);
-                      }} 
-                      className="mt-4 w-full rounded-xl bg-[#00A896] py-2 text-xs font-bold text-white hover:bg-teal-500 cursor-pointer"
-                    >
-                      Gerar PDF Mensal
-                    </button>
-                  </div>
-                  <div className="rounded-2xl border border-white/10 bg-[#0b1624] p-5">
-                    <h4 className="font-bold text-white text-sm">Auditoria Anual de Patrimônio</h4>
-                    <p className="text-xs text-slate-400 mt-1">Histórico completo de equipamentos intervencionados.</p>
-                    <button 
-                      onClick={() => {
-                        setSelectedReportType('PATRIMONIO');
-                        setReportModalOpen(true);
-                      }} 
-                      className="mt-4 w-full rounded-xl border border-white/15 bg-white/5 py-2 text-xs font-bold text-white hover:bg-white/10 cursor-pointer"
-                    >
-                      Exportar Auditoria Patrimonial
-                    </button>
-                  </div>
+            <div className="space-y-4">
+              <h2 className="text-xl font-bold text-white">Central de Relatórios Oficiais</h2>
+              <p className="text-xs text-slate-400">Emissão de relatórios consolidados em PDF e CSV.</p>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
+                <div className="rounded-2xl border border-white/10 bg-[#0b1624] p-5">
+                  <h4 className="font-bold text-white text-sm">Relatório Semanal de Atendimentos</h4>
+                  <p className="text-xs text-slate-400 mt-1">Consolidado das demandas e tempos de resolução da semana corrente.</p>
+                  <button
+                    onClick={() => {
+                      setSelectedReportType('SEMANAL');
+                      setReportModalOpen(true);
+                    }}
+                    className="mt-4 w-full rounded-xl bg-cyan-500 py-2 text-xs font-bold text-slate-950 hover:bg-cyan-400 cursor-pointer"
+                  >
+                    Gerar PDF Semanal
+                  </button>
                 </div>
-
-                <OfficialReportModal
-                  isOpen={reportModalOpen}
-                  onClose={() => setReportModalOpen(false)}
-                  tipoRelatorio={selectedReportType}
-                  tickets={tickets}
-                  gestorName={activeUser.name}
-                />
+                <div className="rounded-2xl border border-white/10 bg-[#0b1624] p-5">
+                  <h4 className="font-bold text-white text-sm">Relatório Mensal de Produtividade</h4>
+                  <p className="text-xs text-slate-400 mt-1">Balanço mensal de horas gastas por técnico e peças substituídas.</p>
+                  <button
+                    onClick={() => {
+                      setSelectedReportType('MENSAL');
+                      setReportModalOpen(true);
+                    }}
+                    className="mt-4 w-full rounded-xl bg-[#00A896] py-2 text-xs font-bold text-white hover:bg-teal-500 cursor-pointer"
+                  >
+                    Gerar PDF Mensal
+                  </button>
+                </div>
+                <div className="rounded-2xl border border-white/10 bg-[#0b1624] p-5">
+                  <h4 className="font-bold text-white text-sm">Auditoria Anual de Patrimônio</h4>
+                  <p className="text-xs text-slate-400 mt-1">Histórico completo de equipamentos intervencionados.</p>
+                  <button
+                    onClick={() => {
+                      setSelectedReportType('PATRIMONIO');
+                      setReportModalOpen(true);
+                    }}
+                    className="mt-4 w-full rounded-xl border border-white/15 bg-white/5 py-2 text-xs font-bold text-white hover:bg-white/10 cursor-pointer"
+                  >
+                    Exportar Auditoria Patrimonial
+                  </button>
+                </div>
               </div>
-            )}
-          </GestorPageContainer>
-        </div>
-      );
+
+              <OfficialReportModal
+                isOpen={reportModalOpen}
+                onClose={() => setReportModalOpen(false)}
+                tipoRelatorio={selectedReportType}
+                tickets={tickets}
+                gestorName={activeUser.name}
+              />
+            </div>
+          )}
+        </GestorPageContainer>
+      </div>
+    );
   }
 
   return null;

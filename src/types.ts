@@ -54,6 +54,7 @@ export interface Ticket {
   rating?: number;
   ratingComment?: string;
   internalNotes: InternalNote[];
+  resolvedAt?: string | null;
 }
 
 export interface User {

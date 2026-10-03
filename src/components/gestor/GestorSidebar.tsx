@@ -11,6 +11,7 @@ import {
   , MessageSquareHeart
 } from 'lucide-react';
 import { User as UserType, UserRole } from '@/types';
+import Logo from '../Logo';
 
 export type GestorPage = 'gestor-dashboard' | 'gestor-equipe' | 'gestor-auditoria' | 'gestor-relatorios' | 'gestor-perfil';
 
@@ -46,13 +47,13 @@ export default function GestorSidebar({
     <aside className="fixed left-0 top-0 z-30 flex h-screen w-64 flex-col bg-[#0b1624] border-r border-white/5 text-slate-200">
 
       {/* Topo / Marca Executiva */}
-      <div className="flex h-16 items-center gap-3 border-b border-white/5 px-6">
-        <img
-          src="/src/logo-sti.png"
-          alt="STI — Sistema de Tickets Interno"
-          className="w-auto max-w-[260px] max-h-14 h-auto object-contain brightness-110 h-8"
-        />
+
+
+
+      <div className="flex h-20 shrink-0 items-center border-b border-white/5 px-6">
+        <Logo variant="dashboard" light />
       </div>
+
 
       {/* Switcher Rápido de Perfil */}
       {canSwitch && otherRole && onSwitchRole && (
@@ -84,8 +85,8 @@ export default function GestorSidebar({
         <button
           onClick={() => onNavigate('gestor-dashboard')}
           className={`flex items-center justify-between rounded-xl px-3.5 py-2.5 text-xs font-medium transition-all ${current === 'gestor-dashboard'
-              ? 'bg-[#00A896] text-white font-semibold shadow-md shadow-teal-500/20'
-              : 'text-slate-400 hover:bg-white/5 hover:text-white'
+            ? 'bg-[#00A896] text-white font-semibold shadow-md shadow-teal-500/20'
+            : 'text-slate-400 hover:bg-white/5 hover:text-white'
             }`}
         >
           <div className="flex items-center gap-3">
@@ -97,8 +98,8 @@ export default function GestorSidebar({
         <button
           onClick={() => onNavigate('gestor-equipe')}
           className={`flex items-center justify-between rounded-xl px-3.5 py-2.5 text-xs font-medium transition-all ${current === 'gestor-equipe'
-              ? 'bg-[#00A896] text-white font-semibold shadow-md shadow-teal-500/20'
-              : 'text-slate-400 hover:bg-white/5 hover:text-white'
+            ? 'bg-[#00A896] text-white font-semibold shadow-md shadow-teal-500/20'
+            : 'text-slate-400 hover:bg-white/5 hover:text-white'
             }`}
         >
           <div className="flex items-center gap-3">
@@ -110,8 +111,8 @@ export default function GestorSidebar({
         <button
           onClick={() => onNavigate('gestor-auditoria')}
           className={`flex items-center justify-between rounded-xl px-3.5 py-2.5 text-xs font-medium transition-all ${current === 'gestor-auditoria'
-              ? 'bg-[#00A896] text-white font-semibold shadow-md shadow-teal-500/20'
-              : 'text-slate-400 hover:bg-white/5 hover:text-white'
+            ? 'bg-[#00A896] text-white font-semibold shadow-md shadow-teal-500/20'
+            : 'text-slate-400 hover:bg-white/5 hover:text-white'
             }`}
         >
           <div className="flex items-center gap-3">
@@ -123,8 +124,8 @@ export default function GestorSidebar({
         <button
           onClick={() => onNavigate('gestor-relatorios')}
           className={`flex items-center justify-between rounded-xl px-3.5 py-2.5 text-xs font-medium transition-all ${current === 'gestor-relatorios'
-              ? 'bg-[#00A896] text-white font-semibold shadow-md shadow-teal-500/20'
-              : 'text-slate-400 hover:bg-white/5 hover:text-white'
+            ? 'bg-[#00A896] text-white font-semibold shadow-md shadow-teal-500/20'
+            : 'text-slate-400 hover:bg-white/5 hover:text-white'
             }`}
         >
           <div className="flex items-center gap-3">
@@ -136,8 +137,8 @@ export default function GestorSidebar({
         <button
           onClick={() => onNavigate('gestor-feedbacks' as any)}
           className={`flex items-center justify-between rounded-xl px-3.5 py-2.5 text-xs font-medium transition-all ${(current as string) === 'gestor-feedbacks'
-              ? 'bg-[#00A896] text-white font-semibold shadow-md shadow-teal-500/20'
-              : 'text-slate-400 hover:bg-white/5 hover:text-white'
+            ? 'bg-[#00A896] text-white font-semibold shadow-md shadow-teal-500/20'
+            : 'text-slate-400 hover:bg-white/5 hover:text-white'
             }`}
         >
           <div className="flex items-center gap-3">

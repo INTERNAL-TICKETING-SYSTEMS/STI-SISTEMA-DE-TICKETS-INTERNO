@@ -1,4 +1,5 @@
-﻿import type { ImgHTMLAttributes } from 'react';
+﻿
+import type { ImgHTMLAttributes } from 'react';
 import logoSti from '../logo-sti.png';
 
 interface LogoProps extends ImgHTMLAttributes<HTMLImageElement> {
@@ -13,18 +14,19 @@ export default function Logo({
   ...rest
 }: LogoProps) {
   const sizeClass = {
-    dashboard: 'w-auto max-w-[260px] max-h-14 h-auto object-contain brightness-110 h-8',
-    full: 'w-auto max-w-[260px] max-h-14',
-    compact: 'w-auto max-w-[180px] max-h-10',
-    login: 'w-auto max-w-[400px] max-h-24',
+    dashboard: 'h-12 w-auto max-w-[260px]',
+    full: 'h-12 w-auto max-w-[260px]',
+    compact: 'h-10 w-auto max-w-[180px]',
+    login: 'h-20 w-auto max-w-[400px]',
   }[variant];
 
   return (
     <img
       src={logoSti}
       alt="STI — Sistema de Tickets Interno"
-      className={`${sizeClass} object-contain ${light ? 'brightness-110' : ''
-        } ${className}`}
+      className={`block shrink-0 object-contain ${sizeClass} ${
+        light ? 'brightness-110' : ''
+      } ${className}`}
       {...rest}
     />
   );

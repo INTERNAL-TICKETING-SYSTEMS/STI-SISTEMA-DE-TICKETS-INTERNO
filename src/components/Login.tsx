@@ -1,7 +1,7 @@
 import { dbRepository } from '../services/dbRepository';
 import { enviarOtpMetaWhatsApp } from '../services/metaWhatsappService';
-﻿import React, { useState } from 'react';
-import { Lock, Mail, ShieldCheck, Wrench, UserCheck, UserPlus, ArrowRight, TicketCheck, MessagesSquare, Shield, Activity, BarChart3 } from 'lucide-react';
+import React, { useState } from 'react';
+import { Lock, Mail, ShieldCheck, Wrench, UserCheck, UserPlus, ArrowRight, TicketCheck, MessagesSquare, Shield, Activity, BarChart3, CheckCircle2 } from 'lucide-react';
 import Button from '@/components/ui/Button';
 import { Field, Input } from '@/components/ui/Field';
 import Logo from '@/components/Logo';
@@ -63,7 +63,7 @@ export default function Login({ onLogin, onGoToRegister }: LoginProps) {
     roles: { id: UserRole; title: string; desc: string; icon: any }[];
   } | null>(null);
 
-  
+
   const [sendingOtp, setSendingOtp] = useState(false);
 
   const handleGenerateRecoveryCode = async () => {
@@ -254,14 +254,15 @@ export default function Login({ onLogin, onGoToRegister }: LoginProps) {
         </div>
       )}
 
-      {/* =====================================================
-          LADO ESQUERDO (Apresentação Visual Institucional)
-      ====================================================== */}
-      <section className="relative hidden overflow-hidden bg-[#0b1624] md:flex md:w-[42%] lg:w-[44%]">
-        <div className="absolute -left-32 -top-32 h-96 w-96 rounded-full bg-cyan-500/10 blur-3xl" />
-        <div className="absolute -bottom-32 -right-32 h-96 w-96 rounded-full bg-teal-500/10 blur-3xl" />
 
-        <div className="relative z-10 flex h-full w-full flex-col justify-between p-10 lg:p-14 text-white">
+      {/* PAINEL ESQUERDO — APRESENTAÇÃO SIMPLES E ANIMADA */}
+      <section className="relative hidden overflow-hidden bg-[#0b1624] md:flex md:w-[42%] md:flex-col lg:w-[44%]">
+        {/* Brilhos decorativos */}
+        <div className="pointer-events-none absolute -left-32 -top-32 h-96 w-96 rounded-full bg-cyan-500/10 blur-3xl" />
+        <div className="pointer-events-none absolute -bottom-32 -right-32 h-96 w-96 rounded-full bg-teal-500/10 blur-3xl" />
+
+        <div className="relative z-10 flex min-h-screen w-full flex-col justify-between p-8 text-white lg:p-12">
+          {/* Logo animada */}
           <div className="w-fit max-w-full animate-sti-logo">
             <Logo
               variant="login"
@@ -270,40 +271,78 @@ export default function Login({ onLogin, onGoToRegister }: LoginProps) {
             />
           </div>
 
-
-          <div className="max-w-md space-y-6">
-            <div className="space-y-2">
-              <span className="inline-flex items-center gap-1.5 rounded-full bg-cyan-500/10 px-3 py-1 text-xs font-semibold text-cyan-400 border border-cyan-500/20">
-                <TicketCheck className="h-3.5 w-3.5" /> STI Conectado
-              </span>
-              <h2 className="text-2xl lg:text-3xl font-bold leading-tight">
-                Gestão de TI centralizada, ágil e em conformidade de SLA.
-              </h2>
+          {/* Mensagem principal */}
+          <div className="my-10 max-w-lg space-y-6">
+            <div className="inline-flex items-center gap-2 rounded-full border border-cyan-500/20 bg-cyan-500/10 px-3 py-1.5 text-xs font-semibold text-cyan-300">
+              <span className="h-2 w-2 animate-pulse rounded-full bg-teal-400" />
+              Suporte de TI em um só lugar
             </div>
-            <p className="text-sm text-slate-300">
-              Acompanhamento de chamados em tempo real com controle de acessos, inventário de peças e métricas de produtividade.
-            </p>
 
-            <div className="grid grid-cols-2 gap-3 pt-2">
-              <div className="rounded-xl border border-white/10 bg-white/5 p-3.5">
-                <div className="flex items-center gap-2 text-cyan-400 mb-1">
-                  <MessagesSquare className="h-4 w-4" />
-                  <span className="text-xs font-semibold">Atendimento Rápido</span>
+            <div className="space-y-3">
+              <h2 className="text-3xl font-bold leading-tight tracking-tight lg:text-4xl">
+                Precisa de alguma
+                <br />
+                ajuda?
+              </h2>
+
+              <p className="max-w-md text-sm leading-relaxed text-slate-300 lg:text-base">
+                Abra seu chamado, acompanhe o atendimento e veja as atualizações
+                sem complicação.
+              </p>
+            </div>
+
+            {/* Etapas do atendimento */}
+            <div className="space-y-3 pt-2">
+              <div className="group flex items-center gap-4 rounded-2xl border border-white/10 bg-white/[0.04] p-4 transition-all duration-300 hover:border-cyan-400/40 hover:bg-cyan-400/[0.07]">
+                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-cyan-500/15 text-cyan-300 transition-transform duration-300 group-hover:scale-110">
+                  <MessagesSquare className="h-5 w-5" />
                 </div>
-                <p className="text-[11px] text-slate-400">Comunicação direta com o solicitante.</p>
+                <div className="min-w-0 flex-1">
+                  <h3 className="text-sm font-semibold text-white">
+                    1. Peça ajuda
+                  </h3>
+                  <p className="mt-1 text-xs leading-relaxed text-slate-400">
+                    Conte o que aconteceu e envie sua solicitação.
+                  </p>
+                </div>
+                <ArrowRight className="h-4 w-4 shrink-0 text-cyan-400" />
               </div>
-              <div className="rounded-xl border border-white/10 bg-white/5 p-3.5">
-                <div className="flex items-center gap-2 text-amber-400 mb-1">
-                  <ShieldCheck className="h-4 w-4" />
-                  <span className="text-xs font-semibold">Auditoria de SLA</span>
+
+              <div className="group flex items-center gap-4 rounded-2xl border border-white/10 bg-white/[0.04] p-4 transition-all duration-300 hover:border-cyan-400/40 hover:bg-cyan-400/[0.07]">
+                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-teal-500/15 text-teal-300 transition-transform duration-300 group-hover:scale-110">
+                  <Activity className="h-5 w-5" />
                 </div>
-                <p className="text-[11px] text-slate-400">Controle rigoroso de prazos e metas.</p>
+                <div className="min-w-0 flex-1">
+                  <h3 className="text-sm font-semibold text-white">
+                    2. Acompanhe
+                  </h3>
+                  <p className="mt-1 text-xs leading-relaxed text-slate-400">
+                    Veja o andamento do seu chamado.
+                  </p>
+                </div>
+                <ArrowRight className="h-4 w-4 shrink-0 text-teal-400" />
+              </div>
+
+              <div className="group flex items-center gap-4 rounded-2xl border border-white/10 bg-white/[0.04] p-4 transition-all duration-300 hover:border-emerald-400/40 hover:bg-emerald-400/[0.07]">
+                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-emerald-500/15 text-emerald-300 transition-transform duration-300 group-hover:scale-110">
+                  <CheckCircle2 className="h-5 w-5" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <h3 className="text-sm font-semibold text-white">
+                    3. Confira a solução
+                  </h3>
+                  <p className="mt-1 text-xs leading-relaxed text-slate-400">
+                    Consulte a conclusão do atendimento.
+                  </p>
+                </div>
+                <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-400" />
               </div>
             </div>
           </div>
 
+          {/* Rodapé institucional */}
           <p className="text-xs text-slate-500">
-            STI &copy; {new Date().getFullYear()} - Governo do Estado do Tocantins
+            STI &copy; {new Date().getFullYear()} 
           </p>
         </div>
       </section>
@@ -347,20 +386,20 @@ export default function Login({ onLogin, onGoToRegister }: LoginProps) {
                   />
                 </div>
               </Field>
-                <div className="flex justify-end -mt-2 mb-2">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setForgotErrorMessage('');
-                      setForgotSuccessMessage('');
-                      setForgotStep('IDENTIFY');
-                      setIsForgotOpen(true);
-                    }}
-                    className="text-xs font-semibold text-cyan-400 hover:text-cyan-300 transition-colors cursor-pointer"
-                  >
-                    Esqueceu sua senha?
-                  </button>
-                </div>
+              <div className="flex justify-end -mt-2 mb-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setForgotErrorMessage('');
+                    setForgotSuccessMessage('');
+                    setForgotStep('IDENTIFY');
+                    setIsForgotOpen(true);
+                  }}
+                  className="text-xs font-semibold text-cyan-400 hover:text-cyan-300 transition-colors cursor-pointer"
+                >
+                  Esqueceu sua senha?
+                </button>
+              </div>
 
               <Button
                 type="submit"
@@ -398,151 +437,151 @@ export default function Login({ onLogin, onGoToRegister }: LoginProps) {
             </p>
 
             {isForgotOpen && (
-  <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 p-4 backdrop-blur-sm">
-    <div className="w-full max-w-md rounded-2xl border border-white/10 bg-[#0b1624] p-6 text-white shadow-2xl">
-      <div className="flex items-center justify-between border-b border-white/10 pb-4">
-        <div className="flex items-center gap-2.5">
-          <div className="rounded-xl bg-cyan-500/20 p-2 text-cyan-400">
-            <Shield className="h-5 w-5" />
-          </div>
-          <div>
-            <h3 className="text-base font-bold text-white">Recuperar Senha</h3>
-            <p className="text-xs text-slate-400">Validação Rápida via WhatsApp</p>
-          </div>
-        </div>
-        <button
-          type="button"
-          onClick={() => setIsForgotOpen(false)}
-          className="rounded-lg p-1.5 text-slate-400 hover:bg-white/10 hover:text-white cursor-pointer"
-        >
-          ✕
-        </button>
-      </div>
+              <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 p-4 backdrop-blur-sm">
+                <div className="w-full max-w-md rounded-2xl border border-white/10 bg-[#0b1624] p-6 text-white shadow-2xl">
+                  <div className="flex items-center justify-between border-b border-white/10 pb-4">
+                    <div className="flex items-center gap-2.5">
+                      <div className="rounded-xl bg-cyan-500/20 p-2 text-cyan-400">
+                        <Shield className="h-5 w-5" />
+                      </div>
+                      <div>
+                        <h3 className="text-base font-bold text-white">Recuperar Senha</h3>
+                        <p className="text-xs text-slate-400">Validação Rápida via WhatsApp</p>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setIsForgotOpen(false)}
+                      className="rounded-lg p-1.5 text-slate-400 hover:bg-white/10 hover:text-white cursor-pointer"
+                    >
+                      ✕
+                    </button>
+                  </div>
 
-      <div className="mt-4 space-y-4">
-        {forgotSuccessMessage ? (
-          <div className="p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-semibold text-center">
-            {forgotSuccessMessage}
-          </div>
-        ) : forgotStep === 'IDENTIFY' ? (
-          <div className="space-y-3">
-            <p className="text-xs text-slate-300 leading-relaxed">
-              Informe seu e-mail e o número do seu WhatsApp com DDD para receber o código de segurança:
-            </p>
+                  <div className="mt-4 space-y-4">
+                    {forgotSuccessMessage ? (
+                      <div className="p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-semibold text-center">
+                        {forgotSuccessMessage}
+                      </div>
+                    ) : forgotStep === 'IDENTIFY' ? (
+                      <div className="space-y-3">
+                        <p className="text-xs text-slate-300 leading-relaxed">
+                          Informe seu e-mail e o número do seu WhatsApp com DDD para receber o código de segurança:
+                        </p>
 
-            <div>
-              <label className="block text-xs font-medium text-slate-300 mb-1">E-mail ou Matrícula</label>
-              <input
-                type="text"
-                value={forgotInput}
-                onChange={(e) => setForgotInput(e.target.value)}
-                placeholder="Ex: wanderson.maior@sti.chamados.com"
-                className="w-full rounded-xl border border-white/10 bg-white/5 p-2.5 text-xs text-white placeholder-slate-500 focus:border-cyan-500 focus:outline-none"
-              />
-            </div>
+                        <div>
+                          <label className="block text-xs font-medium text-slate-300 mb-1">E-mail ou Matrícula</label>
+                          <input
+                            type="text"
+                            value={forgotInput}
+                            onChange={(e) => setForgotInput(e.target.value)}
+                            placeholder="Ex: wanderson.maior@sti.chamados.com"
+                            className="w-full rounded-xl border border-white/10 bg-white/5 p-2.5 text-xs text-white placeholder-slate-500 focus:border-cyan-500 focus:outline-none"
+                          />
+                        </div>
 
-            <div>
-              <label className="block text-xs font-medium text-slate-300 mb-1">Seu WhatsApp (com DDD)</label>
-              <input
-                type="text"
-                value={forgotPhone}
-                onChange={(e) => setForgotPhone(e.target.value)}
-                placeholder="Ex: (63) 98400-0000"
-                className="w-full rounded-xl border border-white/10 bg-white/5 p-2.5 text-xs text-white placeholder-slate-500 focus:border-cyan-500 focus:outline-none"
-              />
-            </div>
+                        <div>
+                          <label className="block text-xs font-medium text-slate-300 mb-1">Seu WhatsApp (com DDD)</label>
+                          <input
+                            type="text"
+                            value={forgotPhone}
+                            onChange={(e) => setForgotPhone(e.target.value)}
+                            placeholder="Ex: (63) 98400-0000"
+                            className="w-full rounded-xl border border-white/10 bg-white/5 p-2.5 text-xs text-white placeholder-slate-500 focus:border-cyan-500 focus:outline-none"
+                          />
+                        </div>
 
-            {forgotErrorMessage && (
-              <p className="text-rose-400 text-xs font-medium">{forgotErrorMessage}</p>
+                        {forgotErrorMessage && (
+                          <p className="text-rose-400 text-xs font-medium">{forgotErrorMessage}</p>
+                        )}
+
+                        <div className="flex items-center justify-end gap-2 pt-2">
+                          <button
+                            type="button"
+                            onClick={() => setIsForgotOpen(false)}
+                            className="px-3 py-2 text-xs font-medium text-slate-400 hover:text-white cursor-pointer"
+                          >
+                            Cancelar
+                          </button>
+                          <button
+                            type="button"
+                            disabled={sendingOtp}
+                            onClick={handleGenerateRecoveryCode}
+                            className="flex items-center gap-1.5 rounded-xl bg-emerald-600 px-4 py-2 text-xs font-bold text-white hover:bg-emerald-500 cursor-pointer shadow-md shadow-emerald-600/20 disabled:opacity-50"
+                          >
+                            {sendingOtp ? 'Enviando via Meta API...' : 'Enviar Código via WhatsApp Oficial →'}
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <form onSubmit={handleConfirmNewPassword} className="space-y-3">
+                        <div className="rounded-xl bg-emerald-500/10 border border-emerald-500/20 p-3 text-xs text-emerald-300">
+                          <span className="block font-semibold">Código de segurança enviado!</span>
+                          <span className="text-[11px] text-slate-300">Verifique a mensagem oficial recebida no WhatsApp do número informado.</span>
+                        </div>
+
+                        <div>
+                          <label className="block text-[11px] font-medium text-slate-300 mb-1">Código de 6 Dígitos</label>
+                          <input
+                            type="text"
+                            maxLength={6}
+                            value={userOtpInput}
+                            onChange={(e) => setUserOtpInput(e.target.value)}
+                            placeholder="Ex: 849201"
+                            required
+                            className="w-full text-center tracking-widest font-mono font-bold rounded-xl border border-white/10 bg-white/5 p-2 text-base text-cyan-400 focus:border-cyan-500 focus:outline-none"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-[11px] font-medium text-slate-300 mb-1">Nova Senha</label>
+                          <input
+                            type="password"
+                            value={newPassword}
+                            onChange={(e) => setNewPassword(e.target.value)}
+                            placeholder="••••••••"
+                            required
+                            className="w-full rounded-xl border border-white/10 bg-white/5 p-2 text-xs text-white focus:border-cyan-500 focus:outline-none"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-[11px] font-medium text-slate-300 mb-1">Confirmar Nova Senha</label>
+                          <input
+                            type="password"
+                            value={confirmPassword}
+                            onChange={(e) => setConfirmPassword(e.target.value)}
+                            placeholder="••••••••"
+                            required
+                            className="w-full rounded-xl border border-white/10 bg-white/5 p-2 text-xs text-white focus:border-cyan-500 focus:outline-none"
+                          />
+                        </div>
+
+                        {forgotErrorMessage && (
+                          <p className="text-rose-400 text-xs font-medium">{forgotErrorMessage}</p>
+                        )}
+
+                        <div className="flex items-center justify-between pt-2">
+                          <button
+                            type="button"
+                            onClick={() => setForgotStep('IDENTIFY')}
+                            className="text-xs text-slate-400 hover:text-white cursor-pointer"
+                          >
+                            &larr; Voltar
+                          </button>
+                          <button
+                            type="submit"
+                            className="rounded-xl bg-cyan-500 px-4 py-2 text-xs font-bold text-slate-950 hover:bg-cyan-400 cursor-pointer"
+                          >
+                            Redefinir Senha
+                          </button>
+                        </div>
+                      </form>
+                    )}
+                  </div>
+                </div>
+              </div>
             )}
-
-            <div className="flex items-center justify-end gap-2 pt-2">
-              <button
-                type="button"
-                onClick={() => setIsForgotOpen(false)}
-                className="px-3 py-2 text-xs font-medium text-slate-400 hover:text-white cursor-pointer"
-              >
-                Cancelar
-              </button>
-              <button
-                type="button"
-                disabled={sendingOtp}
-                onClick={handleGenerateRecoveryCode}
-                className="flex items-center gap-1.5 rounded-xl bg-emerald-600 px-4 py-2 text-xs font-bold text-white hover:bg-emerald-500 cursor-pointer shadow-md shadow-emerald-600/20 disabled:opacity-50"
-              >
-                {sendingOtp ? 'Enviando via Meta API...' : 'Enviar Código via WhatsApp Oficial →'}
-              </button>
-            </div>
-          </div>
-        ) : (
-          <form onSubmit={handleConfirmNewPassword} className="space-y-3">
-            <div className="rounded-xl bg-emerald-500/10 border border-emerald-500/20 p-3 text-xs text-emerald-300">
-              <span className="block font-semibold">Código de segurança enviado!</span>
-              <span className="text-[11px] text-slate-300">Verifique a mensagem oficial recebida no WhatsApp do número informado.</span>
-            </div>
-
-            <div>
-              <label className="block text-[11px] font-medium text-slate-300 mb-1">Código de 6 Dígitos</label>
-              <input
-                type="text"
-                maxLength={6}
-                value={userOtpInput}
-                onChange={(e) => setUserOtpInput(e.target.value)}
-                placeholder="Ex: 849201"
-                required
-                className="w-full text-center tracking-widest font-mono font-bold rounded-xl border border-white/10 bg-white/5 p-2 text-base text-cyan-400 focus:border-cyan-500 focus:outline-none"
-              />
-            </div>
-
-            <div>
-              <label className="block text-[11px] font-medium text-slate-300 mb-1">Nova Senha</label>
-              <input
-                type="password"
-                value={newPassword}
-                onChange={(e) => setNewPassword(e.target.value)}
-                placeholder="••••••••"
-                required
-                className="w-full rounded-xl border border-white/10 bg-white/5 p-2 text-xs text-white focus:border-cyan-500 focus:outline-none"
-              />
-            </div>
-
-            <div>
-              <label className="block text-[11px] font-medium text-slate-300 mb-1">Confirmar Nova Senha</label>
-              <input
-                type="password"
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                placeholder="••••••••"
-                required
-                className="w-full rounded-xl border border-white/10 bg-white/5 p-2 text-xs text-white focus:border-cyan-500 focus:outline-none"
-              />
-            </div>
-
-            {forgotErrorMessage && (
-              <p className="text-rose-400 text-xs font-medium">{forgotErrorMessage}</p>
-            )}
-
-            <div className="flex items-center justify-between pt-2">
-              <button
-                type="button"
-                onClick={() => setForgotStep('IDENTIFY')}
-                className="text-xs text-slate-400 hover:text-white cursor-pointer"
-              >
-                &larr; Voltar
-              </button>
-              <button
-                type="submit"
-                className="rounded-xl bg-cyan-500 px-4 py-2 text-xs font-bold text-slate-950 hover:bg-cyan-400 cursor-pointer"
-              >
-                Redefinir Senha
-              </button>
-            </div>
-          </form>
-        )}
-      </div>
-    </div>
-  </div>
-)}
 
           </div>
         </div>

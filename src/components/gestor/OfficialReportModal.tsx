@@ -114,7 +114,7 @@ export default function OfficialReportModal({
         <div class="header">
           <div>
             <div style="font-size: 11px; font-weight: 800; letter-spacing: 1px; color: #64748b; text-transform: uppercase;">
-              GOVERNO DO ESTADO DO TOCANTINS — DETRAN-TO
+               DETRAN-TO
             </div>
             <h1 style="font-size: 20px; font-weight: 900; margin: 4px 0 2px 0;">${titulo}</h1>
             <div style="font-size: 12px; color: #475569;">${subtitulo}</div>
@@ -226,7 +226,7 @@ export default function OfficialReportModal({
           <div className="border-b-2 border-slate-900 pb-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div>
               <p className="text-[11px] font-bold uppercase tracking-widest text-slate-500">
-                GOVERNO DO ESTADO DO TOCANTINS — DETRAN-TO
+                
               </p>
               <h1 className="text-xl font-black text-slate-950 mt-1">{titulo}</h1>
               <p className="text-xs text-slate-600 mt-0.5">{subtitulo}</p>

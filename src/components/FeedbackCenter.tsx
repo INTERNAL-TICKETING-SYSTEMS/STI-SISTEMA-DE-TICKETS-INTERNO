@@ -283,7 +283,7 @@ export default function FeedbackCenter({
             </div>
 
 
-            <h1 className="text-xl font-bold tracking-tight text-gray-900 sm:text-2xl">
+            <h1 className="text-xl font-bold tracking-tight text-slate-100 sm:text-2xl">
               Central de Feedbacks &amp; Demandas
             </h1>
 
@@ -331,7 +331,7 @@ export default function FeedbackCenter({
 
               className={`group flex min-h-28 items-center justify-between gap-3 rounded-2xl border p-4 text-left transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500 ${isActive
                 ? typeStyle.active
-                : 'border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50'
+                : 'border-white/10 bg-[#0b1624] hover:border-cyan-500/40 hover:bg-[#102033]'
                 }`}
             >
               <div className="flex min-w-0 items-center gap-3">
@@ -343,11 +343,11 @@ export default function FeedbackCenter({
 
                 <div className="min-w-0">
 
-                  <span className="block text-2xl font-bold tabular-nums text-gray-900">
-                    {feedbacks.length}
+                  <span className="block text-2xl font-bold tabular-nums text-slate-100">
+                    {counter.count}
                   </span>
 
-                  <span className="block text-sm font-semibold text-gray-900">
+                  <span className="block text-sm font-semibold text-slate-300">
                     {typeStyle.label}
                   </span>
                   <span className="mt-0.5 block text-xs text-slate-500">
@@ -356,7 +356,7 @@ export default function FeedbackCenter({
                 </div>
               </div>
 
-              <span className="text-xs text-slate-500 transition-colors group-hover:text-slate-300">
+              <span className="text-xs text-slate-400 transition-colors group-hover:text-slate-300">
                 {isActive ? 'Filtrado' : 'Ver'}
               </span>
             </button>
@@ -366,10 +366,10 @@ export default function FeedbackCenter({
 
       {/* Filtros */}
 
-      <section className="rounded-2xl border border-gray-200 bg-white p-3 sm:p-4">
+      <section className="rounded-2xl border border-white/10 bg-[#0b1624] p-3 sm:p-4">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-          <div className="flex shrink-0 items-center gap-2 text-sm font-semibold text-gray-800">
-            <Filter className="h-4 w-4 text-gray-600" />
+          <div className="flex shrink-0 items-center gap-2 text-sm font-semibold text-slate-200">
+            <Filter className="h-4 w-4 text-slate-400" />
             Filtrar registros
           </div>
 
@@ -380,7 +380,7 @@ export default function FeedbackCenter({
               aria-pressed={filterType === 'todos'}
               className={`min-h-9 rounded-lg border px-3 py-2 text-xs font-semibold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400 ${filterType === 'todos'
                 ? 'border-cyan-200 bg-cyan-50 text-cyan-900'
-                : 'border-transparent text-gray-700 hover:bg-gray-100 hover:text-gray-900'
+                : 'border-transparent text-gray-300 hover:bg-white/5 hover:text-white'
                 }`}
             >
               Todos ({feedbacks.length})
@@ -399,7 +399,7 @@ export default function FeedbackCenter({
                     onClick={() => setFilterType(type)}
                     className={`min-h-9 rounded-lg border px-3 py-2 text-xs font-semibold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400 ${selected
                       ? style.badge
-                      : 'border-transparent text-gray-700 hover:bg-gray-100 hover:text-gray-900'
+                      : 'border-transparent text-slate-300 hover:bg-white/5 hover:text-white'
                       }`}
                   >
                     {style.label}
@@ -450,7 +450,7 @@ export default function FeedbackCenter({
 
               <article
                 key={item.id}
-                className="space-y-4 rounded-2xl border border-gray-200 bg-white p-4 transition-colors hover:border-gray-300 sm:p-5"
+                className="space-y-4 rounded-2xl border border-white/10 bg-[#0b1624] p-4 transition-colors hover:border-cyan-500/30 sm:p-5"
               >
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                   <div className="flex min-w-0 flex-wrap items-center gap-2">
@@ -491,7 +491,7 @@ export default function FeedbackCenter({
                           e.target.value as FeedbackItem['status'],
                         )
                       }
-                      className="min-h-9 max-w-full rounded-lg border border-gray-300 bg-white px-2.5 py-2 text-xs text-gray-900 outline-none transition-colors focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500"
+                      className="min-h-9 max-w-full rounded-lg border border-white/10 bg-slate-900 px-2.5 py-2 text-xs text-slate-200 outline-none transition-colors focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500"
                     >
                       {Object.entries(STATUS_STYLES).map(([value, status]) => (
 
@@ -509,26 +509,26 @@ export default function FeedbackCenter({
 
                 <div>
 
-                  <h2 className="break-words text-base font-semibold leading-snug text-gray-900">
+                  <h2 className="break-words text-base font-semibold leading-snug text-slate-100">
                     {item.title}
                   </h2>
 
-                  <p className="mt-2 whitespace-pre-wrap break-words text-sm leading-relaxed text-gray-800">
+                  <p className="mt-2 whitespace-pre-wrap break-words text-sm leading-relaxed text-slate-300">
                     {item.description}
                   </p>
                 </div>
 
-                <div className="flex flex-wrap items-center gap-x-5 gap-y-3 border-t border-gray-200 pt-3">
+                <div className="flex flex-wrap items-center gap-x-5 gap-y-3 border-t border-white/10 pt-3">
 
-                  <div className="flex items-center gap-2 text-xs text-gray-700">
-                    <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-cyan-50 text-cyan-700">
+                  <div className="flex items-center gap-2 text-xs text-slate-400">
+                    <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-cyan-400/10 text-cyan-300">
                       <User className="h-3.5 w-3.5" />
                     </span>
                     <span>
-                      <span className="block text-[10px] text-gray-600">
+                      <span className="block text-[10px] text-slate-500">
                         Solicitante
                       </span>
-                      <span className="font-medium text-gray-900">
+                      <span className="font-medium text-slate-300">
                         {item.authorName}
                       </span>
                     </span>
@@ -544,7 +544,7 @@ export default function FeedbackCenter({
                           Setor
                         </span>
 
-                        <span className="font-medium text-gray-900">
+                        <span className="font-medium text-slate-100">
                           {item.authorDepartment}
                         </span>
                       </span>
@@ -552,7 +552,7 @@ export default function FeedbackCenter({
                   )}
 
                   {item.authorRole && (
-                    <span className="rounded-md border border-gray-200 bg-gray-100 px-2 py-1 text-[11px] text-gray-800">
+                    <span className="rounded-md border border-white/10 bg-white/5 px-2 py-1 text-[11px] text-slate-300">
                       Perfil: {item.authorRole}
                     </span>
                   )}
@@ -584,9 +584,9 @@ export default function FeedbackCenter({
             role="dialog"
             aria-modal="true"
             aria-labelledby="demand-modal-title"
-            className="my-auto w-full max-w-lg rounded-2xl border border-gray-200 bg-slate-900 p-5 text-white shadow-2xl sm:p-6"
+            className="my-auto w-full max-w-lg rounded-2xl border border-white/10 bg-slate-900 p-5 text-white shadow-2xl sm:p-6"
           >
-            <div className="flex items-start justify-between gap-3 border-b border-gray-200 pb-4">
+            <div className="flex items-start justify-between gap-3 border-b border-white/10 pb-4">
               <div className="flex min-w-0 items-center gap-3">
                 <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-amber-400/20 bg-amber-400/10 text-amber-300">
                   <FileText className="h-5 w-5" />
