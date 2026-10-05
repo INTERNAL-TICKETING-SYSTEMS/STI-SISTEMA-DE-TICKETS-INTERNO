@@ -1,3 +1,4 @@
+import { CloseTicketModal } from './CloseTicketModal';
 ﻿import { useState } from 'react';
 import { Ticket, TicketStatus, User } from '@/types';
 import StatusBadge, { statusLabel } from '@/components/ui/StatusBadge';
@@ -49,6 +50,13 @@ export default function TechTicketDetail({
   technicians = [],
   onAssign,
 }: TechTicketDetailProps) {
+  const [isCloseModalOpen, setIsCloseModalOpen] = useState(false);
+
+  const handleConfirmClose = async (parecerTecnico: string) => {
+    onResolve(ticket.id, parecerTecnico);
+    setIsCloseModalOpen(false);
+  };
+
   const [selectedTransferTech, setSelectedTransferTech] = useState('');
   const [showTransferSelect, setShowTransferSelect] = useState(false);
   const [tab, setTab] = useState<Tab>('interactions');
@@ -346,7 +354,15 @@ export default function TechTicketDetail({
                     <CheckCircle2 className="h-4 w-4" />
                     Marcar como resolvido
                   </Button>
-                </div>
+
+      <CloseTicketModal
+        isOpen={isCloseModalOpen}
+        ticketProtocolo={ticket.protocol || ticket.id}
+        onClose={() => setIsCloseModalOpen(false)}
+        onConfirm={handleConfirmClose}
+      />
+
+      </div>
               )}
 
               {ticket.solution && ticket.status === 'resolvido' && (
@@ -656,6 +672,7 @@ function Avatar({ author, name }: { author: 'usuario' | 'tecnico'; name: string 
   return (
     <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-sti-teal-100 text-sm font-semibold text-sti-teal-700">
       {name.charAt(0)}
-    </div>
+      
+      </div>
   );
 }
