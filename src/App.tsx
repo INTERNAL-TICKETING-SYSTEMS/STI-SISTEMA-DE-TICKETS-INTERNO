@@ -1,4 +1,6 @@
+﻿import { dbRepository } from '@/services/dbRepository';
 import { AuditCompliancePanel } from './components/tech/AuditCompliancePanel';
+
 import OfficialReportModal from '@/components/gestor/OfficialReportModal';
 import GestorAuditTable from '@/components/gestor/GestorAuditTable';
 import { registrarAuditoria } from './services/auditService';
@@ -558,13 +560,23 @@ export default function App() {
     );
   };
 
-
   const handleResolve = (
     id: string,
     solution: string,
     assetTag?: string,
     replacedParts?: string
   ) => {
+    // Despacho oficial para persistência e microsserviço DATA-AUDIT
+    dbRepository.atualizarStatusChamado(
+      id,
+      'RESOLVIDO',
+      (activeUser as any)?.name ||
+      (activeUser as any)?.email ||
+      'Técnico STI',
+      (activeUser as any)?.id || undefined,
+      solution
+    );
+
     const now = new Date().toISOString();
 
     setTickets((prev) =>
@@ -576,7 +588,10 @@ export default function App() {
             solution,
             assetTag: assetTag || t.assetTag,
             replacedParts: replacedParts || t.replacedParts,
+
+            // Mantém a primeira data de resolução
             resolvedAt: t.resolvedAt || now,
+
             updatedAt: now,
             updates: [
               ...t.updates,
@@ -604,10 +619,13 @@ export default function App() {
         solucao: solution,
         patrimonio: assetTag || null,
         pecasTrocadas: replacedParts || null,
-        resolvedAt: now,
       },
-      metadados: { acao: 'Resolução técnica concluída' }
-    }).catch(err => console.error('[Auditoria] Falha ao registar resolução:', err));
+      metadados: {
+        acao: 'Resolução técnica concluída',
+      },
+    }).catch((err) =>
+      console.error('[Auditoria] Falha ao registar resolução:', err)
+    );
   };
 
 
