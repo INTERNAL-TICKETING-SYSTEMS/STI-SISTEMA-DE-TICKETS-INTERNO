@@ -1,5 +1,6 @@
+import { dataAuditService, AuditEventResponse, IntegrityCheckResponse } from '../../services/dataAuditService';
 import { CloseTicketModal } from './CloseTicketModal';
-﻿import { useState } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { Ticket, TicketStatus, User } from '@/types';
 import StatusBadge, { statusLabel } from '@/components/ui/StatusBadge';
 import Button from '@/components/ui/Button';
@@ -51,6 +52,31 @@ export default function TechTicketDetail({
   onAssign,
 }: TechTicketDetailProps) {
   const [isCloseModalOpen, setIsCloseModalOpen] = useState(false);
+  const [forensicEvent, setForensicEvent] = useState<AuditEventResponse | null>(null);
+  const [checkingIntegrity, setCheckingIntegrity] = useState(false);
+  const [integrityStatus, setIntegrityStatus] = useState<IntegrityCheckResponse | null>(null);
+
+  // Busca histórico de auditoria do chamado quando ele estiver concluído
+  useEffect(() => {
+    const fetchAudit = async () => {
+      const protocolo = ticket.protocol || ticket.id;
+      const events = await dataAuditService.buscarPorEntidade('CHAMADOS', protocolo);
+      if (events && events.length > 0) {
+        setForensicEvent(events[0]);
+      }
+    };
+    if (ticket.status === 'resolvido') {
+      fetchAudit();
+    }
+  }, [ticket.status, ticket.protocol, ticket.id]);
+
+  const handleCheckForensic = async () => {
+    if (!forensicEvent) return;
+    setCheckingIntegrity(true);
+    const result = await dataAuditService.verificarIntegridade(forensicEvent.id);
+    setIntegrityStatus(result);
+    setCheckingIntegrity(false);
+  };
 
   const handleConfirmClose = async (parecerTecnico: string) => {
     onResolve(ticket.id, parecerTecnico);
@@ -350,10 +376,58 @@ export default function TechTicketDetail({
 
               {!ticket.solution && ticket.status !== 'fechado' && (
                 <div className="flex justify-end">
-                  <Button onClick={handleResolve} disabled={!solution.trim()}>
-                    <CheckCircle2 className="h-4 w-4" />
-                    Marcar como resolvido
+                  <Button onClick={() => setIsCloseModalOpen(true)} className="bg-emerald-600 hover:bg-emerald-500 text-white font-medium">
+                    Concluir Chamado (Parecer Técnico)
                   </Button>
+
+      
+      {/* Bloco de Integridade Criptográfica Forense (DATA-AUDIT) */}
+      {(ticket.status === 'resolvido') && (
+        <div className="mt-6 p-4 rounded-xl bg-slate-900/80 border border-slate-700 shadow-lg">
+          <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <div className="p-2.5 rounded-lg bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                <CheckCircle2 className="w-5 h-5" />
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <h4 className="text-sm font-bold text-white tracking-wide">Trilha de Auditoria Forense (SHA-256)</h4>
+                  <span className="text-[10px] uppercase font-bold px-2 py-0.5 rounded bg-blue-500/20 text-blue-400 border border-blue-500/30">
+                    DATA-AUDIT Microservice
+                  </span>
+                </div>
+                <p className="text-xs text-slate-400 font-mono mt-0.5">
+                  {forensicEvent?.hashIntegridade 
+                    ? `Hash: ${forensicEvent.hashIntegridade.slice(0, 32)}...`
+                    : 'Aguardando sincronização de hash com o subsistema forense...'}
+                </p>
+              </div>
+            </div>
+
+            {forensicEvent && (
+              <div className="flex items-center gap-3">
+                {integrityStatus && (
+                  <span className={`text-xs font-semibold px-2.5 py-1 rounded-lg flex items-center gap-1.5 ${
+                    integrityStatus.statusIntegridade === 'VALIDO'
+                      ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
+                      : 'bg-red-500/20 text-red-300 border border-red-500/30'
+                  }`}>
+                    {integrityStatus.statusIntegridade === 'VALIDO' ? '✅ Integridade Verificada' : '❌ Adulteração Detectada'}
+                  </span>
+                )}
+                <Button
+                  onClick={handleCheckForensic}
+                  disabled={checkingIntegrity}
+                  className="text-xs bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-600 px-3 py-1.5"
+                >
+                  {checkingIntegrity ? 'Recalculando Hash...' : '🔍 Validar Hash no Spring Boot'}
+                </Button>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
 
       <CloseTicketModal
         isOpen={isCloseModalOpen}
