@@ -1,4 +1,6 @@
-﻿import { AuditCompliancePanel } from './components/tech/AuditCompliancePanel';
+﻿import { dbRepository } from '@/services/dbRepository';
+import { AuditCompliancePanel } from './components/tech/AuditCompliancePanel';
+
 import OfficialReportModal from '@/components/gestor/OfficialReportModal';
 import GestorAuditTable from '@/components/gestor/GestorAuditTable';
 import { registrarAuditoria } from './services/auditService';
@@ -23,7 +25,6 @@ import { mockTickets, currentUser, currentTech, mockTechnicians } from '@/data';
 import { Ticket, UserRole, TicketStatus, User } from '@/types';
 import Logo from '@/components/Logo';
 import { BarChart3, ClipboardList, CheckCircle2, Clock, Users } from 'lucide-react';
-import { dbRepository } from './services/dbRepository';
 
 type UserView = { page: Page } | { page: 'ticket-detail'; ticketId: string };
 type TechView = { page: TechPage } | { page: 'tech-ticket-detail'; ticketId: string };
@@ -558,7 +559,6 @@ export default function App() {
       )
     );
   };
-
 
   const handleResolve = (
     id: string,
