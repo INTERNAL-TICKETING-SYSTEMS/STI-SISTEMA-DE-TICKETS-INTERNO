@@ -1,711 +1,1187 @@
-﻿
-import React, { useEffect, useState } from 'react';
+﻿import React, { useMemo, useState } from 'react';
 import {
-  Bug,
-  Sparkles,
-  FileText,
-  Filter,
-  Send,
-  CheckCircle2,
-  Clock,
   AlertCircle,
-  PlusCircle,
-  X,
-  User,
-  Building,
-  CalendarDays,
+  ArrowRight,
+  BarChart3,
   ClipboardList,
+  Filter,
+  Lightbulb,
+  Moon,
+  Search,
+  ShieldAlert,
+  Sun,
+  User,
 } from 'lucide-react';
 
-export interface FeedbackItem {
+import { useTechTheme } from '@/components/tech/TechSidebar';
+
+/*
+|--------------------------------------------------------------------------
+| TIPOS
+|--------------------------------------------------------------------------
+*/
+
+type FeedbackType =
+  | 'falha'
+  | 'sugestao'
+  | 'demanda_gerencial';
+
+type FeedbackStatus =
+  | 'Novo'
+  | 'Em análise'
+  | 'Concluído'
+  | 'Descartado';
+
+type FeedbackPriority =
+  | 'alta'
+  | 'media'
+  | 'baixa';
+
+interface FeedbackRecord {
   id: string;
-  type: 'falha' | 'ideia' | 'demanda_gestor';
+  type: FeedbackType;
+  date: string;
   title: string;
   description: string;
-  authorName: string;
-  authorDepartment?: string;
-  authorRole?: string;
-  createdAt: string;
-  status: 'novo' | 'em_analise' | 'implementado' | 'descartado';
-  priority?: 'baixa' | 'media' | 'alta';
+  requester: string;
+  department: string;
+  profile: 'Servidor' | 'Gestor';
+  priority: FeedbackPriority;
+  status: FeedbackStatus;
 }
 
+/*
+|--------------------------------------------------------------------------
+| DADOS
+|--------------------------------------------------------------------------
+*/
+
+const initialRecords: FeedbackRecord[] = [
+  {
+    id: 'FB-001',
+    type: 'falha',
+    date: '30/09/2026, 13:53',
+    title: 'Lentidão no carregamento de anexos pesados',
+    description:
+      'Ao anexar PDFs acima de 5MB na abertura de chamado, a página congela por alguns segundos antes de confirmar o upload.',
+    requester: 'Ana Paula Rocha',
+    department: 'Recursos Humanos',
+    profile: 'Servidor',
+    priority: 'alta',
+    status: 'Em análise',
+  },
+  {
+    id: 'FB-002',
+    type: 'sugestao',
+    date: '29/09/2026, 13:53',
+    title: 'Adicionar filtro por data de abertura no painel',
+    description:
+      'Seria muito útil podermos filtrar os chamados por período de datas específico para conciliação mensal.',
+    requester: 'Carlos Eduardo',
+    department: 'Financeiro',
+    profile: 'Servidor',
+    priority: 'media',
+    status: 'Novo',
+  },
+  {
+    id: 'FB-003',
+    type: 'demanda_gerencial',
+    date: '01/10/2026, 01:53',
+    title:
+      'Relatório Executivo de Tempo Médio de Resolução (MTTR) por Diretoria',
+    description:
+      'Necessário compilar os dados consolidados do terceiro trimestre para apresentação ao comitê de governança.',
+    requester: 'Diretoria de Governança',
+    department: 'Gabinete / Gestão',
+    profile: 'Gestor',
+    priority: 'alta',
+    status: 'Novo',
+  },
+];
+
+/*
+|--------------------------------------------------------------------------
+| CONFIGURAÇÕES VISUAIS
+|--------------------------------------------------------------------------
+*/
+
+const typeConfig: Record<
+  FeedbackType,
+  {
+    label: string;
+    icon: React.ElementType;
+  }
+> = {
+  falha: {
+    label: 'Falha',
+    icon: AlertCircle,
+  },
+  sugestao: {
+    label: 'Sugestão',
+    icon: Lightbulb,
+  },
+  demanda_gerencial: {
+    label: 'Demanda gerencial',
+    icon: BarChart3,
+  },
+};
+
+const statusConfig: Record<
+  FeedbackStatus,
+  {
+    label: string;
+  }
+> = {
+  Novo: {
+    label: 'Novo',
+  },
+  'Em análise': {
+    label: 'Em análise',
+  },
+  Concluído: {
+    label: 'Concluído',
+  },
+  Descartado: {
+    label: 'Descartado',
+  },
+};
+
+/*
+|--------------------------------------------------------------------------
+| COMPONENTE
+|--------------------------------------------------------------------------
+*/
+
 interface FeedbackCenterProps {
-  currentRole: 'tecnico' | 'gestor';
+  currentRole?: string;
   activeUserName?: string;
   activeUserDepartment?: string;
 }
 
-const DEFAULT_FEEDBACKS: FeedbackItem[] = [
-  {
-    id: 'FB-001',
-    type: 'falha',
-    title: 'Lentidão no carregamento de anexos pesados',
-    description:
-      'Ao anexar PDFs acima de 5MB na abertura de chamado, a página congela por alguns segundos antes de confirmar o upload.',
-    authorName: 'Ana Paula Rocha',
-    authorDepartment: 'Recursos Humanos',
-    authorRole: 'Servidor',
-    createdAt: new Date(Date.now() - 3600000 * 24).toISOString(),
-    status: 'em_analise',
-    priority: 'alta',
-  },
-  {
-    id: 'FB-002',
-    type: 'ideia',
-    title: 'Adicionar filtro por data de abertura no painel',
-    description:
-      'Seria muito útil podermos filtrar os chamados por período de datas específico para conciliação mensal.',
-    authorName: 'Carlos Eduardo',
-    authorDepartment: 'Financeiro',
-    authorRole: 'Servidor',
-    createdAt: new Date(Date.now() - 3600000 * 48).toISOString(),
-    status: 'novo',
-    priority: 'media',
-  },
-  {
-    id: 'FB-003',
-    type: 'demanda_gestor',
-    title: 'Relatório Executivo de Tempo Médio de Resolução (MTTR) por Diretoria',
-    description:
-      'Necessário compilar os dados consolidados do terceiro trimestre para apresentação ao comitê de governança.',
-    authorName: 'Diretoria de Governança',
-    authorDepartment: 'Gabinete / Gestão',
-    authorRole: 'Gestor',
-    createdAt: new Date(Date.now() - 3600000 * 12).toISOString(),
-    status: 'novo',
-    priority: 'alta',
-  },
-];
-
-const TYPE_STYLES = {
-  falha: {
-    label: 'Falha',
-    icon: Bug,
-    color: 'amber',
-    badge: 'border-amber-400/25 bg-amber-400/10 text-amber-300',
-    iconBox: 'bg-amber-400/10 text-amber-300',
-    active: 'border-amber-400/40 bg-amber-400/10 ring-1 ring-amber-400/20',
-  },
-  ideia: {
-    label: 'Sugestão',
-    icon: Sparkles,
-    color: 'cyan',
-    badge: 'border-cyan-400/25 bg-cyan-400/10 text-cyan-300',
-    iconBox: 'bg-cyan-400/10 text-cyan-300',
-    active: 'border-cyan-400/40 bg-cyan-400/10 ring-1 ring-cyan-400/20',
-  },
-  demanda_gestor: {
-    label: 'Demanda gerencial',
-    icon: FileText,
-    color: 'emerald',
-    badge: 'border-emerald-400/25 bg-emerald-400/10 text-emerald-300',
-    iconBox: 'bg-emerald-400/10 text-emerald-300',
-    active: 'border-emerald-400/40 bg-emerald-400/10 ring-1 ring-emerald-400/20',
-  },
-} as const;
-
-const STATUS_STYLES = {
-  novo: {
-    label: 'Novo',
-    icon: AlertCircle,
-    classes: 'border-sky-400/25 bg-sky-400/10 text-sky-300',
-    dot: 'bg-sky-400',
-  },
-  em_analise: {
-    label: 'Em análise',
-    icon: Clock,
-    classes: 'border-amber-400/25 bg-amber-400/10 text-amber-300',
-    dot: 'bg-amber-400',
-  },
-  implementado: {
-    label: 'Concluído',
-    icon: CheckCircle2,
-    classes: 'border-emerald-400/25 bg-emerald-400/10 text-emerald-300',
-    dot: 'bg-emerald-400',
-  },
-  descartado: {
-    label: 'Descartado',
-    icon: X,
-    classes: 'border-rose-400/25 bg-rose-400/10 text-rose-300',
-    dot: 'bg-rose-400',
-  },
-} as const;
-
-const PRIORITY_STYLES = {
-  baixa: 'border-slate-400/20 bg-slate-400/10 text-slate-300',
-  media: 'border-amber-400/25 bg-amber-400/10 text-amber-300',
-  alta: 'border-rose-400/25 bg-rose-400/10 text-rose-300',
-} as const;
-
-type FilterType = 'todos' | FeedbackItem['type'];
-
-function formatDate(date: string) {
-  const parsed = new Date(date);
-
-  if (Number.isNaN(parsed.getTime())) {
-    return 'Data indisponível';
-  }
-
-  return parsed.toLocaleString('pt-BR', {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  });
-}
-
-function loadFeedbacks(): FeedbackItem[] {
-  try {
-    const saved = localStorage.getItem('sti_feedbacks');
-
-    if (saved) {
-      const parsed: unknown = JSON.parse(saved);
-
-      if (Array.isArray(parsed)) {
-        return parsed as FeedbackItem[];
-      }
-    }
-  } catch {
-    // Mantém os registros padrão se o armazenamento estiver inválido.
-  }
-
-  return DEFAULT_FEEDBACKS;
-}
-
 export default function FeedbackCenter({
   currentRole,
-  activeUserName = 'Usuário',
-  activeUserDepartment = 'STI',
+  activeUserName,
+  activeUserDepartment,
 }: FeedbackCenterProps) {
-  const [feedbacks, setFeedbacks] = useState<FeedbackItem[]>(loadFeedbacks);
-  const [filterType, setFilterType] = useState<FilterType>('todos');
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [demandTitle, setDemandTitle] = useState('');
-  const [demandDesc, setDemandDesc] = useState('');
-  const [demandPriority, setDemandPriority] =
-    useState<FeedbackItem['priority']>('alta');
+  const { isDark, toggleTheme } = useTechTheme();
 
-  useEffect(() => {
-    try {
-      localStorage.setItem('sti_feedbacks', JSON.stringify(feedbacks));
-    } catch {
-      // A interface continua funcionando mesmo se o navegador bloquear o armazenamento.
-    }
-  }, [feedbacks]);
+  const [records, setRecords] =
+    useState<FeedbackRecord[]>(initialRecords);
 
-  const saveFeedbacks = (updated: FeedbackItem[]) => {
-    setFeedbacks(updated);
-  };
+  const [selectedType, setSelectedType] =
+    useState<'todos' | FeedbackType>('todos');
 
-  const handleUpdateStatus = (
+  const [search, setSearch] = useState('');
+
+  /*
+  |--------------------------------------------------------------------------
+  | CONTADORES
+  |--------------------------------------------------------------------------
+  */
+
+  const failureCount = records.filter(
+    (record) => record.type === 'falha'
+  ).length;
+
+  const suggestionCount = records.filter(
+    (record) => record.type === 'sugestao'
+  ).length;
+
+  const managementCount = records.filter(
+    (record) => record.type === 'demanda_gerencial'
+  ).length;
+
+  /*
+  |--------------------------------------------------------------------------
+  | FILTROS
+  |--------------------------------------------------------------------------
+  */
+
+  const filteredRecords = useMemo(() => {
+    const normalizedSearch =
+      search.trim().toLowerCase();
+
+    return records.filter((record) => {
+      const matchesType =
+        selectedType === 'todos' ||
+        record.type === selectedType;
+
+      const matchesSearch =
+        !normalizedSearch ||
+        record.id
+          .toLowerCase()
+          .includes(normalizedSearch) ||
+        record.title
+          .toLowerCase()
+          .includes(normalizedSearch) ||
+        record.description
+          .toLowerCase()
+          .includes(normalizedSearch) ||
+        record.requester
+          .toLowerCase()
+          .includes(normalizedSearch) ||
+        record.department
+          .toLowerCase()
+          .includes(normalizedSearch);
+
+      return matchesType && matchesSearch;
+    });
+  }, [records, selectedType, search]);
+
+  /*
+  |--------------------------------------------------------------------------
+  | ALTERAÇÃO DE STATUS
+  |--------------------------------------------------------------------------
+  */
+
+  const updateStatus = (
     id: string,
-    newStatus: FeedbackItem['status'],
+    status: FeedbackStatus
   ) => {
-    saveFeedbacks(
-      feedbacks.map((item) =>
-        item.id === id ? { ...item, status: newStatus } : item,
-      ),
+    setRecords((current) =>
+      current.map((record) =>
+        record.id === id
+          ? {
+              ...record,
+              status,
+            }
+          : record
+      )
     );
   };
 
-  const handleCreateDemand = (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
+  /*
+  |--------------------------------------------------------------------------
+  | HELPERS
+  |--------------------------------------------------------------------------
+  */
 
-    if (!demandTitle.trim() || !demandDesc.trim()) {
-      return;
+  const getTypeClasses = (
+    type: FeedbackType
+  ) => {
+    if (type === 'falha') {
+      return isDark
+        ? 'border-red-500/20 bg-red-500/10 text-red-300'
+        : 'border-red-200 bg-red-50 text-red-700';
     }
 
-    const newItem: FeedbackItem = {
-      id: `DEM-${Date.now().toString().slice(-6)}`,
-      type: 'demanda_gestor',
-      title: demandTitle.trim(),
-      description: demandDesc.trim(),
-      authorName: activeUserName,
-      authorDepartment: activeUserDepartment,
-      authorRole: 'Gestor',
-      createdAt: new Date().toISOString(),
-      status: 'novo',
-      priority: demandPriority ?? 'alta',
-    };
+    if (type === 'sugestao') {
+      return isDark
+        ? 'border-amber-500/20 bg-amber-500/10 text-amber-300'
+        : 'border-amber-200 bg-amber-50 text-amber-700';
+    }
 
-    saveFeedbacks([newItem, ...feedbacks]);
-    setFilterType('todos');
-    setDemandTitle('');
-    setDemandDesc('');
-    setDemandPriority('alta');
-    setIsModalOpen(false);
+    return isDark
+      ? 'border-violet-500/20 bg-violet-500/10 text-violet-300'
+      : 'border-violet-200 bg-violet-50 text-violet-700';
   };
 
-  const filteredFeedbacks = feedbacks.filter(
-    (item) => filterType === 'todos' || item.type === filterType,
-  );
+  const getStatusClasses = (
+    status: FeedbackStatus
+  ) => {
+    switch (status) {
+      case 'Novo':
+        return isDark
+          ? 'border-blue-500/20 bg-blue-500/10 text-blue-300'
+          : 'border-blue-200 bg-blue-50 text-blue-700';
 
-  const bugsCount = feedbacks.filter((item) => item.type === 'falha').length;
-  const ideasCount = feedbacks.filter((item) => item.type === 'ideia').length;
-  const demandsCount = feedbacks.filter(
-    (item) => item.type === 'demanda_gestor',
-  ).length;
+      case 'Em análise':
+        return isDark
+          ? 'border-amber-500/20 bg-amber-500/10 text-amber-300'
+          : 'border-amber-200 bg-amber-50 text-amber-700';
 
-  const counters = [
-    {
-      key: 'falha' as const,
-      label: 'Problemas e falhas',
-      description: 'Ocorrências reportadas',
-      count: bugsCount,
-      icon: Bug,
-    },
-    {
-      key: 'ideia' as const,
-      label: 'Sugestões de ideias',
-      description: 'Propostas de melhoria',
-      count: ideasCount,
-      icon: Sparkles,
-    },
-    {
-      key: 'demanda_gestor' as const,
-      label: 'Demandas de gestão',
-      description: 'Solicitações institucionais',
-      count: demandsCount,
-      icon: FileText,
-    },
-  ];
+      case 'Concluído':
+        return isDark
+          ? 'border-emerald-500/20 bg-emerald-500/10 text-emerald-300'
+          : 'border-emerald-200 bg-emerald-50 text-emerald-700';
+
+      case 'Descartado':
+        return isDark
+          ? 'border-slate-500/20 bg-slate-500/10 text-slate-300'
+          : 'border-slate-200 bg-slate-50 text-slate-600';
+
+      default:
+        return '';
+    }
+  };
+
+  const getPriorityClasses = (
+    priority: FeedbackPriority
+  ) => {
+    switch (priority) {
+      case 'alta':
+        return isDark
+          ? 'text-red-300'
+          : 'text-red-600';
+
+      case 'media':
+        return isDark
+          ? 'text-amber-300'
+          : 'text-amber-600';
+
+      case 'baixa':
+        return isDark
+          ? 'text-emerald-300'
+          : 'text-emerald-600';
+
+      default:
+        return '';
+    }
+  };
+
+  const priorityLabel = (
+    priority: FeedbackPriority
+  ) => {
+    if (priority === 'alta') return 'alta';
+    if (priority === 'media') return 'media';
+    return 'baixa';
+  };
+
+  /*
+  |--------------------------------------------------------------------------
+  | RENDER
+  |--------------------------------------------------------------------------
+  */
 
   return (
-    <div className="min-w-0 space-y-6 text-slate-100">
-      {/* Cabeçalho */}
-      <header className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div className="min-w-0">
-          <div className="flex flex-wrap items-center gap-2.5">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-cyan-400/20 bg-cyan-400/10 text-cyan-300">
-              <ClipboardList className="h-5 w-5" />
-            </div>
+    <div
+      className={[
+        'w-full',
+        isDark
+          ? 'text-slate-100'
+          : 'text-slate-900',
+      ].join(' ')}
+    >
+      <div className="mx-auto w-full max-w-[1400px] space-y-6">
 
+        {/* =====================================================
+            CABEÇALHO
+        ====================================================== */}
 
-            <h1 className="text-xl font-bold tracking-tight text-slate-100 sm:text-2xl">
-              Central de Feedbacks &amp; Demandas
-            </h1>
-
-            <span className="inline-flex items-center rounded-full border border-cyan-400/25 bg-cyan-400/10 px-2.5 py-1 text-[11px] font-semibold text-cyan-300">
-              {currentRole === 'gestor' ? 'Visão da Gestão' : 'Console Técnico'}
-            </span>
-          </div>
-
-          <p className="mt-2 max-w-3xl text-sm leading-relaxed text-slate-400">
-            Acompanhe problemas, sugestões de aprimoramento e solicitações de
-            relatórios em um único lugar.
-          </p>
-        </div>
-
-        {currentRole === 'gestor' && (
-          <button
-            type="button"
-            onClick={() => setIsModalOpen(true)}
-            className="inline-flex min-h-11 shrink-0 items-center justify-center gap-2 rounded-xl bg-amber-500 px-4 py-2.5 text-sm font-semibold text-slate-950 shadow-sm transition-colors hover:bg-amber-400 focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-300 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950"
-          >
-            <PlusCircle className="h-4 w-4" />
-            <span>Nova demanda</span>
-          </button>
-        )}
-      </header>
-
-      {/* Contadores */}
-      <section
-        aria-label="Resumo de feedbacks"
-        className="grid grid-cols-1 gap-4 sm:grid-cols-3"
-      >
-        {counters.map((counter) => {
-          const typeStyle = TYPE_STYLES[counter.key];
-          const Icon = counter.icon;
-          const isActive = filterType === counter.key;
-
-          return (
-            <button
-              key={counter.key}
-              type="button"
-              aria-pressed={isActive}
-              onClick={() =>
-                setFilterType(isActive ? 'todos' : counter.key)
-              }
-
-              className={`group flex min-h-28 items-center justify-between gap-3 rounded-2xl border p-4 text-left transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500 ${isActive
-                ? typeStyle.active
-                : 'border-white/10 bg-[#0b1624] hover:border-cyan-500/40 hover:bg-[#102033]'
-                }`}
-            >
-              <div className="flex min-w-0 items-center gap-3">
-                <div
-                  className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ${typeStyle.iconBox}`}
-                >
-                  <Icon className="h-5 w-5" />
-                </div>
-
-                <div className="min-w-0">
-
-                  <span className="block text-2xl font-bold tabular-nums text-slate-100">
-                    {counter.count}
-                  </span>
-
-                  <span className="block text-sm font-semibold text-slate-300">
-                    {typeStyle.label}
-                  </span>
-                  <span className="mt-0.5 block text-xs text-slate-500">
-                    {counter.description}
-                  </span>
-                </div>
-              </div>
-
-              <span className="text-xs text-slate-400 transition-colors group-hover:text-slate-300">
-                {isActive ? 'Filtrado' : 'Ver'}
-              </span>
-            </button>
-          );
-        })}
-      </section>
-
-      {/* Filtros */}
-
-      <section className="rounded-2xl border border-white/10 bg-[#0b1624] p-3 sm:p-4">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-          <div className="flex shrink-0 items-center gap-2 text-sm font-semibold text-slate-200">
-            <Filter className="h-4 w-4 text-slate-400" />
-            Filtrar registros
-          </div>
-
-          <div className="flex flex-wrap gap-2">
-            <button
-              type="button"
-              onClick={() => setFilterType('todos')}
-              aria-pressed={filterType === 'todos'}
-              className={`min-h-9 rounded-lg border px-3 py-2 text-xs font-semibold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400 ${filterType === 'todos'
-                ? 'border-cyan-200 bg-cyan-50 text-cyan-900'
-                : 'border-transparent text-gray-300 hover:bg-white/5 hover:text-white'
-                }`}
-            >
-              Todos ({feedbacks.length})
-            </button>
-
-            {(Object.keys(TYPE_STYLES) as FeedbackItem['type'][]).map(
-              (type) => {
-                const selected = filterType === type;
-                const style = TYPE_STYLES[type];
-
-                return (
-                  <button
-                    key={type}
-                    type="button"
-                    aria-pressed={selected}
-                    onClick={() => setFilterType(type)}
-                    className={`min-h-9 rounded-lg border px-3 py-2 text-xs font-semibold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400 ${selected
-                      ? style.badge
-                      : 'border-transparent text-slate-300 hover:bg-white/5 hover:text-white'
-                      }`}
-                  >
-                    {style.label}
-                  </button>
-                );
-              },
-            )}
-          </div>
-
-          <span className="text-xs text-slate-500 sm:ml-auto">
-            {filteredFeedbacks.length}{' '}
-            {filteredFeedbacks.length === 1 ? 'registro' : 'registros'}
-          </span>
-        </div>
-      </section>
-
-      {/* Lista */}
-      <section aria-label="Lista de feedbacks" className="space-y-3">
-        {filteredFeedbacks.length === 0 ? (
-          <div className="rounded-2xl border border-dashed border-white/15 bg-slate-900/40 px-5 py-12 text-center">
-            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-xl bg-white/5 text-slate-400">
-              <FileText className="h-6 w-6" />
-            </div>
-            <h2 className="mt-4 text-sm font-semibold text-slate-200">
-              Nenhum registro encontrado
-            </h2>
-            <p className="mt-1 text-sm text-slate-500">
-              Não há registros nesta categoria no momento.
-            </p>
-            {filterType !== 'todos' && (
-              <button
-                type="button"
-                onClick={() => setFilterType('todos')}
-                className="mt-4 rounded-lg px-3 py-2 text-sm font-semibold text-cyan-300 hover:bg-cyan-400/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400"
-              >
-                Limpar filtro
-              </button>
-            )}
-          </div>
-        ) : (
-          filteredFeedbacks.map((item) => {
-            const typeStyle = TYPE_STYLES[item.type];
-            const TypeIcon = typeStyle.icon;
-            const statusStyle = STATUS_STYLES[item.status] ?? STATUS_STYLES.novo;
-            const StatusIcon = statusStyle.icon;
-
-            return (
-
-              <article
-                key={item.id}
-                className="space-y-4 rounded-2xl border border-white/10 bg-[#0b1624] p-4 transition-colors hover:border-cyan-500/30 sm:p-5"
-              >
-                <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                  <div className="flex min-w-0 flex-wrap items-center gap-2">
-                    <span
-                      className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-semibold ${typeStyle.badge}`}
-                    >
-                      <TypeIcon className="h-3.5 w-3.5" />
-                      {typeStyle.label}
-                    </span>
-
-                    <span className="rounded-md border border-white/10 bg-white/[0.03] px-2 py-1 font-mono text-[11px] text-slate-400">
-                      {item.id}
-                    </span>
-
-                    <span className="inline-flex items-center gap-1.5 text-xs text-slate-500">
-                      <CalendarDays className="h-3.5 w-3.5" />
-                      {formatDate(item.createdAt)}
-                    </span>
-                  </div>
-
-                  <div className="flex flex-wrap items-center gap-2">
-                    <span
-                      className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-semibold ${statusStyle.classes}`}
-                    >
-                      <StatusIcon className="h-3.5 w-3.5" />
-                      {statusStyle.label}
-                    </span>
-
-                    <label className="sr-only" htmlFor={`status-${item.id}`}>
-                      Status do registro {item.id}
-                    </label>
-                    <select
-                      id={`status-${item.id}`}
-                      value={item.status}
-                      onChange={(e) =>
-                        handleUpdateStatus(
-                          item.id,
-                          e.target.value as FeedbackItem['status'],
-                        )
-                      }
-                      className="min-h-9 max-w-full rounded-lg border border-white/10 bg-slate-900 px-2.5 py-2 text-xs text-slate-200 outline-none transition-colors focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500"
-                    >
-                      {Object.entries(STATUS_STYLES).map(([value, status]) => (
-
-                        <option
-                          key={value}
-                          value={value}
-                          className="bg-white text-gray-900"
-                        >
-                          {status.label}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
-
-                <div>
-
-                  <h2 className="break-words text-base font-semibold leading-snug text-slate-100">
-                    {item.title}
-                  </h2>
-
-                  <p className="mt-2 whitespace-pre-wrap break-words text-sm leading-relaxed text-slate-300">
-                    {item.description}
-                  </p>
-                </div>
-
-                <div className="flex flex-wrap items-center gap-x-5 gap-y-3 border-t border-white/10 pt-3">
-
-                  <div className="flex items-center gap-2 text-xs text-slate-400">
-                    <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-cyan-400/10 text-cyan-300">
-                      <User className="h-3.5 w-3.5" />
-                    </span>
-                    <span>
-                      <span className="block text-[10px] text-slate-500">
-                        Solicitante
-                      </span>
-                      <span className="font-medium text-slate-300">
-                        {item.authorName}
-                      </span>
-                    </span>
-                  </div>
-
-                  {item.authorDepartment && (
-                    <div className="flex items-center gap-2 text-xs text-slate-400">
-                      <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-white/5 text-slate-400">
-                        <Building className="h-3.5 w-3.5" />
-                      </span>
-                      <span>
-                        <span className="block text-[10px] text-slate-500">
-                          Setor
-                        </span>
-
-                        <span className="font-medium text-slate-100">
-                          {item.authorDepartment}
-                        </span>
-                      </span>
-                    </div>
-                  )}
-
-                  {item.authorRole && (
-                    <span className="rounded-md border border-white/10 bg-white/5 px-2 py-1 text-[11px] text-slate-300">
-                      Perfil: {item.authorRole}
-                    </span>
-                  )}
-
-                  {item.priority && (
-                    <span
-                      className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-semibold ${PRIORITY_STYLES[item.priority]}`}
-                    >
-                      <span className="h-1.5 w-1.5 rounded-full bg-current" />
-                      Prioridade {item.priority}
-                    </span>
-                  )}
-                </div>
-              </article>
-            );
-          })
-        )}
-      </section>
-
-      {/* Modal do gestor */}
-      {isModalOpen && currentRole === 'gestor' && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-slate-950/80 p-4 backdrop-blur-sm"
-          onMouseDown={(e) => {
-            if (e.target === e.currentTarget) setIsModalOpen(false);
-          }}
+        <section
+          className={[
+            'rounded-2xl border p-5 shadow-sm',
+            isDark
+              ? 'border-white/10 bg-[#0b1624]'
+              : 'border-slate-200 bg-white',
+          ].join(' ')}
         >
-          <section
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="demand-modal-title"
-            className="my-auto w-full max-w-lg rounded-2xl border border-white/10 bg-slate-900 p-5 text-white shadow-2xl sm:p-6"
-          >
-            <div className="flex items-start justify-between gap-3 border-b border-white/10 pb-4">
-              <div className="flex min-w-0 items-center gap-3">
-                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-amber-400/20 bg-amber-400/10 text-amber-300">
-                  <FileText className="h-5 w-5" />
-                </div>
-                <div>
-                  <h2
-                    id="demand-modal-title"
-                    className="text-base font-bold text-white"
-                  >
-                    Solicitar dado ou relatório
-                  </h2>
-                  <p className="mt-1 text-xs leading-relaxed text-slate-400">
-                    Registre uma demanda para análise da equipe STI.
-                  </p>
-                </div>
-              </div>
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
 
-              <button
-                type="button"
-                aria-label="Fechar formulário"
-                onClick={() => setIsModalOpen(false)}
-                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-slate-400 transition-colors hover:bg-white/10 hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400"
+            <div className="flex items-start gap-4">
+
+              <div
+                className={[
+                  'flex h-12 w-12 shrink-0 items-center justify-center rounded-xl',
+                  isDark
+                    ? 'bg-teal-500/10 text-teal-300'
+                    : 'bg-teal-50 text-teal-600',
+                ].join(' ')}
               >
-                <X className="h-4 w-4" />
-              </button>
-            </div>
-
-            <form onSubmit={handleCreateDemand} className="mt-5 space-y-5">
-              <div>
-                <label
-                  htmlFor="demand-title"
-                  className="mb-2 block text-sm font-medium text-slate-200"
-                >
-                  Título da solicitação
-                </label>
-                <input
-                  id="demand-title"
-                  type="text"
-                  required
-                  maxLength={160}
-                  autoFocus
-                  value={demandTitle}
-                  onChange={(e) => setDemandTitle(e.target.value)}
-                  placeholder="Ex.: Relatório de SLA dos chamados"
-                  className="min-h-11 w-full rounded-xl border border-white/10 bg-slate-950/70 px-3.5 py-3 text-sm text-white outline-none placeholder:text-slate-500 focus:border-amber-400 focus:ring-1 focus:ring-amber-400"
-                />
+                <MessageSquareIcon />
               </div>
 
-              <fieldset>
-                <legend className="mb-2 block text-sm font-medium text-slate-200">
-                  Prioridade institucional
-                </legend>
-                <div className="grid grid-cols-3 gap-2">
-                  {(['baixa', 'media', 'alta'] as const).map((priority) => {
-                    const selected = demandPriority === priority;
-
-                    return (
-                      <button
-                        key={priority}
-                        type="button"
-                        aria-pressed={selected}
-                        onClick={() => setDemandPriority(priority)}
-                        className={`min-h-10 rounded-lg border px-3 py-2 text-sm font-semibold capitalize transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-300 ${selected
-                          ? PRIORITY_STYLES[priority]
-                          : 'border-white/10 bg-slate-950/50 text-slate-400 hover:border-white/20 hover:text-slate-200'
-                          }`}
-                      >
-                        {priority}
-                      </button>
-                    );
-                  })}
-                </div>
-              </fieldset>
-
               <div>
-                <label
-                  htmlFor="demand-description"
-                  className="mb-2 block text-sm font-medium text-slate-200"
+                <h1
+                  className={[
+                    'text-2xl font-bold tracking-tight',
+                    isDark
+                      ? 'text-white'
+                      : 'text-slate-900',
+                  ].join(' ')}
                 >
-                  Especificação dos dados necessários
-                </label>
-                <textarea
-                  id="demand-description"
-                  rows={5}
-                  required
-                  maxLength={4000}
-                  value={demandDesc}
-                  onChange={(e) => setDemandDesc(e.target.value)}
-                  placeholder="Informe o período, os setores envolvidos, as métricas desejadas e o objetivo do relatório."
-                  className="w-full resize-y rounded-xl border border-white/10 bg-slate-950/70 px-3.5 py-3 text-sm leading-relaxed text-white outline-none placeholder:text-slate-500 focus:border-amber-400 focus:ring-1 focus:ring-amber-400"
-                />
-              </div>
+                  Central de Feedbacks & Demandas
+                </h1>
 
-              <div className="flex flex-col-reverse gap-3 border-t border-white/10 pt-4 sm:flex-row sm:items-center sm:justify-between">
-                <p className="text-xs text-slate-500">
-                  Solicitação registrada pelo perfil gestor.
+                <p
+                  className={[
+                    'mt-1 text-sm',
+                    isDark
+                      ? 'text-slate-400'
+                      : 'text-slate-600',
+                  ].join(' ')}
+                >
+                  Console Técnico
                 </p>
 
-                <div className="flex justify-end gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setIsModalOpen(false)}
-                    className="min-h-10 rounded-lg px-3 py-2 text-sm font-medium text-slate-400 transition-colors hover:bg-white/5 hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400"
-                  >
-                    Cancelar
-                  </button>
-                  <button
-                    type="submit"
-                    className="inline-flex min-h-10 items-center justify-center gap-2 rounded-xl bg-amber-500 px-4 py-2 text-sm font-bold text-slate-950 transition-colors hover:bg-amber-400 focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-300"
-                  >
-                    <Send className="h-4 w-4" />
-                    Registrar demanda
-                  </button>
-                </div>
+                <p
+                  className={[
+                    'mt-1 text-sm',
+                    isDark
+                      ? 'text-slate-500'
+                      : 'text-slate-500',
+                  ].join(' ')}
+                >
+                  Acompanhe problemas, sugestões de aprimoramento
+                  e solicitações de relatórios em um único lugar.
+                </p>
               </div>
-            </form>
-          </section>
+            </div>
+
+            <div className="flex items-center gap-3">
+
+              {/* CONTADOR */}
+
+              <div
+                className={[
+                  'hidden rounded-xl border px-4 py-3 text-right lg:block',
+                  isDark
+                    ? 'border-white/10 bg-white/[0.03]'
+                    : 'border-slate-200 bg-slate-50',
+                ].join(' ')}
+              >
+                <p
+                  className={[
+                    'text-[10px] font-bold uppercase tracking-wider',
+                    isDark
+                      ? 'text-slate-500'
+                      : 'text-slate-400',
+                  ].join(' ')}
+                >
+                  Registros ativos
+                </p>
+
+                <p
+                  className={[
+                    'mt-1 text-2xl font-bold',
+                    isDark
+                      ? 'text-white'
+                      : 'text-slate-900',
+                  ].join(' ')}
+                >
+                  {records.length}
+                </p>
+              </div>
+
+              {/* BOTÃO DE TEMA */}
+
+              <button
+                type="button"
+                onClick={toggleTheme}
+                aria-label={
+                  isDark
+                    ? 'Ativar modo claro'
+                    : 'Ativar modo escuro'
+                }
+                title={
+                  isDark
+                    ? 'Ativar modo claro'
+                    : 'Ativar modo escuro'
+                }
+                className={[
+                  'flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border',
+                  'transition-all duration-200',
+                  'focus:outline-none focus:ring-2 focus:ring-teal-500/40',
+                  'hover:-translate-y-0.5',
+                  isDark
+                    ? 'border-white/10 bg-white/[0.03] text-amber-300 hover:border-amber-400/30 hover:bg-amber-500/10'
+                    : 'border-slate-200 bg-slate-50 text-slate-700 hover:border-teal-300 hover:bg-teal-50 hover:text-teal-700',
+                ].join(' ')}
+              >
+                {isDark ? (
+                  <Sun className="h-5 w-5" />
+                ) : (
+                  <Moon className="h-5 w-5" />
+                )}
+              </button>
+            </div>
+          </div>
+        </section>
+
+        {/* =====================================================
+            CARDS DE RESUMO
+        ====================================================== */}
+
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+
+          <SummaryCard
+            icon={AlertCircle}
+            title="Falha"
+            description="Ocorrências reportadas"
+            count={failureCount}
+            isDark={isDark}
+            iconClass={
+              isDark
+                ? 'bg-red-500/10 text-red-300'
+                : 'bg-red-50 text-red-600'
+            }
+            onClick={() =>
+              setSelectedType('falha')
+            }
+          />
+
+          <SummaryCard
+            icon={Lightbulb}
+            title="Sugestão"
+            description="Propostas de melhoria"
+            count={suggestionCount}
+            isDark={isDark}
+            iconClass={
+              isDark
+                ? 'bg-amber-500/10 text-amber-300'
+                : 'bg-amber-50 text-amber-600'
+            }
+            onClick={() =>
+              setSelectedType('sugestao')
+            }
+          />
+
+          <SummaryCard
+            icon={BarChart3}
+            title="Demanda gerencial"
+            description="Solicitações institucionais"
+            count={managementCount}
+            isDark={isDark}
+            iconClass={
+              isDark
+                ? 'bg-violet-500/10 text-violet-300'
+                : 'bg-violet-50 text-violet-600'
+            }
+            onClick={() =>
+              setSelectedType(
+                'demanda_gerencial'
+              )
+            }
+          />
         </div>
-      )}
+
+        {/* =====================================================
+            FILTROS
+        ====================================================== */}
+
+        <section
+          className={[
+            'rounded-2xl border p-4',
+            isDark
+              ? 'border-white/10 bg-[#0b1624]'
+              : 'border-slate-200 bg-white',
+          ].join(' ')}
+        >
+          <div className="flex flex-col gap-4">
+
+            <div className="flex items-center gap-2">
+              <Filter
+                className={[
+                  'h-4 w-4',
+                  isDark
+                    ? 'text-slate-400'
+                    : 'text-slate-500',
+                ].join(' ')}
+              />
+
+              <span
+                className={[
+                  'text-sm font-semibold',
+                  isDark
+                    ? 'text-slate-200'
+                    : 'text-slate-700',
+                ].join(' ')}
+              >
+                Filtrar registros
+              </span>
+            </div>
+
+            <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+
+              <div className="flex flex-wrap gap-2">
+
+                {[
+                  {
+                    key: 'todos' as const,
+                    label: `Todos (${records.length})`,
+                  },
+                  {
+                    key: 'falha' as const,
+                    label: 'Falha',
+                  },
+                  {
+                    key: 'sugestao' as const,
+                    label: 'Sugestão',
+                  },
+                  {
+                    key: 'demanda_gerencial' as const,
+                    label: 'Demanda gerencial',
+                  },
+                ].map((filter) => {
+                  const active =
+                    selectedType === filter.key;
+
+                  return (
+                    <button
+                      key={filter.key}
+                      type="button"
+                      onClick={() =>
+                        setSelectedType(
+                          filter.key
+                        )
+                      }
+                      className={[
+                        'rounded-lg border px-3 py-2',
+                        'text-xs font-semibold',
+                        'transition-all duration-200',
+                        active
+                          ? 'border-teal-500 bg-teal-500 text-white shadow-sm'
+                          : isDark
+                            ? 'border-white/10 bg-white/[0.03] text-slate-400 hover:bg-white/[0.06] hover:text-white'
+                            : 'border-slate-200 bg-slate-50 text-slate-600 hover:bg-slate-100 hover:text-slate-900',
+                      ].join(' ')}
+                    >
+                      {filter.label}
+                    </button>
+                  );
+                })}
+              </div>
+
+              <div className="relative w-full lg:max-w-xs">
+
+                <Search
+                  className={[
+                    'pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2',
+                    isDark
+                      ? 'text-slate-500'
+                      : 'text-slate-400',
+                  ].join(' ')}
+                />
+
+                <input
+                  type="text"
+                  value={search}
+                  onChange={(event) =>
+                    setSearch(
+                      event.target.value
+                    )
+                  }
+                  placeholder="Buscar registro..."
+                  className={[
+                    'h-10 w-full rounded-lg border pl-9 pr-3 text-sm outline-none',
+                    'transition-colors',
+                    'focus:ring-2 focus:ring-teal-500/30',
+                    isDark
+                      ? 'border-white/10 bg-white/[0.03] text-white placeholder:text-slate-500 focus:border-teal-500/50'
+                      : 'border-slate-200 bg-slate-50 text-slate-900 placeholder:text-slate-400 focus:border-teal-500',
+                  ].join(' ')}
+                />
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* =====================================================
+            LISTAGEM
+        ====================================================== */}
+
+        <section
+          className={[
+            'overflow-hidden rounded-2xl border',
+            isDark
+              ? 'border-white/10 bg-[#0b1624]'
+              : 'border-slate-200 bg-white',
+          ].join(' ')}
+        >
+          <div
+            className={[
+              'flex items-center justify-between border-b px-5 py-4',
+              isDark
+                ? 'border-white/10'
+                : 'border-slate-200',
+            ].join(' ')}
+          >
+            <div>
+              <h2
+                className={[
+                  'text-base font-bold',
+                  isDark
+                    ? 'text-white'
+                    : 'text-slate-900',
+                ].join(' ')}
+              >
+                Registros
+              </h2>
+
+              <p
+                className={[
+                  'mt-0.5 text-xs',
+                  isDark
+                    ? 'text-slate-500'
+                    : 'text-slate-500',
+                ].join(' ')}
+              >
+                {filteredRecords.length}{' '}
+                {filteredRecords.length === 1
+                  ? 'registro encontrado'
+                  : 'registros encontrados'}
+              </p>
+            </div>
+          </div>
+
+          {filteredRecords.length === 0 ? (
+            <div className="flex flex-col items-center justify-center px-5 py-16 text-center">
+
+              <div
+                className={[
+                  'flex h-14 w-14 items-center justify-center rounded-full',
+                  isDark
+                    ? 'bg-slate-500/10 text-slate-400'
+                    : 'bg-slate-100 text-slate-400',
+                ].join(' ')}
+              >
+                <Search className="h-6 w-6" />
+              </div>
+
+              <p
+                className={[
+                  'mt-4 font-semibold',
+                  isDark
+                    ? 'text-slate-200'
+                    : 'text-slate-700',
+                ].join(' ')}
+              >
+                Nenhum registro encontrado
+              </p>
+
+              <p
+                className={[
+                  'mt-1 text-sm',
+                  isDark
+                    ? 'text-slate-500'
+                    : 'text-slate-500',
+                ].join(' ')}
+              >
+                Tente alterar o filtro ou a busca.
+              </p>
+            </div>
+          ) : (
+            <div
+              className={[
+                'divide-y',
+                isDark
+                  ? 'divide-white/10'
+                  : 'divide-slate-200',
+              ].join(' ')}
+            >
+              {filteredRecords.map((record) => {
+                const TypeIcon =
+                  typeConfig[record.type].icon;
+
+                return (
+                  <article
+                    key={record.id}
+                    className={[
+                      'p-5',
+                      'transition-colors duration-200',
+                      isDark
+                        ? 'hover:bg-white/[0.02]'
+                        : 'hover:bg-slate-50',
+                    ].join(' ')}
+                  >
+                    <div className="flex flex-col gap-5">
+
+                      <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+
+                        <div className="flex min-w-0 items-start gap-3">
+
+                          <div
+                            className={[
+                              'flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border',
+                              getTypeClasses(
+                                record.type
+                              ),
+                            ].join(' ')}
+                          >
+                            <TypeIcon className="h-5 w-5" />
+                          </div>
+
+                          <div className="min-w-0">
+
+                            <div className="flex flex-wrap items-center gap-2">
+
+                              <span
+                                className={[
+                                  'rounded-md border px-2 py-1 text-[10px] font-bold uppercase tracking-wide',
+                                  getTypeClasses(
+                                    record.type
+                                  ),
+                                ].join(' ')}
+                              >
+                                {
+                                  typeConfig[
+                                    record.type
+                                  ].label
+                                }
+                              </span>
+
+                              <span
+                                className={[
+                                  'font-mono text-xs font-bold',
+                                  isDark
+                                    ? 'text-slate-400'
+                                    : 'text-slate-500',
+                                ].join(' ')}
+                              >
+                                {record.id}
+                              </span>
+
+                              <span
+                                className={[
+                                  'text-xs',
+                                  isDark
+                                    ? 'text-slate-600'
+                                    : 'text-slate-400',
+                                ].join(' ')}
+                              >
+                                {record.date}
+                              </span>
+                            </div>
+
+                            <h3
+                              className={[
+                                'mt-3 text-base font-bold',
+                                isDark
+                                  ? 'text-white'
+                                  : 'text-slate-900',
+                              ].join(' ')}
+                            >
+                              {record.title}
+                            </h3>
+
+                            <p
+                              className={[
+                                'mt-2 max-w-4xl text-sm leading-6',
+                                isDark
+                                  ? 'text-slate-400'
+                                  : 'text-slate-600',
+                              ].join(' ')}
+                            >
+                              {record.description}
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="flex shrink-0 items-center gap-2">
+
+                          <select
+                            value={record.status}
+                            onChange={(event) =>
+                              updateStatus(
+                                record.id,
+                                event.target
+                                  .value as FeedbackStatus
+                              )
+                            }
+                            className={[
+                              'rounded-lg border px-3 py-2 text-xs font-semibold outline-none',
+                              'focus:ring-2 focus:ring-teal-500/30',
+                              getStatusClasses(
+                                record.status
+                              ),
+                              isDark
+                                ? 'bg-[#0b1624]'
+                                : 'bg-white',
+                            ].join(' ')}
+                            aria-label={`Status do registro ${record.id}`}
+                          >
+                            {Object.keys(
+                              statusConfig
+                            ).map((status) => (
+                              <option
+                                key={status}
+                                value={status}
+                              >
+                                {status}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                      </div>
+
+                      <div
+                        className={[
+                          'flex flex-col gap-4 border-t pt-4 lg:flex-row lg:items-center lg:justify-between',
+                          isDark
+                            ? 'border-white/10'
+                            : 'border-slate-200',
+                        ].join(' ')}
+                      >
+
+                        <div className="flex flex-wrap gap-x-8 gap-y-3">
+
+                          <div className="flex items-center gap-2">
+
+                            <User
+                              className={[
+                                'h-4 w-4',
+                                isDark
+                                  ? 'text-slate-500'
+                                  : 'text-slate-400',
+                              ].join(' ')}
+                            />
+
+                            <div>
+                              <p
+                                className={[
+                                  'text-[10px] font-bold uppercase tracking-wide',
+                                  isDark
+                                    ? 'text-slate-600'
+                                    : 'text-slate-400',
+                                ].join(' ')}
+                              >
+                                Solicitante
+                              </p>
+
+                              <p
+                                className={[
+                                  'text-xs font-semibold',
+                                  isDark
+                                    ? 'text-slate-300'
+                                    : 'text-slate-700',
+                                ].join(' ')}
+                              >
+                                {record.requester}
+                              </p>
+                            </div>
+                          </div>
+
+                          <div className="flex items-center gap-2">
+
+                            <ClipboardList
+                              className={[
+                                'h-4 w-4',
+                                isDark
+                                  ? 'text-slate-500'
+                                  : 'text-slate-400',
+                              ].join(' ')}
+                            />
+
+                            <div>
+                              <p
+                                className={[
+                                  'text-[10px] font-bold uppercase tracking-wide',
+                                  isDark
+                                    ? 'text-slate-600'
+                                    : 'text-slate-400',
+                                ].join(' ')}
+                              >
+                                Setor
+                              </p>
+
+                              <p
+                                className={[
+                                  'text-xs font-semibold',
+                                  isDark
+                                    ? 'text-slate-300'
+                                    : 'text-slate-700',
+                                ].join(' ')}
+                              >
+                                {record.department}
+                              </p>
+                            </div>
+                          </div>
+
+                          <div className="flex items-center gap-2">
+
+                            <ShieldAlert
+                              className={[
+                                'h-4 w-4',
+                                isDark
+                                  ? 'text-slate-500'
+                                  : 'text-slate-400',
+                              ].join(' ')}
+                            />
+
+                            <div>
+                              <p
+                                className={[
+                                  'text-[10px] font-bold uppercase tracking-wide',
+                                  isDark
+                                    ? 'text-slate-600'
+                                    : 'text-slate-400',
+                                ].join(' ')}
+                              >
+                                Perfil
+                              </p>
+
+                              <p
+                                className={[
+                                  'text-xs font-semibold',
+                                  isDark
+                                    ? 'text-slate-300'
+                                    : 'text-slate-700',
+                                ].join(' ')}
+                              >
+                                {record.profile}
+                              </p>
+                            </div>
+                          </div>
+
+                          <div>
+                            <p
+                              className={[
+                                'text-[10px] font-bold uppercase tracking-wide',
+                                isDark
+                                  ? 'text-slate-600'
+                                  : 'text-slate-400',
+                              ].join(' ')}
+                            >
+                              Prioridade
+                            </p>
+
+                            <p
+                              className={[
+                                'text-xs font-bold capitalize',
+                                getPriorityClasses(
+                                  record.priority
+                                ),
+                              ].join(' ')}
+                            >
+                              {priorityLabel(
+                                record.priority
+                              )}
+                            </p>
+                          </div>
+                        </div>
+
+                        <button
+                          type="button"
+                          className={[
+                            'inline-flex items-center gap-2 self-start rounded-lg px-3 py-2 text-xs font-semibold',
+                            'transition-all duration-200 hover:translate-x-0.5',
+                            isDark
+                              ? 'text-teal-300 hover:bg-teal-500/10'
+                              : 'text-teal-600 hover:bg-teal-50',
+                          ].join(' ')}
+                        >
+                          Ver detalhes
+                          <ArrowRight className="h-4 w-4" />
+                        </button>
+                      </div>
+                    </div>
+                  </article>
+                );
+              })}
+            </div>
+          )}
+        </section>
+      </div>
     </div>
+  );
+}
+
+/*
+|--------------------------------------------------------------------------
+| COMPONENTES AUXILIARES
+|--------------------------------------------------------------------------
+*/
+
+function MessageSquareIcon() {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      className="h-6 w-6"
+      aria-hidden="true"
+    >
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M7 8h10M7 12h6m-9 7 2.5-3H18a3 3 0 0 0 3-3V7a3 3 0 0 0-3-3H6a3 3 0 0 0-3 3v6a3 3 0 0 0 3 3h.5L4 19Z"
+      />
+    </svg>
+  );
+}
+
+interface SummaryCardProps {
+  icon: React.ElementType;
+  title: string;
+  description: string;
+  count: number;
+  isDark: boolean;
+  iconClass: string;
+  onClick: () => void;
+}
+
+function SummaryCard({
+  icon: Icon,
+  title,
+  description,
+  count,
+  isDark,
+  iconClass,
+  onClick,
+}: SummaryCardProps) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={[
+        'group flex min-h-[130px] items-center justify-between rounded-2xl border p-5 text-left',
+        'shadow-sm transition-all duration-300',
+        'hover:-translate-y-1 hover:shadow-lg',
+        'focus:outline-none focus:ring-2 focus:ring-teal-500/40',
+        isDark
+          ? 'border-white/10 bg-[#0b1624] hover:border-teal-500/30 hover:bg-[#102033]'
+          : 'border-slate-200 bg-white hover:border-teal-300 hover:bg-slate-50',
+      ].join(' ')}
+    >
+      <div className="flex items-center gap-4">
+
+        <div
+          className={[
+            'flex h-12 w-12 shrink-0 items-center justify-center rounded-xl',
+            iconClass,
+          ].join(' ')}
+        >
+          <Icon className="h-6 w-6" />
+        </div>
+
+        <div>
+          <p
+            className={[
+              'text-3xl font-bold',
+              isDark
+                ? 'text-white'
+                : 'text-slate-900',
+            ].join(' ')}
+          >
+            {count}
+          </p>
+
+          <p
+            className={[
+              'mt-1 text-sm font-bold',
+              isDark
+                ? 'text-slate-200'
+                : 'text-slate-700',
+            ].join(' ')}
+          >
+            {title}
+          </p>
+
+          <p
+            className={[
+              'mt-0.5 text-xs',
+              isDark
+                ? 'text-slate-500'
+                : 'text-slate-500',
+            ].join(' ')}
+          >
+            {description}
+          </p>
+        </div>
+      </div>
+
+      <span
+        className={[
+          'flex h-9 w-9 items-center justify-center rounded-lg',
+          'transition-all duration-300 group-hover:translate-x-1',
+          isDark
+            ? 'bg-white/5 text-slate-400 group-hover:bg-teal-500/10 group-hover:text-teal-300'
+            : 'bg-slate-50 text-slate-400 group-hover:bg-teal-50 group-hover:text-teal-600',
+        ].join(' ')}
+      >
+        <ArrowRight className="h-4 w-4" />
+      </span>
+    </button>
   );
 }

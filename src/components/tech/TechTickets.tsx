@@ -1,9 +1,11 @@
-﻿
-import { useState, useEffect } from 'react';
+﻿import { useState, useEffect } from 'react';
 import { Ticket, TicketStatus } from '@/types';
 import StatusBadge from '@/components/ui/StatusBadge';
 import Button from '@/components/ui/Button';
-import { TechPage } from '@/components/tech/TechSidebar';
+import {
+  TechPage,
+  useTechTheme,
+} from '@/components/tech/TechSidebar';
 import {
   Search,
   Inbox,
@@ -11,6 +13,8 @@ import {
   UserCheck,
   ArrowRightLeft,
   Filter,
+  Sun,
+  Moon,
 } from 'lucide-react';
 import { mockTechnicians } from '@/data';
 
@@ -23,7 +27,10 @@ interface TechTicketsProps {
   initialStatus?: TicketStatus | 'todos';
 }
 
-const statusFilters: { id: TicketStatus | 'todos'; label: string }[] = [
+const statusFilters: {
+  id: TicketStatus | 'todos';
+  label: string;
+}[] = [
   { id: 'todos', label: 'Todos os status' },
   { id: 'aberto', label: 'Abertos' },
   { id: 'em_andamento', label: 'Em atendimento' },
@@ -39,9 +46,37 @@ export default function TechTickets({
   techName = 'Daniel Santos',
   initialStatus = 'todos',
 }: TechTicketsProps) {
-  const [statusFilter, setStatusFilter] = useState<TicketStatus | 'todos'>(initialStatus);
-  const [techFilter, setTechFilter] = useState<string>('todos');
+  const [statusFilter, setStatusFilter] =
+    useState<TicketStatus | 'todos'>(initialStatus);
+
+  const [techFilter, setTechFilter] =
+    useState<string>('todos');
+
   const [search, setSearch] = useState('');
+
+  /*
+   * ============================================================
+   * TEMA
+   * ============================================================
+   *
+   * O tema agora é compartilhado com:
+   * - TechSidebar
+   * - TechPageContainer
+   * - demais páginas técnicas
+   *
+   * Assim não existem estados de tema separados.
+   */
+
+  const {
+    isDark,
+    toggleTheme,
+  } = useTechTheme();
+
+  /*
+   * ============================================================
+   * FILTROS
+   * ============================================================
+   */
 
   useEffect(() => {
     setStatusFilter(initialStatus);
@@ -50,16 +85,38 @@ export default function TechTickets({
   const getTransferInfo = (ticket: Ticket) => {
     const transferUpdate = [...ticket.updates]
       .reverse()
-      .find((u) => u.message.toLowerCase().includes('transferido'));
+      .find((u) =>
+        u.message
+          .toLowerCase()
+          .includes('transferido')
+      );
 
-    return transferUpdate ? transferUpdate.message : null;
+    return transferUpdate
+      ? transferUpdate.message
+      : null;
   };
 
   const filtered = tickets.filter((t) => {
-    if (statusFilter !== 'todos' && t.status !== statusFilter) return false;
+    if (
+      statusFilter !== 'todos' &&
+      t.status !== statusFilter
+    ) {
+      return false;
+    }
 
-    if (techFilter === 'sem_tecnico' && t.assignee) return false;
-    if (techFilter === 'meus' && t.assignee !== techName) return false;
+    if (
+      techFilter === 'sem_tecnico' &&
+      t.assignee
+    ) {
+      return false;
+    }
+
+    if (
+      techFilter === 'meus' &&
+      t.assignee !== techName
+    ) {
+      return false;
+    }
 
     if (
       techFilter !== 'todos' &&
@@ -72,11 +129,17 @@ export default function TechTickets({
 
     if (search) {
       const q = search.toLowerCase();
+
       return (
         t.title.toLowerCase().includes(q) ||
         t.protocol.toLowerCase().includes(q) ||
-        (t.assignee && t.assignee.toLowerCase().includes(q)) ||
-        t.requesterName.toLowerCase().includes(q)
+        (t.assignee &&
+          t.assignee
+            .toLowerCase()
+            .includes(q)) ||
+        t.requesterName
+          .toLowerCase()
+          .includes(q)
       );
     }
 
@@ -85,273 +148,643 @@ export default function TechTickets({
 
   const counts = tickets.reduce(
     (acc, t) => {
-      acc[t.status] = (acc[t.status] ?? 0) + 1;
+      acc[t.status] =
+        (acc[t.status] ?? 0) + 1;
+
       return acc;
     },
     {} as Record<string, number>
   );
 
   const unassignedCount = tickets.filter(
-    (t) => !t.assignee && t.status !== 'fechado' && t.status !== 'resolvido'
+    (t) =>
+      !t.assignee &&
+      t.status !== 'fechado' &&
+      t.status !== 'resolvido'
   ).length;
 
   const myCount = tickets.filter(
-    (t) => t.assignee === techName && t.status !== 'fechado' && t.status !== 'resolvido'
+    (t) =>
+      t.assignee === techName &&
+      t.status !== 'fechado' &&
+      t.status !== 'resolvido'
   ).length;
 
   return (
-    <div>
-      {/* Cabeçalho */}
-      <div className="mb-6 flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-100">
-            Fila Geral de Chamados
-          </h1>
-          <p className="mt-1 text-sm text-slate-400">
-            Gestão, custódia e distribuição de demandas de Manutenção / TI.
-          </p>
-        </div>
-      </div>
+    <div
+      className={`min-h-screen w-full transition-colors duration-500 ${
+        isDark
+          ? 'bg-[#07111d] text-slate-100'
+          : 'bg-slate-50 text-slate-900'
+      }`}
+    >
+      <div className="mx-auto w-full max-w-[1400px] space-y-6">
 
-      {/* Busca */}
-      <div className="relative mb-5">
-        <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500" />
-        <input
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          placeholder="Buscar por protocolo, assunto, solicitante ou técnico responsável…"
-          className="w-full rounded-xl border border-white/10 bg-[#0b1624] py-2.5 pl-11 pr-4 text-sm text-slate-100 placeholder:text-slate-500 shadow-sm transition-colors focus:border-cyan-500 focus:outline-none focus:ring-2 focus:ring-cyan-500/20"
-        />
-      </div>
+        {/* =====================================================
+            CABEÇALHO
+        ====================================================== */}
 
-      {/* Filtros por responsável */}
-      <div className="mb-3 flex flex-wrap items-center gap-1.5 rounded-xl border border-white/10 bg-[#0b1624] p-2 shadow-sm">
-        <span className="flex items-center gap-1.5 px-2 text-xs font-semibold uppercase tracking-wider text-slate-400">
-          <Filter className="h-3.5 w-3.5" />
-          Responsável:
-        </span>
-
-        <button
-          onClick={() => setTechFilter('todos')}
-          className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-all ${
-            techFilter === 'todos'
-              ? 'bg-[#00A896] text-white shadow-sm'
-              : 'text-slate-300 hover:bg-white/5'
+        <div
+          className={`flex flex-col gap-5 rounded-2xl border p-5 shadow-sm transition-all duration-500 sm:flex-row sm:items-center sm:justify-between ${
+            isDark
+              ? 'border-white/10 bg-[#0b1624]'
+              : 'border-slate-200 bg-white'
           }`}
         >
-          Todos ({tickets.length})
-        </button>
+          <div>
+            <div className="flex items-center gap-3">
 
-        <button
-          onClick={() => setTechFilter('sem_tecnico')}
-          className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium transition-all ${
-            techFilter === 'sem_tecnico'
-              ? 'bg-amber-600 text-white shadow-sm'
-              : 'bg-amber-500/10 text-amber-300 hover:bg-amber-500/20'
-          }`}
-        >
-          <span className="h-2 w-2 rounded-full bg-amber-400" />
-          Livres na Fila ({unassignedCount})
-        </button>
-
-        <button
-          onClick={() => setTechFilter('meus')}
-          className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium transition-all ${
-            techFilter === 'meus'
-              ? 'bg-[#00A896] text-white shadow-sm'
-              : 'bg-teal-500/10 text-teal-300 hover:bg-teal-500/20'
-          }`}
-        >
-          <span className="h-2 w-2 rounded-full bg-teal-400" />
-          Atribuídos a Mim ({myCount})
-        </button>
-
-        <div className="mx-1 hidden h-4 w-px bg-white/10 sm:block" />
-
-        {/* Filtros individuais dos técnicos */}
-        {mockTechnicians.map((tech) => {
-          const isSelected = techFilter === tech.name;
-          const techTicketCount = tickets.filter(
-            (t) =>
-              t.assignee === tech.name &&
-              t.status !== 'fechado' &&
-              t.status !== 'resolvido'
-          ).length;
-
-          return (
-            <button
-              key={tech.email}
-              onClick={() => setTechFilter(tech.name)}
-              className={`rounded-lg px-2.5 py-1.5 text-xs font-medium transition-all ${
-                isSelected
-                  ? 'bg-[#00A896] text-white shadow-sm'
-                  : 'text-slate-300 hover:bg-white/5'
-              }`}
-            >
-              {tech.name.split(' ')[0]} ({techTicketCount})
-            </button>
-          );
-        })}
-      </div>
-
-      {/* Filtros por status */}
-      <div className="mb-6 flex flex-wrap gap-2">
-        {statusFilters.map((f) => {
-          const active = statusFilter === f.id;
-          const count = f.id === 'todos' ? tickets.length : counts[f.id] ?? 0;
-
-          return (
-            <button
-              key={f.id}
-              onClick={() => setStatusFilter(f.id)}
-              className={`inline-flex items-center gap-2 rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors ${
-                active
-                  ? 'border-[#00A896] bg-[#00A896] text-white shadow-sm'
-                  : 'border-white/10 bg-[#0b1624] text-slate-300 hover:border-cyan-500/40 hover:bg-white/5'
-              }`}
-            >
-              {f.label}
-              <span
-                className={`rounded-full px-1.5 py-0.5 text-[10px] ${
-                  active
-                    ? 'bg-white/20 text-white'
-                    : 'bg-white/10 text-slate-400'
+              <div
+                className={`flex h-11 w-11 items-center justify-center rounded-xl transition-all duration-500 ${
+                  isDark
+                    ? 'bg-teal-500/10 text-teal-300'
+                    : 'bg-teal-50 text-teal-600'
                 }`}
               >
-                {count}
-              </span>
-            </button>
-          );
-        })}
-      </div>
+                <Inbox className="h-5 w-5" />
+              </div>
 
-      {/* Tabela de chamados */}
-      {filtered.length === 0 ? (
-        <div className="flex flex-col items-center justify-center rounded-2xl border border-white/10 bg-[#0b1624] py-16 text-center shadow-sm">
-          <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-white/5">
-            <Inbox className="h-7 w-7 text-slate-500" />
+              <div>
+                <h1
+                  className={`text-2xl font-bold tracking-tight transition-colors duration-500 ${
+                    isDark
+                      ? 'text-white'
+                      : 'text-slate-900'
+                  }`}
+                >
+                  Fila Geral de Chamados
+                </h1>
+
+                <p
+                  className={`mt-1 text-sm transition-colors duration-500 ${
+                    isDark
+                      ? 'text-slate-400'
+                      : 'text-slate-600'
+                  }`}
+                >
+                  Gestão, custódia e distribuição de
+                  demandas de Manutenção / TI.
+                </p>
+              </div>
+            </div>
           </div>
-          <p className="text-sm font-semibold text-slate-100">
-            Nenhum chamado encontrado
-          </p>
-          <p className="mt-1 text-xs text-slate-400">
-            Tente ajustar os filtros de responsável ou a busca textual.
-          </p>
+
+          {/* ===================================================
+              BOTÃO TEMA
+          ==================================================== */}
+
+          <button
+            type="button"
+            onClick={toggleTheme}
+            aria-label={
+              isDark
+                ? 'Ativar modo claro'
+                : 'Ativar modo escuro'
+            }
+            title={
+              isDark
+                ? 'Ativar modo claro'
+                : 'Ativar modo escuro'
+            }
+            className={`group flex min-h-[46px] items-center justify-center gap-3 rounded-xl border px-4 py-2.5 text-sm font-semibold shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-teal-500/50 ${
+              isDark
+                ? 'border-white/10 bg-white/5 text-slate-200 hover:border-teal-500/40 hover:bg-teal-500/10'
+                : 'border-slate-200 bg-slate-50 text-slate-700 hover:border-teal-300 hover:bg-teal-50'
+            }`}
+          >
+            <span
+              className={`flex h-8 w-8 items-center justify-center rounded-lg transition-all duration-500 ${
+                isDark
+                  ? 'bg-slate-800 text-amber-300 group-hover:bg-amber-400/10'
+                  : 'bg-white text-indigo-600 shadow-sm group-hover:bg-indigo-50'
+              }`}
+            >
+              {isDark ? (
+                <Sun className="h-4 w-4 transition-transform duration-500 group-hover:rotate-45" />
+              ) : (
+                <Moon className="h-4 w-4 transition-transform duration-500 group-hover:-rotate-12" />
+              )}
+            </span>
+
+            <span>
+              {isDark
+                ? 'Modo claro'
+                : 'Modo escuro'}
+            </span>
+          </button>
         </div>
-      ) : (
-        <div className="overflow-hidden rounded-2xl border border-white/10 bg-[#0b1624] shadow-sm">
-          <div className="overflow-x-auto scrollbar-thin">
-            <table className="w-full text-left text-sm">
-              <thead>
-                <tr className="border-b border-white/10 bg-[#102033] text-xs font-semibold uppercase tracking-wider text-slate-400">
-                  <th className="px-4 py-3.5">Protocolo</th>
-                  <th className="px-4 py-3.5">Assunto &amp; Contexto</th>
-                  <th className="px-4 py-3.5">Solicitante</th>
-                  <th className="px-4 py-3.5">Setor</th>
-                  <th className="px-4 py-3.5">Status</th>
-                  <th className="px-4 py-3.5">Responsável</th>
-                  <th className="px-4 py-3.5 text-right">Ações</th>
-                </tr>
-              </thead>
 
-              <tbody className="divide-y divide-white/10">
-                {filtered.map((t) => {
-                  const transferMsg = getTransferInfo(t);
-                  const isMine = t.assignee === techName;
+        {/* =====================================================
+            BUSCA
+        ====================================================== */}
 
-                  return (
-                    <tr
-                      key={t.id}
-                      className="transition-colors hover:bg-white/5"
-                    >
-                      <td className="px-4 py-3.5 font-mono text-xs font-semibold text-slate-300">
-                        {t.protocol}
-                      </td>
+        <div className="relative">
 
-                      <td className="max-w-[260px] px-4 py-3.5">
-                        <div className="truncate font-medium text-slate-100">
-                          {t.title}
-                        </div>
+          <Search
+            className={`pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 ${
+              isDark
+                ? 'text-slate-500'
+                : 'text-slate-400'
+            }`}
+          />
 
-                        {transferMsg && (
-                          <div className="mt-1 inline-flex items-center gap-1 rounded border border-purple-400/20 bg-purple-500/10 px-1.5 py-0.5 text-[10px] font-medium text-purple-300">
-                            <ArrowRightLeft className="h-3 w-3" />
-                            Transferido
+          <input
+            value={search}
+            onChange={(e) =>
+              setSearch(e.target.value)
+            }
+            placeholder="Buscar por protocolo, assunto, solicitante ou técnico responsável…"
+            className={`w-full rounded-xl border py-3 pl-11 pr-4 text-sm shadow-sm outline-none transition-all duration-500 ${
+              isDark
+                ? 'border-white/10 bg-[#0b1624] text-slate-100 placeholder:text-slate-500 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20'
+                : 'border-slate-200 bg-white text-slate-900 placeholder:text-slate-400 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20'
+            }`}
+          />
+
+        </div>
+
+        {/* =====================================================
+            FILTROS POR RESPONSÁVEL
+        ====================================================== */}
+
+        <div
+          className={`flex flex-wrap items-center gap-1.5 rounded-xl border p-2 shadow-sm transition-colors duration-500 ${
+            isDark
+              ? 'border-white/10 bg-[#0b1624]'
+              : 'border-slate-200 bg-white'
+          }`}
+        >
+
+          <span
+            className={`flex items-center gap-1.5 px-2 text-xs font-semibold uppercase tracking-wider ${
+              isDark
+                ? 'text-slate-400'
+                : 'text-slate-500'
+            }`}
+          >
+            <Filter className="h-3.5 w-3.5" />
+            Responsável:
+          </span>
+
+          {/* Todos */}
+
+          <button
+            type="button"
+            onClick={() =>
+              setTechFilter('todos')
+            }
+            className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-all ${
+              techFilter === 'todos'
+                ? 'bg-[#00A896] text-white shadow-sm'
+                : isDark
+                  ? 'text-slate-300 hover:bg-white/5'
+                  : 'text-slate-600 hover:bg-slate-100'
+            }`}
+          >
+            Todos ({tickets.length})
+          </button>
+
+          {/* Livres */}
+
+          <button
+            type="button"
+            onClick={() =>
+              setTechFilter('sem_tecnico')
+            }
+            className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium transition-all ${
+              techFilter === 'sem_tecnico'
+                ? 'bg-amber-600 text-white shadow-sm'
+                : isDark
+                  ? 'bg-amber-500/10 text-amber-300 hover:bg-amber-500/20'
+                  : 'bg-amber-50 text-amber-700 hover:bg-amber-100'
+            }`}
+          >
+            <span className="h-2 w-2 rounded-full bg-amber-400" />
+            Livres na Fila ({unassignedCount})
+          </button>
+
+          {/* Meus */}
+
+          <button
+            type="button"
+            onClick={() =>
+              setTechFilter('meus')
+            }
+            className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium transition-all ${
+              techFilter === 'meus'
+                ? 'bg-[#00A896] text-white shadow-sm'
+                : isDark
+                  ? 'bg-teal-500/10 text-teal-300 hover:bg-teal-500/20'
+                  : 'bg-teal-50 text-teal-700 hover:bg-teal-100'
+            }`}
+          >
+            <span className="h-2 w-2 rounded-full bg-teal-400" />
+            Atribuídos a Mim ({myCount})
+          </button>
+
+          <div
+            className={`mx-1 hidden h-4 w-px sm:block ${
+              isDark
+                ? 'bg-white/10'
+                : 'bg-slate-200'
+            }`}
+          />
+
+          {/* Técnicos */}
+
+          {mockTechnicians.map((tech) => {
+            const isSelected =
+              techFilter === tech.name;
+
+            const techTicketCount =
+              tickets.filter(
+                (t) =>
+                  t.assignee === tech.name &&
+                  t.status !== 'fechado' &&
+                  t.status !== 'resolvido'
+              ).length;
+
+            return (
+              <button
+                type="button"
+                key={tech.email}
+                onClick={() =>
+                  setTechFilter(tech.name)
+                }
+                className={`rounded-lg px-2.5 py-1.5 text-xs font-medium transition-all ${
+                  isSelected
+                    ? 'bg-[#00A896] text-white shadow-sm'
+                    : isDark
+                      ? 'text-slate-300 hover:bg-white/5'
+                      : 'text-slate-600 hover:bg-slate-100'
+                }`}
+              >
+                {tech.name.split(' ')[0]} (
+                {techTicketCount})
+              </button>
+            );
+          })}
+        </div>
+
+        {/* =====================================================
+            FILTROS POR STATUS
+        ====================================================== */}
+
+        <div className="flex flex-wrap gap-2">
+
+          {statusFilters.map((f) => {
+            const active =
+              statusFilter === f.id;
+
+            const count =
+              f.id === 'todos'
+                ? tickets.length
+                : counts[f.id] ?? 0;
+
+            return (
+              <button
+                type="button"
+                key={f.id}
+                onClick={() =>
+                  setStatusFilter(f.id)
+                }
+                className={`inline-flex items-center gap-2 rounded-lg border px-3 py-1.5 text-xs font-medium transition-all ${
+                  active
+                    ? 'border-[#00A896] bg-[#00A896] text-white shadow-sm'
+                    : isDark
+                      ? 'border-white/10 bg-[#0b1624] text-slate-300 hover:border-teal-500/40 hover:bg-white/5'
+                      : 'border-slate-200 bg-white text-slate-600 hover:border-teal-300 hover:bg-teal-50'
+                }`}
+              >
+                {f.label}
+
+                <span
+                  className={`rounded-full px-1.5 py-0.5 text-[10px] ${
+                    active
+                      ? 'bg-white/20 text-white'
+                      : isDark
+                        ? 'bg-white/10 text-slate-400'
+                        : 'bg-slate-100 text-slate-500'
+                  }`}
+                >
+                  {count}
+                </span>
+              </button>
+            );
+          })}
+
+        </div>
+
+        {/* =====================================================
+            TABELA
+        ====================================================== */}
+
+        {filtered.length === 0 ? (
+
+          <div
+            className={`flex flex-col items-center justify-center rounded-2xl border py-16 text-center shadow-sm transition-colors duration-500 ${
+              isDark
+                ? 'border-white/10 bg-[#0b1624]'
+                : 'border-slate-200 bg-white'
+            }`}
+          >
+
+            <div
+              className={`mb-4 flex h-14 w-14 items-center justify-center rounded-full ${
+                isDark
+                  ? 'bg-white/5'
+                  : 'bg-slate-100'
+              }`}
+            >
+              <Inbox
+                className={`h-7 w-7 ${
+                  isDark
+                    ? 'text-slate-500'
+                    : 'text-slate-400'
+                }`}
+              />
+            </div>
+
+            <p
+              className={`text-sm font-semibold ${
+                isDark
+                  ? 'text-slate-100'
+                  : 'text-slate-800'
+              }`}
+            >
+              Nenhum chamado encontrado
+            </p>
+
+            <p
+              className={`mt-1 text-xs ${
+                isDark
+                  ? 'text-slate-400'
+                  : 'text-slate-500'
+              }`}
+            >
+              Tente ajustar os filtros de responsável
+              ou a busca textual.
+            </p>
+
+          </div>
+
+        ) : (
+
+          <div
+            className={`overflow-hidden rounded-2xl border shadow-sm transition-colors duration-500 ${
+              isDark
+                ? 'border-white/10 bg-[#0b1624]'
+                : 'border-slate-200 bg-white'
+            }`}
+          >
+
+            <div className="overflow-x-auto scrollbar-thin">
+
+              <table className="w-full text-left text-sm">
+
+                {/* Cabeçalho */}
+
+                <thead>
+                  <tr
+                    className={`border-b text-xs font-semibold uppercase tracking-wider transition-colors duration-500 ${
+                      isDark
+                        ? 'border-white/10 bg-[#102033] text-slate-400'
+                        : 'border-slate-200 bg-slate-50 text-slate-500'
+                    }`}
+                  >
+                    <th className="px-4 py-3.5">
+                      Protocolo
+                    </th>
+
+                    <th className="px-4 py-3.5">
+                      Assunto &amp; Contexto
+                    </th>
+
+                    <th className="px-4 py-3.5">
+                      Solicitante
+                    </th>
+
+                    <th className="px-4 py-3.5">
+                      Setor
+                    </th>
+
+                    <th className="px-4 py-3.5">
+                      Status
+                    </th>
+
+                    <th className="px-4 py-3.5">
+                      Responsável
+                    </th>
+
+                    <th className="px-4 py-3.5 text-right">
+                      Ações
+                    </th>
+                  </tr>
+                </thead>
+
+                {/* Corpo */}
+
+                <tbody
+                  className={
+                    isDark
+                      ? 'divide-y divide-white/10'
+                      : 'divide-y divide-slate-100'
+                  }
+                >
+                  {filtered.map((t) => {
+                    const transferMsg =
+                      getTransferInfo(t);
+
+                    const isMine =
+                      t.assignee === techName;
+
+                    return (
+                      <tr
+                        key={t.id}
+                        className={`group transition-colors duration-200 ${
+                          isDark
+                            ? 'hover:bg-teal-500/[0.04]'
+                            : 'hover:bg-teal-50/60'
+                        }`}
+                      >
+
+                        {/* Protocolo */}
+
+                        <td
+                          className={`px-4 py-3.5 font-mono text-xs font-semibold ${
+                            isDark
+                              ? 'text-slate-300'
+                              : 'text-slate-700'
+                          }`}
+                        >
+                          {t.protocol}
+                        </td>
+
+                        {/* Assunto */}
+
+                        <td className="max-w-[260px] px-4 py-3.5">
+
+                          <div
+                            className={`truncate font-medium ${
+                              isDark
+                                ? 'text-slate-100'
+                                : 'text-slate-800'
+                            }`}
+                          >
+                            {t.title}
                           </div>
-                        )}
-                      </td>
 
-                      <td className="px-4 py-3.5 text-xs text-slate-300">
-                        {t.requesterName}
-                      </td>
-
-                      <td className="px-4 py-3.5 text-xs text-slate-400">
-                        {t.requesterDepartment}
-                      </td>
-
-                      <td className="px-4 py-3.5">
-                        <StatusBadge status={t.status} />
-                      </td>
-
-                      <td className="px-4 py-3.5 text-xs">
-                        {t.assignee ? (
-                          <div className="flex items-center gap-1.5">
-                            <span
-                              className={`h-2 w-2 rounded-full ${
-                                isMine ? 'bg-cyan-400' : 'bg-slate-500'
-                              }`}
-                            />
-                            <span
-                              className={`font-medium ${
-                                isMine
-                                  ? 'font-semibold text-cyan-300'
-                                  : 'text-slate-300'
+                          {transferMsg && (
+                            <div
+                              className={`mt-1 inline-flex items-center gap-1 rounded border px-1.5 py-0.5 text-[10px] font-medium ${
+                                isDark
+                                  ? 'border-purple-400/20 bg-purple-500/10 text-purple-300'
+                                  : 'border-purple-200 bg-purple-50 text-purple-700'
                               }`}
                             >
-                              {t.assignee}
-                            </span>
-                          </div>
-                        ) : (
-                          <span className="inline-flex items-center gap-1 rounded-full border border-amber-400/20 bg-amber-500/10 px-2 py-0.5 text-[11px] font-semibold text-amber-300">
-                            Aguardando
-                          </span>
-                        )}
-                      </td>
+                              <ArrowRightLeft className="h-3 w-3" />
+                              Transferido
+                            </div>
+                          )}
 
-                      <td className="px-4 py-3.5 text-right">
-                        <div className="flex items-center justify-end gap-1.5">
-                          {!isMine &&
-                            t.status !== 'fechado' &&
-                            t.status !== 'resolvido' && (
-                              <button
-                                type="button"
-                                onClick={() => onAssume(t.id)}
-                                className="inline-flex items-center gap-1 rounded-lg bg-[#00A896] px-2.5 py-1.5 text-xs font-semibold text-white shadow-sm transition-colors hover:bg-[#008f80]"
-                                title="Assumir este chamado para mim"
+                        </td>
+
+                        {/* Solicitante */}
+
+                        <td
+                          className={`px-4 py-3.5 text-xs ${
+                            isDark
+                              ? 'text-slate-300'
+                              : 'text-slate-700'
+                          }`}
+                        >
+                          {t.requesterName}
+                        </td>
+
+                        {/* Setor */}
+
+                        <td
+                          className={`px-4 py-3.5 text-xs ${
+                            isDark
+                              ? 'text-slate-400'
+                              : 'text-slate-600'
+                          }`}
+                        >
+                          {t.requesterDepartment}
+                        </td>
+
+                        {/* Status */}
+
+                        <td className="px-4 py-3.5">
+                          <StatusBadge
+                            status={t.status}
+                          />
+                        </td>
+
+                        {/* Responsável */}
+
+                        <td className="px-4 py-3.5 text-xs">
+
+                          {t.assignee ? (
+
+                            <div className="flex items-center gap-1.5">
+
+                              <span
+                                className={`h-2 w-2 rounded-full ${
+                                  isMine
+                                    ? 'bg-cyan-400'
+                                    : isDark
+                                      ? 'bg-slate-500'
+                                      : 'bg-slate-400'
+                                }`}
+                              />
+
+                              <span
+                                className={`font-medium ${
+                                  isMine
+                                    ? isDark
+                                      ? 'font-semibold text-cyan-300'
+                                      : 'font-semibold text-cyan-700'
+                                    : isDark
+                                      ? 'text-slate-300'
+                                      : 'text-slate-600'
+                                }`}
                               >
-                                <UserCheck className="h-3.5 w-3.5" />
-                                Assumir
-                              </button>
-                            )}
+                                {t.assignee}
+                              </span>
 
-                          <Button
-                            size="sm"
-                            variant="secondary"
-                            onClick={() => onOpenTicket(t.id)}
-                          >
-                            Abrir
-                            <ArrowRight className="ml-1 h-3.5 w-3.5" />
-                          </Button>
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+                            </div>
+
+                          ) : (
+
+                            <span
+                              className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] font-semibold ${
+                                isDark
+                                  ? 'border-amber-400/20 bg-amber-500/10 text-amber-300'
+                                  : 'border-amber-200 bg-amber-50 text-amber-700'
+                              }`}
+                            >
+                              Aguardando
+                            </span>
+
+                          )}
+
+                        </td>
+
+                        {/* Ações */}
+
+                        <td className="px-4 py-3.5 text-right">
+
+                          <div className="flex items-center justify-end gap-1.5">
+
+                            {!isMine &&
+                              t.status !== 'fechado' &&
+                              t.status !== 'resolvido' && (
+
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    onAssume(t.id)
+                                  }
+                                  className="inline-flex items-center gap-1 rounded-lg bg-[#00A896] px-2.5 py-1.5 text-xs font-semibold text-white shadow-sm transition-colors hover:bg-[#008f80]"
+                                  title="Assumir este chamado para mim"
+                                >
+                                  <UserCheck className="h-3.5 w-3.5" />
+                                  Assumir
+                                </button>
+
+                              )}
+
+                            <Button
+                              size="sm"
+                              variant="secondary"
+                              onClick={() =>
+                                onOpenTicket(t.id)
+                              }
+                            >
+                              Abrir
+
+                              <ArrowRight className="ml-1 h-3.5 w-3.5" />
+                            </Button>
+
+                          </div>
+
+                        </td>
+
+                      </tr>
+                    );
+                  })}
+                </tbody>
+
+              </table>
+
+            </div>
+
           </div>
-        </div>
-      )}
+
+        )}
+
+      </div>
     </div>
   );
 }

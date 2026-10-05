@@ -779,7 +779,7 @@ export default function App() {
         : null;
 
     return (
-      <div className="flex h-screen bg-slate-50">
+      <div className="flex h-screen">
         <TechSidebar
           current={
             techView.page === 'tech-ticket-detail'
