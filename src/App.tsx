@@ -1,3 +1,4 @@
+import { dbRepository } from '@/services/dbRepository';
 import { AuditCompliancePanel } from './components/tech/AuditCompliancePanel';
 import OfficialReportModal from '@/components/gestor/OfficialReportModal';
 import GestorAuditTable from '@/components/gestor/GestorAuditTable';
@@ -545,6 +546,9 @@ export default function App() {
   };
 
   const handleResolve = (id: string, solution: string, assetTag?: string, replacedParts?: string) => {
+    // Despacho oficial para persistência e microsserviço DATA-AUDIT
+    dbRepository.atualizarStatusChamado(id, 'RESOLVIDO', (activeUser as any)?.name || (activeUser as any)?.email || 'Técnico STI', (activeUser as any)?.id || undefined, solution);
+
     const now = new Date().toISOString();
     setTickets((prev) =>
       prev.map((t) =>
