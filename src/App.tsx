@@ -1,4 +1,4 @@
-import { AuditCompliancePanel } from './components/tech/AuditCompliancePanel';
+﻿import { AuditCompliancePanel } from './components/tech/AuditCompliancePanel';
 import OfficialReportModal from '@/components/gestor/OfficialReportModal';
 import GestorAuditTable from '@/components/gestor/GestorAuditTable';
 import { registrarAuditoria } from './services/auditService';
@@ -23,6 +23,7 @@ import { mockTickets, currentUser, currentTech, mockTechnicians } from '@/data';
 import { Ticket, UserRole, TicketStatus, User } from '@/types';
 import Logo from '@/components/Logo';
 import { BarChart3, ClipboardList, CheckCircle2, Clock, Users } from 'lucide-react';
+import { dbRepository } from './services/dbRepository';
 
 type UserView = { page: Page } | { page: 'ticket-detail'; ticketId: string };
 type TechView = { page: TechPage } | { page: 'tech-ticket-detail'; ticketId: string };
@@ -565,6 +566,17 @@ export default function App() {
     assetTag?: string,
     replacedParts?: string
   ) => {
+    // Despacho oficial para persistência e microsserviço DATA-AUDIT
+    dbRepository.atualizarStatusChamado(
+      id,
+      'RESOLVIDO',
+      (activeUser as any)?.name ||
+      (activeUser as any)?.email ||
+      'Técnico STI',
+      (activeUser as any)?.id || undefined,
+      solution
+    );
+
     const now = new Date().toISOString();
 
     setTickets((prev) =>
@@ -576,7 +588,10 @@ export default function App() {
             solution,
             assetTag: assetTag || t.assetTag,
             replacedParts: replacedParts || t.replacedParts,
+
+            // Mantém a primeira data de resolução
             resolvedAt: t.resolvedAt || now,
+
             updatedAt: now,
             updates: [
               ...t.updates,
@@ -604,10 +619,13 @@ export default function App() {
         solucao: solution,
         patrimonio: assetTag || null,
         pecasTrocadas: replacedParts || null,
-        resolvedAt: now,
       },
-      metadados: { acao: 'Resolução técnica concluída' }
-    }).catch(err => console.error('[Auditoria] Falha ao registar resolução:', err));
+      metadados: {
+        acao: 'Resolução técnica concluída',
+      },
+    }).catch((err) =>
+      console.error('[Auditoria] Falha ao registar resolução:', err)
+    );
   };
 
 
