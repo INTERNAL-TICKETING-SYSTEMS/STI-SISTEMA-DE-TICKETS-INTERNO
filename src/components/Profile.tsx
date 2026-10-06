@@ -1,8 +1,11 @@
 import { registrarAuditoria } from '../services/auditService';
 import React, { useState } from 'react';
+
 import { User } from '@/types';
+
 import Button from '@/components/ui/Button';
 import { Field, Input } from '@/components/ui/Field';
+
 import {
   Mail,
   Phone,
@@ -16,26 +19,41 @@ import {
   IdCard,
 } from 'lucide-react';
 
+import { useTechTheme } from '@/components/tech/TechSidebar';
+
 interface ProfileProps {
   user: User;
 }
 
-export default function Profile({ user }: ProfileProps) {
-  const [saved, setSaved] = useState(false);
+export default function Profile({
+  user,
+}: ProfileProps) {
+  const { isDark } =
+    useTechTheme();
+
+  const [saved, setSaved] =
+    useState(false);
 
   const [form, setForm] = useState({
     name: user.name,
     email: user.email,
-    phone: user.phone || '(63) 98400-0000',
+    phone:
+      user.phone ||
+      '(63) 98400-0000',
     department:
-      user.department || 'DTI - Diretoria de Tecnologia da Informação',
-    role: user.role || 'Servidor / Colaborador',
+      user.department ||
+      'DTI - Diretoria de Tecnologia da Informação',
+    role:
+      user.role ||
+      'Servidor / Colaborador',
   });
 
   const handlePhoneChange = (
     e: React.ChangeEvent<HTMLInputElement>
   ) => {
-    let value = e.target.value.replace(/\D/g, '').slice(0, 11);
+    let value = e.target.value
+      .replace(/\D/g, '')
+      .slice(0, 11);
 
     if (value.length > 6) {
       value = value.replace(
@@ -55,7 +73,9 @@ export default function Profile({ user }: ProfileProps) {
     }));
   };
 
-  const handleSave = (e: React.FormEvent) => {
+  const handleSave = (
+    e: React.FormEvent
+  ) => {
     e.preventDefault();
 
     setSaved(true);
@@ -63,15 +83,18 @@ export default function Profile({ user }: ProfileProps) {
     registrarAuditoria({
       entidade: 'USUARIO',
       idEntidade: user.email,
-      tipoOperacao: 'ATUALIZACAO_PERFIL',
+      tipoOperacao:
+        'ATUALIZACAO_PERFIL',
       autor: user.email,
       estadoAtual: {
         nome: form.name,
         telefone: form.phone,
-        departamento: form.department,
+        departamento:
+          form.department,
       },
       metadados: {
-        alteradoEm: new Date().toISOString(),
+        alteradoEm:
+          new Date().toISOString(),
       },
     }).catch((err) =>
       console.error(
@@ -99,118 +122,318 @@ export default function Profile({ user }: ProfileProps) {
       : user.userRole;
 
   /*
-   * Estilo comum dos labels.
-   * Mantém todos os textos dos campos claros no modo escuro.
-   */
-  const fieldLabelClass =
-    '[&>label]:!text-slate-100';
+  |--------------------------------------------------------------------------
+  | CORES DO TEMA
+  |--------------------------------------------------------------------------
+  |
+  | Tudo que depende de tema fica definido aqui.
+  | Não usamos transition-colors para troca de tema.
+  |
+  */
+
+  const pageText = isDark
+    ? 'text-slate-100'
+    : 'text-slate-900';
+
+  const headingText = isDark
+    ? 'text-white'
+    : 'text-slate-900';
+
+  const secondaryText = isDark
+    ? 'text-slate-400'
+    : 'text-slate-600';
+
+  const mutedText = isDark
+    ? 'text-slate-500'
+    : 'text-slate-500';
+
+  const cardClass = isDark
+    ? 'border-white/10 bg-[#0b1624]'
+    : 'border-slate-200 bg-white';
+
+  const cardBorder = isDark
+    ? 'border-white/10'
+    : 'border-slate-200';
+
+  const sectionDivider = isDark
+    ? 'border-white/10'
+    : 'border-slate-200';
 
   /*
-   * Campo editável.
-   *
-   * Os !important do Tailwind (!) são intencionais aqui:
-   * o componente Input possui estilos próprios e poderia
-   * sobrescrever o fundo/texto.
-   */
-  const editableInputClass =
-    '!border-slate-700 ' +
-    '!bg-slate-800 ' +
-    '!text-slate-100 ' +
-    'placeholder:!text-slate-500 ' +
-    'focus:!border-[#14b8a6] ' +
-    'focus:!ring-[#14b8a6]/20';
+  |--------------------------------------------------------------------------
+  | LABELS DOS CAMPOS
+  |--------------------------------------------------------------------------
+  */
+
+  const fieldLabelClass = [
+    '[&>label]:!font-medium',
+    isDark
+      ? '[&>label]:!text-slate-200'
+      : '[&>label]:!text-slate-700',
+  ].join(' ');
 
   /*
-   * Campo bloqueado.
-   *
-   * Mantém o fundo escuro e força o texto claro mesmo
-   * quando o navegador aplica estilos de disabled.
-   */
-  const lockedInputClass =
-    'cursor-not-allowed ' +
-    '!border-slate-700 ' +
-    '!bg-slate-800/80 ' +
-    '!text-slate-100 ' +
-    'disabled:!bg-slate-800/80 ' +
-    'disabled:!text-slate-100 ' +
-    'disabled:opacity-100';
+  |--------------------------------------------------------------------------
+  | INPUT EDITÁVEL
+  |--------------------------------------------------------------------------
+  */
+
+  const editableInputClass = [
+    'focus:!border-[#14b8a6]',
+    'focus:!ring-[#14b8a6]/20',
+    isDark
+      ? [
+          '!border-slate-700',
+          '!bg-[#111f2e]',
+          '!text-slate-100',
+          'placeholder:!text-slate-500',
+        ].join(' ')
+      : [
+          '!border-slate-300',
+          '!bg-white',
+          '!text-slate-900',
+          'placeholder:!text-slate-400',
+        ].join(' '),
+  ].join(' ');
+
+  /*
+  |--------------------------------------------------------------------------
+  | INPUT BLOQUEADO
+  |--------------------------------------------------------------------------
+  */
+
+  const lockedInputClass = [
+    'cursor-not-allowed',
+    'disabled:opacity-100',
+    isDark
+      ? [
+          '!border-slate-700',
+          '!bg-[#101c2a]',
+          '!text-slate-200',
+          'disabled:!bg-[#101c2a]',
+          'disabled:!text-slate-200',
+        ].join(' ')
+      : [
+          '!border-slate-300',
+          '!bg-slate-100',
+          '!text-slate-700',
+          'disabled:!bg-slate-100',
+          'disabled:!text-slate-700',
+        ].join(' '),
+  ].join(' ');
+
+  /*
+  |--------------------------------------------------------------------------
+  | ÍCONE DOS CAMPOS
+  |--------------------------------------------------------------------------
+  */
+
+  const lockedIconColor = isDark
+    ? 'text-slate-500'
+    : 'text-slate-400';
+
+  const accentIconColor = isDark
+    ? 'text-[#5eead4]'
+    : 'text-[#0f766e]';
 
   return (
-    <div className="max-w-5xl space-y-6 pb-8">
+    <div
+      className={[
+        'max-w-5xl space-y-6 pb-8',
+        pageText,
+      ].join(' ')}
+    >
 
       {/* =========================================================
           CABEÇALHO
       ========================================================= */}
+
       <div>
         <div className="flex flex-wrap items-center gap-2">
-          <h1 className="text-2xl font-bold text-slate-100">
+          <h1
+            className={[
+              'text-2xl font-bold',
+              headingText,
+            ].join(' ')}
+          >
             Perfil Técnico
           </h1>
 
-          <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-400/30 bg-emerald-400/10 px-2.5 py-1 text-xs font-semibold text-emerald-300">
+          <span
+            className={[
+              'inline-flex items-center gap-1.5',
+              'rounded-full border px-2.5 py-1',
+              'text-xs font-semibold',
+              isDark
+                ? 'border-emerald-400/30 bg-emerald-400/10 text-emerald-300'
+                : 'border-emerald-200 bg-emerald-50 text-emerald-700',
+            ].join(' ')}
+          >
             <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
+
             Ativo
           </span>
         </div>
 
-        <p className="mt-1 text-sm text-slate-400">
-          Informações profissionais e dados de contato utilizados no
-          Sistema de Tickets do DETRAN-TO.
+        <p
+          className={[
+            'mt-1 text-sm',
+            secondaryText,
+          ].join(' ')}
+        >
+          Informações profissionais e dados
+          de contato utilizados no Sistema de
+          Tickets do DETRAN-TO.
         </p>
       </div>
 
       {/* =========================================================
           IDENTIDADE DO TÉCNICO
       ========================================================= */}
-      <section className="overflow-hidden rounded-2xl border border-slate-700/80 bg-slate-900 shadow-xl shadow-black/10">
+
+      <section
+        className={[
+          'overflow-hidden rounded-2xl border shadow-xl',
+          isDark
+            ? 'border-white/10 bg-[#0b1624] shadow-black/20'
+            : 'border-slate-200 bg-white shadow-slate-200/60',
+        ].join(' ')}
+      >
 
         {/* Banner */}
-        <div className="relative overflow-hidden bg-gradient-to-br from-slate-950 via-slate-900 to-slate-800 px-6 py-7">
+
+        <div
+          className={[
+            'relative overflow-hidden px-6 py-7',
+            isDark
+              ? 'bg-gradient-to-br from-[#07111d] via-[#0b1624] to-[#102033]'
+              : 'bg-gradient-to-br from-white via-slate-50 to-teal-50/50',
+          ].join(' ')}
+        >
 
           {/* Detalhe visual STI */}
-          <div className="pointer-events-none absolute right-0 top-0 h-full w-1/3 bg-gradient-to-l from-[#06b6b4]/10 to-transparent" />
+
+          <div
+            className={[
+              'pointer-events-none absolute right-0 top-0',
+              'h-full w-1/3',
+              isDark
+                ? 'bg-gradient-to-l from-[#06b6b4]/10 to-transparent'
+                : 'bg-gradient-to-l from-teal-100/70 to-transparent',
+            ].join(' ')}
+          />
 
           <div className="relative flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
 
             <div className="flex items-center gap-4">
 
               {/* Avatar */}
-              <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-2xl border border-[#2dd4bf]/30 bg-gradient-to-br from-[#14b8a6] to-[#0f766e] text-xl font-bold text-white shadow-lg shadow-[#06b6b4]/10">
+
+              <div
+                className="
+                  flex h-20 w-20 shrink-0
+                  items-center justify-center
+                  rounded-2xl
+                  border border-[#2dd4bf]/30
+                  bg-gradient-to-br
+                  from-[#14b8a6]
+                  to-[#0f766e]
+                  text-xl font-bold
+                  text-white
+                  shadow-lg
+                  shadow-[#06b6b6]/10
+                "
+              >
                 {initials}
               </div>
 
               <div className="min-w-0">
                 <div className="flex flex-wrap items-center gap-2">
 
-                  <h2 className="text-xl font-bold text-white">
+                  <h2
+                    className={[
+                      'text-xl font-bold',
+                      headingText,
+                    ].join(' ')}
+                  >
                     {form.name}
                   </h2>
 
-                  <span className="inline-flex items-center gap-1 rounded-full border border-emerald-400/30 bg-emerald-400/10 px-2.5 py-1 text-xs font-semibold text-emerald-300">
+                  <span
+                    className={[
+                      'inline-flex items-center gap-1',
+                      'rounded-full border px-2.5 py-1',
+                      'text-xs font-semibold',
+                      isDark
+                        ? 'border-emerald-400/30 bg-emerald-400/10 text-emerald-300'
+                        : 'border-emerald-200 bg-emerald-50 text-emerald-700',
+                    ].join(' ')}
+                  >
                     <ShieldCheck className="h-3.5 w-3.5" />
+
                     Conta ativa
                   </span>
 
                 </div>
 
-                <p className="mt-1 text-sm font-medium text-slate-200">
+                <p
+                  className={[
+                    'mt-1 text-sm font-medium',
+                    isDark
+                      ? 'text-slate-200'
+                      : 'text-slate-700',
+                  ].join(' ')}
+                >
                   {form.role}
                 </p>
 
-                <div className="mt-2 flex items-center gap-1.5 text-sm text-slate-300">
-                  <Building2 className="h-4 w-4 text-[#2dd4bf]" />
-                  <span>{form.department}</span>
+                <div
+                  className={[
+                    'mt-2 flex items-center gap-1.5 text-sm',
+                    secondaryText,
+                  ].join(' ')}
+                >
+                  <Building2
+                    className={[
+                      'h-4 w-4',
+                      accentIconColor,
+                    ].join(' ')}
+                  />
+
+                  <span>
+                    {form.department}
+                  </span>
                 </div>
               </div>
             </div>
 
             {/* Perfil STI */}
-            <div className="rounded-xl border border-[#06b6b4]/20 bg-[#06b6b4]/5 px-4 py-3">
-              <p className="text-xs font-medium text-slate-400">
+
+            <div
+              className={[
+                'rounded-xl border px-4 py-3',
+                isDark
+                  ? 'border-[#06b6b4]/20 bg-[#06b6b4]/5'
+                  : 'border-teal-200 bg-teal-50/70',
+              ].join(' ')}
+            >
+              <p
+                className={[
+                  'text-xs font-medium',
+                  secondaryText,
+                ].join(' ')}
+              >
                 Perfil no STI
               </p>
 
-              <p className="mt-1 text-sm font-semibold capitalize text-[#5eead4]">
+              <p
+                className={[
+                  'mt-1 text-sm font-semibold capitalize',
+                  isDark
+                    ? 'text-[#5eead4]'
+                    : 'text-[#0f766e]',
+                ].join(' ')}
+              >
                 {profileLabel}
               </p>
             </div>
@@ -221,40 +444,124 @@ export default function Profile({ user }: ProfileProps) {
         {/* =====================================================
             RESUMO
         ===================================================== */}
-        <div className="grid gap-4 border-t border-slate-700/70 bg-slate-950/70 p-6 sm:grid-cols-3">
+
+        <div
+          className={[
+            'grid gap-4 border-t p-6 sm:grid-cols-3',
+            sectionDivider,
+            isDark
+              ? 'bg-[#08121f]'
+              : 'bg-slate-50',
+          ].join(' ')}
+        >
 
           {/* Função */}
-          <div className="rounded-xl border border-[#2dd4bf]/20 bg-[#0f766e]/10 p-4 transition-colors hover:border-[#2dd4bf]/40">
-            <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-[#5eead4]">
+
+          <div
+            className={[
+              'rounded-xl border p-4',
+              'transition-colors duration-200',
+              isDark
+                ? 'border-[#2dd4bf]/20 bg-[#0f766e]/10 hover:border-[#2dd4bf]/40'
+                : 'border-teal-200 bg-teal-50/60 hover:border-teal-300',
+            ].join(' ')}
+          >
+            <div
+              className={[
+                'flex items-center gap-2',
+                'text-xs font-semibold uppercase tracking-wide',
+                isDark
+                  ? 'text-[#5eead4]'
+                  : 'text-[#0f766e]',
+              ].join(' ')}
+            >
               <Briefcase className="h-4 w-4" />
+
               Função
             </div>
 
-            <p className="mt-2 text-sm font-semibold text-slate-100">
+            <p
+              className={[
+                'mt-2 text-sm font-semibold',
+                isDark
+                  ? 'text-slate-100'
+                  : 'text-slate-800',
+              ].join(' ')}
+            >
               {form.role}
             </p>
           </div>
 
           {/* Setor */}
-          <div className="rounded-xl border border-[#2dd4bf]/20 bg-[#0f766e]/10 p-4 transition-colors hover:border-[#2dd4bf]/40">
-            <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-[#5eead4]">
+
+          <div
+            className={[
+              'rounded-xl border p-4',
+              'transition-colors duration-200',
+              isDark
+                ? 'border-[#2dd4bf]/20 bg-[#0f766e]/10 hover:border-[#2dd4bf]/40'
+                : 'border-teal-200 bg-teal-50/60 hover:border-teal-300',
+            ].join(' ')}
+          >
+            <div
+              className={[
+                'flex items-center gap-2',
+                'text-xs font-semibold uppercase tracking-wide',
+                isDark
+                  ? 'text-[#5eead4]'
+                  : 'text-[#0f766e]',
+              ].join(' ')}
+            >
               <Building2 className="h-4 w-4" />
+
               Setor
             </div>
 
-            <p className="mt-2 text-sm font-semibold text-slate-100">
+            <p
+              className={[
+                'mt-2 text-sm font-semibold',
+                isDark
+                  ? 'text-slate-100'
+                  : 'text-slate-800',
+              ].join(' ')}
+            >
               {form.department}
             </p>
           </div>
 
           {/* Perfil */}
-          <div className="rounded-xl border border-[#2dd4bf]/20 bg-[#0f766e]/10 p-4 transition-colors hover:border-[#2dd4bf]/40">
-            <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-[#5eead4]">
+
+          <div
+            className={[
+              'rounded-xl border p-4',
+              'transition-colors duration-200',
+              isDark
+                ? 'border-[#2dd4bf]/20 bg-[#0f766e]/10 hover:border-[#2dd4bf]/40'
+                : 'border-teal-200 bg-teal-50/60 hover:border-teal-300',
+            ].join(' ')}
+          >
+            <div
+              className={[
+                'flex items-center gap-2',
+                'text-xs font-semibold uppercase tracking-wide',
+                isDark
+                  ? 'text-[#5eead4]'
+                  : 'text-[#0f766e]',
+              ].join(' ')}
+            >
               <IdCard className="h-4 w-4" />
+
               Perfil
             </div>
 
-            <p className="mt-2 text-sm font-semibold capitalize text-slate-100">
+            <p
+              className={[
+                'mt-2 text-sm font-semibold capitalize',
+                isDark
+                  ? 'text-slate-100'
+                  : 'text-slate-800',
+              ].join(' ')}
+            >
               {profileLabel}
             </p>
           </div>
@@ -265,42 +572,76 @@ export default function Profile({ user }: ProfileProps) {
       {/* =========================================================
           INFORMAÇÕES PROFISSIONAIS
       ========================================================= */}
+
       <form
         onSubmit={handleSave}
-        className="
-          overflow-hidden
-          rounded-2xl
-          border border-slate-700/80
-          bg-slate-900
-          shadow-xl shadow-black/10
-          [&_label]:!text-slate-100
-        "
+        className={[
+          'overflow-hidden rounded-2xl border shadow-xl',
+          '[&_label]:!font-medium',
+          cardClass,
+          isDark
+            ? 'shadow-black/20'
+            : 'shadow-slate-200/60',
+        ].join(' ')}
       >
 
         {/* Cabeçalho da seção */}
-        <div className="border-b border-slate-700/80 px-6 py-5">
+
+        <div
+          className={[
+            'border-b px-6 py-5',
+            sectionDivider,
+          ].join(' ')}
+        >
           <div className="flex items-center justify-between gap-4">
 
             <div className="flex items-start gap-3">
 
-              <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[#06b6b4]/10 text-[#5eead4]">
+              <div
+                className={[
+                  'mt-0.5 flex h-9 w-9 shrink-0',
+                  'items-center justify-center rounded-lg',
+                  isDark
+                    ? 'bg-[#06b6b4]/10 text-[#5eead4]'
+                    : 'bg-teal-50 text-teal-700',
+                ].join(' ')}
+              >
                 <Briefcase className="h-4 w-4" />
               </div>
 
               <div>
-                <h3 className="text-sm font-bold uppercase tracking-wider text-slate-100">
+                <h3
+                  className={[
+                    'text-sm font-bold uppercase tracking-wider',
+                    headingText,
+                  ].join(' ')}
+                >
                   Informações profissionais
                 </h3>
 
-                <p className="mt-1 text-xs text-slate-400">
+                <p
+                  className={[
+                    'mt-1 text-xs',
+                    secondaryText,
+                  ].join(' ')}
+                >
                   Dados utilizados para identificação dentro do STI.
                 </p>
               </div>
 
             </div>
 
-            <div className="hidden items-center gap-2 rounded-lg border border-slate-700 bg-slate-800/70 px-3 py-2 text-xs font-medium text-slate-300 sm:flex">
+            <div
+              className={[
+                'hidden items-center gap-2 rounded-lg',
+                'border px-3 py-2 text-xs font-medium sm:flex',
+                isDark
+                  ? 'border-slate-700 bg-[#111d2b] text-slate-300'
+                  : 'border-slate-200 bg-slate-50 text-slate-600',
+              ].join(' ')}
+            >
               <Pencil className="h-3.5 w-3.5" />
+
               Campos editáveis
             </div>
 
@@ -312,12 +653,20 @@ export default function Profile({ user }: ProfileProps) {
           {/* =====================================================
               IDENTIFICAÇÃO
           ===================================================== */}
+
           <div>
 
             <div className="mb-4 flex items-center gap-2">
               <span className="h-1.5 w-1.5 rounded-full bg-[#06b6b4]" />
 
-              <h4 className="text-xs font-bold uppercase tracking-wider text-[#5eead4]">
+              <h4
+                className={[
+                  'text-xs font-bold uppercase tracking-wider',
+                  isDark
+                    ? 'text-[#5eead4]'
+                    : 'text-[#0f766e]',
+                ].join(' ')}
+              >
                 Identificação
               </h4>
             </div>
@@ -325,13 +674,20 @@ export default function Profile({ user }: ProfileProps) {
             <div className="grid gap-5 sm:grid-cols-2">
 
               {/* Nome */}
+
               <Field
                 label="Nome completo"
                 className={fieldLabelClass}
               >
                 <div className="relative">
 
-                  <UserIcon className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[#2dd4bf]" />
+                  <UserIcon
+                    className={[
+                      'pointer-events-none absolute left-3.5 top-1/2',
+                      'h-4 w-4 -translate-y-1/2',
+                      accentIconColor,
+                    ].join(' ')}
+                  />
 
                   <Input
                     value={form.name}
@@ -341,7 +697,10 @@ export default function Profile({ user }: ProfileProps) {
                         name: e.target.value,
                       }))
                     }
-                    className={`${editableInputClass} pl-10`}
+                    className={[
+                      editableInputClass,
+                      'pl-10',
+                    ].join(' ')}
                     required
                   />
 
@@ -349,61 +708,109 @@ export default function Profile({ user }: ProfileProps) {
               </Field>
 
               {/* Cargo */}
+
               <Field
                 label="Cargo / Função"
                 className={fieldLabelClass}
               >
                 <div className="relative">
 
-                  <Briefcase className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                  <Briefcase
+                    className={[
+                      'pointer-events-none absolute left-3.5 top-1/2',
+                      'h-4 w-4 -translate-y-1/2',
+                      lockedIconColor,
+                    ].join(' ')}
+                  />
 
                   <Input
                     value={form.role}
                     disabled
-                    className={`${lockedInputClass} pl-10`}
+                    className={[
+                      lockedInputClass,
+                      'pl-10',
+                    ].join(' ')}
                   />
 
-                  <LockKeyhole className="pointer-events-none absolute right-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                  <LockKeyhole
+                    className={[
+                      'pointer-events-none absolute right-3.5 top-1/2',
+                      'h-4 w-4 -translate-y-1/2',
+                      lockedIconColor,
+                    ].join(' ')}
+                  />
 
                 </div>
               </Field>
 
               {/* Setor */}
+
               <Field
                 label="Setor / Lotação"
                 className={fieldLabelClass}
               >
                 <div className="relative">
 
-                  <Building2 className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                  <Building2
+                    className={[
+                      'pointer-events-none absolute left-3.5 top-1/2',
+                      'h-4 w-4 -translate-y-1/2',
+                      lockedIconColor,
+                    ].join(' ')}
+                  />
 
                   <Input
                     value={form.department}
                     disabled
-                    className={`${lockedInputClass} pl-10`}
+                    className={[
+                      lockedInputClass,
+                      'pl-10',
+                    ].join(' ')}
                   />
 
-                  <LockKeyhole className="pointer-events-none absolute right-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                  <LockKeyhole
+                    className={[
+                      'pointer-events-none absolute right-3.5 top-1/2',
+                      'h-4 w-4 -translate-y-1/2',
+                      lockedIconColor,
+                    ].join(' ')}
+                  />
 
                 </div>
               </Field>
 
               {/* Perfil */}
+
               <Field
                 label="Perfil de acesso"
                 className={fieldLabelClass}
               >
                 <div className="relative">
 
-                  <ShieldCheck className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[#2dd4bf]" />
+                  <ShieldCheck
+                    className={[
+                      'pointer-events-none absolute left-3.5 top-1/2',
+                      'h-4 w-4 -translate-y-1/2',
+                      accentIconColor,
+                    ].join(' ')}
+                  />
 
                   <Input
                     value={profileLabel}
                     disabled
-                    className={`${lockedInputClass} pl-10`}
+                    className={[
+                      lockedInputClass,
+                      'pl-10',
+                    ].join(' ')}
                   />
 
-                  <LockKeyhole className="pointer-events-none absolute right-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                  <LockKeyhole
+                    className={[
+                      'pointer-events-none absolute right-3.5 top-1/2',
+                      'h-4 w-4 -translate-y-1/2',
+                      lockedIconColor,
+                    ].join(' ')}
+                  />
 
                 </div>
               </Field>
@@ -414,20 +821,46 @@ export default function Profile({ user }: ProfileProps) {
           {/* =====================================================
               COMUNICAÇÃO
           ===================================================== */}
-          <div className="border-t border-slate-700/80 pt-6">
+
+          <div
+            className={[
+              'border-t pt-6',
+              sectionDivider,
+            ].join(' ')}
+          >
 
             <div className="mb-4 flex items-start gap-3">
 
-              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[#06b6b4]/10 text-[#5eead4]">
+              <div
+                className={[
+                  'flex h-9 w-9 shrink-0',
+                  'items-center justify-center rounded-lg',
+                  isDark
+                    ? 'bg-[#06b6b4]/10 text-[#5eead4]'
+                    : 'bg-teal-50 text-teal-700',
+                ].join(' ')}
+              >
                 <Phone className="h-4 w-4" />
               </div>
 
               <div>
-                <h4 className="text-xs font-bold uppercase tracking-wider text-[#5eead4]">
+                <h4
+                  className={[
+                    'text-xs font-bold uppercase tracking-wider',
+                    isDark
+                      ? 'text-[#5eead4]'
+                      : 'text-[#0f766e]',
+                  ].join(' ')}
+                >
                   Canais de comunicação
                 </h4>
 
-                <p className="mt-1 text-xs text-slate-400">
+                <p
+                  className={[
+                    'mt-1 text-xs',
+                    secondaryText,
+                  ].join(' ')}
+                >
                   Utilizados para comunicações e notificações relacionadas aos chamados.
                 </p>
               </div>
@@ -437,39 +870,65 @@ export default function Profile({ user }: ProfileProps) {
             <div className="grid gap-5 sm:grid-cols-2">
 
               {/* E-mail */}
+
               <Field
                 label="E-mail institucional"
                 className={fieldLabelClass}
               >
                 <div className="relative">
 
-                  <Mail className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                  <Mail
+                    className={[
+                      'pointer-events-none absolute left-3.5 top-1/2',
+                      'h-4 w-4 -translate-y-1/2',
+                      lockedIconColor,
+                    ].join(' ')}
+                  />
 
                   <Input
                     type="email"
                     value={form.email}
                     disabled
-                    className={`${lockedInputClass} pl-10`}
+                    className={[
+                      lockedInputClass,
+                      'pl-10',
+                    ].join(' ')}
                   />
 
-                  <LockKeyhole className="pointer-events-none absolute right-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                  <LockKeyhole
+                    className={[
+                      'pointer-events-none absolute right-3.5 top-1/2',
+                      'h-4 w-4 -translate-y-1/2',
+                      lockedIconColor,
+                    ].join(' ')}
+                  />
 
                 </div>
               </Field>
 
               {/* Telefone */}
+
               <Field
                 label="Telefone / WhatsApp"
                 className={fieldLabelClass}
               >
                 <div className="relative">
 
-                  <Phone className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[#2dd4bf]" />
+                  <Phone
+                    className={[
+                      'pointer-events-none absolute left-3.5 top-1/2',
+                      'h-4 w-4 -translate-y-1/2',
+                      accentIconColor,
+                    ].join(' ')}
+                  />
 
                   <Input
                     value={form.phone}
                     onChange={handlePhoneChange}
-                    className={`${editableInputClass} pl-10`}
+                    className={[
+                      editableInputClass,
+                      'pl-10',
+                    ].join(' ')}
                     required
                   />
 
@@ -481,17 +940,38 @@ export default function Profile({ user }: ProfileProps) {
 
         </div>
 
-        {/* =====================================================
+        {/* =========================================================
             RODAPÉ
         ========================================================= */}
-        <div className="flex flex-col gap-3 border-t border-slate-700/80 bg-slate-950/60 px-6 py-4 sm:flex-row sm:items-center sm:justify-between">
+
+        <div
+          className={[
+            'flex flex-col gap-3 border-t px-6 py-4',
+            'sm:flex-row sm:items-center sm:justify-between',
+            sectionDivider,
+            isDark
+              ? 'bg-[#08121f]'
+              : 'bg-slate-50',
+          ].join(' ')}
+        >
 
           <div className="flex items-start gap-2">
 
-            <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-[#2dd4bf]" />
+            <ShieldCheck
+              className={[
+                'mt-0.5 h-4 w-4 shrink-0',
+                accentIconColor,
+              ].join(' ')}
+            />
 
-            <p className="text-xs leading-5 text-slate-400">
-              Alterações realizadas neste perfil são registradas na auditoria do sistema.
+            <p
+              className={[
+                'text-xs leading-5',
+                secondaryText,
+              ].join(' ')}
+            >
+              Alterações realizadas neste perfil são
+              registradas na auditoria do sistema.
             </p>
 
           </div>
@@ -499,13 +979,17 @@ export default function Profile({ user }: ProfileProps) {
           <div className="flex items-center gap-3">
 
             {saved && (
-              <span className="flex items-center gap-1.5 text-xs font-semibold text-emerald-400">
+              <span className="flex items-center gap-1.5 text-xs font-semibold text-emerald-500">
                 <CheckCircle2 className="h-4 w-4" />
+
                 Alterações salvas!
               </span>
             )}
 
-            <Button type="submit" variant="primary">
+            <Button
+              type="submit"
+              variant="primary"
+            >
               Salvar alterações
             </Button>
 
@@ -517,23 +1001,56 @@ export default function Profile({ user }: ProfileProps) {
       {/* =========================================================
           SEGURANÇA E CONTA
       ========================================================= */}
-      <section className="overflow-hidden rounded-2xl border border-slate-700/80 bg-slate-900 shadow-xl shadow-black/10">
+
+      <section
+        className={[
+          'overflow-hidden rounded-2xl border shadow-xl',
+          cardClass,
+          isDark
+            ? 'shadow-black/20'
+            : 'shadow-slate-200/60',
+        ].join(' ')}
+      >
 
         {/* Cabeçalho */}
-        <div className="border-b border-slate-700/80 px-6 py-5">
+
+        <div
+          className={[
+            'border-b px-6 py-5',
+            sectionDivider,
+          ].join(' ')}
+        >
 
           <div className="flex items-start gap-3">
 
-            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[#06b6b4]/10 text-[#5eead4]">
+            <div
+              className={[
+                'flex h-9 w-9 shrink-0',
+                'items-center justify-center rounded-lg',
+                isDark
+                  ? 'bg-[#06b6b4]/10 text-[#5eead4]'
+                  : 'bg-teal-50 text-teal-700',
+              ].join(' ')}
+            >
               <ShieldCheck className="h-4 w-4" />
             </div>
 
             <div>
-              <h3 className="text-sm font-bold uppercase tracking-wider text-slate-100">
+              <h3
+                className={[
+                  'text-sm font-bold uppercase tracking-wider',
+                  headingText,
+                ].join(' ')}
+              >
                 Segurança e conta
               </h3>
 
-              <p className="mt-1 text-xs text-slate-400">
+              <p
+                className={[
+                  'mt-1 text-xs',
+                  secondaryText,
+                ].join(' ')}
+              >
                 Informações relacionadas ao acesso do usuário ao sistema.
               </p>
             </div>
@@ -541,13 +1058,36 @@ export default function Profile({ user }: ProfileProps) {
           </div>
         </div>
 
-        <div className="grid gap-4 bg-slate-950/40 p-6 sm:grid-cols-2">
+        <div
+          className={[
+            'grid gap-4 p-6 sm:grid-cols-2',
+            isDark
+              ? 'bg-[#08121f]'
+              : 'bg-slate-50',
+          ].join(' ')}
+        >
 
           {/* Status */}
-          <div className="flex items-center justify-between rounded-xl border border-emerald-500/20 bg-emerald-950/30 p-4">
+
+          <div
+            className={[
+              'flex items-center justify-between',
+              'rounded-xl border p-4',
+              isDark
+                ? 'border-emerald-500/20 bg-emerald-950/30'
+                : 'border-emerald-200 bg-emerald-50',
+            ].join(' ')}
+          >
 
             <div>
-              <p className="text-xs font-medium text-slate-400">
+              <p
+                className={[
+                  'text-xs font-medium',
+                  isDark
+                    ? 'text-slate-400'
+                    : 'text-slate-600',
+                ].join(' ')}
+              >
                 Status da conta
               </p>
 
@@ -555,35 +1095,81 @@ export default function Profile({ user }: ProfileProps) {
 
                 <span className="h-2 w-2 rounded-full bg-emerald-400 shadow-sm shadow-emerald-400/50" />
 
-                <span className="text-sm font-bold text-emerald-300">
+                <span
+                  className={[
+                    'text-sm font-bold',
+                    isDark
+                      ? 'text-emerald-300'
+                      : 'text-emerald-700',
+                  ].join(' ')}
+                >
                   Ativo
                 </span>
 
               </div>
             </div>
 
-            <div className="flex h-9 w-9 items-center justify-center rounded-lg border border-emerald-500/20 bg-emerald-500/10 text-emerald-400">
+            <div
+              className={[
+                'flex h-9 w-9 items-center justify-center',
+                'rounded-lg border',
+                isDark
+                  ? 'border-emerald-500/20 bg-emerald-500/10 text-emerald-400'
+                  : 'border-emerald-200 bg-white text-emerald-600',
+              ].join(' ')}
+            >
               <ShieldCheck className="h-5 w-5" />
             </div>
 
           </div>
 
           {/* Identificação */}
-          <div className="flex items-center justify-between rounded-xl border border-[#06b6b4]/20 bg-[#06b6b4]/5 p-4">
+
+          <div
+            className={[
+              'flex items-center justify-between',
+              'rounded-xl border p-4',
+              isDark
+                ? 'border-[#06b6b4]/20 bg-[#06b6b4]/5'
+                : 'border-teal-200 bg-teal-50/60',
+            ].join(' ')}
+          >
 
             <div className="min-w-0">
 
-              <p className="text-xs font-medium text-slate-400">
+              <p
+                className={[
+                  'text-xs font-medium',
+                  isDark
+                    ? 'text-slate-400'
+                    : 'text-slate-600',
+                ].join(' ')}
+              >
                 Identificação da conta
               </p>
 
-              <p className="mt-1 truncate text-sm font-semibold text-slate-100">
+              <p
+                className={[
+                  'mt-1 truncate text-sm font-semibold',
+                  isDark
+                    ? 'text-slate-100'
+                    : 'text-slate-800',
+                ].join(' ')}
+              >
                 {user.email}
               </p>
 
             </div>
 
-            <div className="ml-3 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-[#06b6b4]/20 bg-[#06b6b4]/10 text-[#5eead4]">
+            <div
+              className={[
+                'ml-3 flex h-9 w-9 shrink-0',
+                'items-center justify-center rounded-lg border',
+                isDark
+                  ? 'border-[#06b6b4]/20 bg-[#06b6b4]/10 text-[#5eead4]'
+                  : 'border-teal-200 bg-white text-teal-700',
+              ].join(' ')}
+            >
               <LockKeyhole className="h-4 w-4" />
             </div>
 

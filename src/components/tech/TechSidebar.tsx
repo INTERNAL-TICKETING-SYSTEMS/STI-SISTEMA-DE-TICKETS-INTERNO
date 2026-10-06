@@ -118,7 +118,7 @@ function getInitialTheme(): ThemeMode {
 
 /*
 |--------------------------------------------------------------------------
-| APLICAÇÃO GLOBAL
+| APLICAÇÃO GLOBAL DO TEMA
 |--------------------------------------------------------------------------
 */
 
@@ -132,6 +132,10 @@ function applyGlobalTheme(
   const html =
     document.documentElement;
 
+  /*
+   * O HTML recebe o tema para compatibilidade
+   * com Tailwind/dark mode.
+   */
   html.dataset.theme = theme;
 
   html.classList.toggle(
@@ -142,8 +146,10 @@ function applyGlobalTheme(
   html.style.colorScheme = theme;
 
   /*
-   * Garante que o próprio documento
-   * acompanhe o tema.
+   * Fundo global.
+   *
+   * Não usamos transition aqui.
+   * A troca precisa ser instantânea.
    */
   html.style.backgroundColor =
     theme === 'dark'
@@ -160,12 +166,19 @@ function applyGlobalTheme(
       theme === 'dark'
         ? '#f1f5f9'
         : '#0f172a';
+
+    /*
+     * Evita que o body tenha alguma
+     * transição global herdada.
+     */
+    document.body.style.transition =
+      'none';
   }
 }
 
 /*
 |--------------------------------------------------------------------------
-| INICIALIZA TEMA GLOBAL UMA ÚNICA VEZ
+| INICIALIZA TEMA GLOBAL
 |--------------------------------------------------------------------------
 */
 
@@ -195,6 +208,13 @@ function setGlobalTheme(
 ) {
   currentTheme = theme;
 
+  /*
+   * Primeiro muda o DOM.
+   * Depois notifica os componentes.
+   *
+   * Assim a troca visual e o estado
+   * acontecem juntos.
+   */
   applyGlobalTheme(theme);
 
   try {
@@ -203,20 +223,16 @@ function setGlobalTheme(
       theme
     );
   } catch {
-    // Ignora erro.
+    // Ignora erro de localStorage.
   }
 
-  /*
-   * Notifica todos os componentes
-   * que usam useTechTheme().
-   */
   themeListeners.forEach(
     (listener) => listener()
   );
 
   /*
-   * Mantém compatibilidade com
-   * componentes que escutam o evento.
+   * Compatibilidade com componentes
+   * antigos que ainda escutam o evento.
    */
   if (typeof window !== 'undefined') {
     window.dispatchEvent(
@@ -279,9 +295,6 @@ export function useTechTheme() {
   useEffect(() => {
     initializeTheme();
 
-    /*
-     * Sincronização com outra aba.
-     */
     const handleStorageChange = (
       event: StorageEvent
     ) => {
@@ -374,7 +387,12 @@ export function TechPageContainer({
       className={[
         'ml-64 min-h-screen flex-1 overflow-y-auto',
         'p-6 lg:p-8',
-        'transition-colors duration-300',
+
+        /*
+         * IMPORTANTE:
+         * não existe transition-colors aqui.
+         * O fundo troca imediatamente.
+         */
         isDark
           ? 'bg-[#070e17] text-slate-100'
           : 'bg-slate-50 text-slate-900',
@@ -448,9 +466,14 @@ export default function TechSidebar({
         'fixed left-0 top-0 z-30',
         'flex h-screen w-64 flex-col',
         'border-r',
-        'transition-colors duration-300',
+
+        /*
+         * SEM transition-colors.
+         *
+         * A sidebar troca imediatamente.
+         */
         isDark
-          ? 'border-white/5 bg-[#0b1624] text-slate-200'
+          ? 'border-white/10 bg-[#0b1624] text-slate-200'
           : 'border-slate-200 bg-white text-slate-700',
       ].join(' ')}
     >
@@ -460,9 +483,9 @@ export default function TechSidebar({
         className={[
           'flex h-16 shrink-0 items-center',
           'border-b px-6',
-          'transition-colors duration-300',
+
           isDark
-            ? 'border-white/5'
+            ? 'border-white/10'
             : 'border-slate-200',
         ].join(' ')}
       >
@@ -489,9 +512,10 @@ export default function TechSidebar({
               'group flex w-full',
               'items-center justify-between',
               'rounded-xl border p-2.5',
-              'text-xs transition-all',
+              'text-xs',
+              'transition-all duration-200',
               isDark
-                ? 'border-amber-500/40 bg-amber-500/10 hover:border-amber-400 hover:bg-amber-500/20'
+                ? 'border-amber-500/30 bg-amber-500/10 hover:border-amber-400/50 hover:bg-amber-500/15'
                 : 'border-amber-200 bg-amber-50 hover:border-amber-300 hover:bg-amber-100',
             ].join(' ')}
           >
@@ -547,7 +571,7 @@ export default function TechSidebar({
       {/* NAVEGAÇÃO */}
 
       <nav className="mt-3 flex flex-col gap-1.5 px-3">
-        {/* Painel */}
+        {/* PAINEL */}
 
         <button
           type="button"
@@ -560,24 +584,26 @@ export default function TechSidebar({
             'flex items-center justify-between',
             'rounded-xl px-3.5 py-2.5',
             'text-xs font-medium',
-            'transition-all',
+            'transition-all duration-200',
+
             current ===
             'tech-inicio'
               ? 'bg-[#00A896] font-semibold text-white shadow-md shadow-teal-500/20'
               : isDark
-                ? 'text-slate-400 hover:bg-white/5 hover:text-white'
+                ? 'text-slate-400 hover:bg-white/[0.06] hover:text-white'
                 : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900',
           ].join(' ')}
         >
           <div className="flex items-center gap-3">
             <LayoutDashboard className="h-4 w-4 shrink-0" />
+
             <span>
               Painel Técnico
             </span>
           </div>
         </button>
 
-        {/* Fila */}
+        {/* FILA GERAL */}
 
         <button
           type="button"
@@ -590,31 +616,32 @@ export default function TechSidebar({
             'flex items-center justify-between',
             'rounded-xl px-3.5 py-2.5',
             'text-xs font-medium',
-            'transition-all',
+            'transition-all duration-200',
+
             current ===
             'tech-chamados'
               ? 'bg-[#00A896] font-semibold text-white shadow-md shadow-teal-500/20'
               : isDark
-                ? 'text-slate-400 hover:bg-white/5 hover:text-white'
+                ? 'text-slate-400 hover:bg-white/[0.06] hover:text-white'
                 : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900',
           ].join(' ')}
         >
           <div className="flex items-center gap-3">
             <Inbox className="h-4 w-4 shrink-0" />
+
             <span>
               Fila Geral
             </span>
           </div>
 
-          {unassignedCount >
-            0 && (
+          {unassignedCount > 0 && (
             <span
               className={[
                 'rounded-full border',
                 'px-2 py-0.5',
                 'text-[10px] font-bold',
                 isDark
-                  ? 'border-amber-500/30 bg-amber-500/20 text-amber-300'
+                  ? 'border-amber-500/30 bg-amber-500/15 text-amber-300'
                   : 'border-amber-200 bg-amber-50 text-amber-700',
               ].join(' ')}
             >
@@ -623,7 +650,7 @@ export default function TechSidebar({
           )}
         </button>
 
-        {/* Atendimentos */}
+        {/* MEUS ATENDIMENTOS */}
 
         <button
           type="button"
@@ -636,31 +663,32 @@ export default function TechSidebar({
             'flex items-center justify-between',
             'rounded-xl px-3.5 py-2.5',
             'text-xs font-medium',
-            'transition-all',
+            'transition-all duration-200',
+
             current ===
             'tech-atendimentos'
               ? 'bg-[#00A896] font-semibold text-white shadow-md shadow-teal-500/20'
               : isDark
-                ? 'text-slate-400 hover:bg-white/5 hover:text-white'
+                ? 'text-slate-400 hover:bg-white/[0.06] hover:text-white'
                 : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900',
           ].join(' ')}
         >
           <div className="flex items-center gap-3">
             <Clock className="h-4 w-4 shrink-0" />
+
             <span>
               Meus Atendimentos
             </span>
           </div>
 
-          {myActiveCount >
-            0 && (
+          {myActiveCount > 0 && (
             <span
               className={[
                 'rounded-full border',
                 'px-2 py-0.5',
                 'text-[10px] font-bold',
                 isDark
-                  ? 'border-cyan-500/30 bg-cyan-500/20 text-cyan-300'
+                  ? 'border-cyan-500/30 bg-cyan-500/15 text-cyan-300'
                   : 'border-cyan-200 bg-cyan-50 text-cyan-700',
               ].join(' ')}
             >
@@ -669,7 +697,7 @@ export default function TechSidebar({
           )}
         </button>
 
-        {/* Feedback */}
+        {/* FEEDBACK */}
 
         <button
           type="button"
@@ -682,12 +710,13 @@ export default function TechSidebar({
             'flex items-center justify-between',
             'rounded-xl px-3.5 py-2.5',
             'text-xs font-medium',
-            'transition-all',
+            'transition-all duration-200',
+
             (current as string) ===
             'tech-feedbacks'
               ? 'bg-[#00A896] font-semibold text-white shadow-md shadow-teal-500/20'
               : isDark
-                ? 'text-slate-400 hover:bg-white/5 hover:text-white'
+                ? 'text-slate-400 hover:bg-white/[0.06] hover:text-white'
                 : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900',
           ].join(' ')}
         >
@@ -750,13 +779,16 @@ export default function TechSidebar({
                   className={[
                     'flex items-center justify-between',
                     'rounded-lg p-2 text-xs',
-                    'transition-colors',
+
+                    /*
+                     * Sem transition de cor.
+                     */
                     isMe
                       ? isDark
                         ? 'border border-cyan-500/20 bg-cyan-500/10'
                         : 'border border-cyan-200 bg-cyan-50'
                       : isDark
-                        ? 'bg-white/[0.02]'
+                        ? 'bg-white/[0.025]'
                         : 'bg-slate-50',
                   ].join(' ')}
                 >
@@ -764,6 +796,7 @@ export default function TechSidebar({
                     <div
                       className={[
                         'h-2 w-2 shrink-0 rounded-full',
+
                         (tech as any)
                           .status ===
                           'disponivel' ||
@@ -795,7 +828,14 @@ export default function TechSidebar({
                     </span>
                   </div>
 
-                  <span className="shrink-0 font-mono text-[10px] text-slate-400">
+                  <span
+                    className={[
+                      'shrink-0 font-mono text-[10px]',
+                      isDark
+                        ? 'text-slate-500'
+                        : 'text-slate-400',
+                    ].join(' ')}
+                  >
                     {techTickets}{' '}
                     ativ.
                   </span>
@@ -811,9 +851,12 @@ export default function TechSidebar({
       <div
         className={[
           'shrink-0 border-t p-3',
-          'transition-colors duration-300',
+
+          /*
+           * Sem transition de tema.
+           */
           isDark
-            ? 'border-white/5 bg-black/20'
+            ? 'border-white/10 bg-[#08121f]'
             : 'border-slate-200 bg-white',
         ].join(' ')}
       >
@@ -828,21 +871,32 @@ export default function TechSidebar({
           className={[
             'flex w-full items-center gap-3',
             'rounded-xl p-2 text-left',
-            'transition-colors',
+            'transition-colors duration-200',
+
             current ===
             'tech-perfil'
               ? isDark
-                ? 'bg-white/10 ring-1 ring-cyan-500/40'
+                ? 'bg-white/[0.08] ring-1 ring-cyan-500/40'
                 : 'bg-cyan-50 ring-1 ring-cyan-500/30'
               : isDark
-                ? 'hover:bg-white/5'
+                ? 'hover:bg-white/[0.05]'
                 : 'hover:bg-slate-100',
           ].join(' ')}
         >
-          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-tr from-[#00A896] to-cyan-500 text-sm font-bold text-white shadow-sm">
-            {userName.charAt(
-              0
-            )}
+          <div
+            className="
+              flex h-9 w-9 shrink-0
+              items-center justify-center
+              rounded-xl
+              bg-gradient-to-tr
+              from-[#00A896]
+              to-cyan-500
+              text-sm font-bold
+              text-white
+              shadow-sm
+            "
+          >
+            {userName.charAt(0)}
           </div>
 
           <div className="min-w-0 flex-1">
@@ -877,7 +931,8 @@ export default function TechSidebar({
             'mt-1.5 flex w-full items-center gap-2.5',
             'rounded-lg px-2.5 py-1.5',
             'text-xs font-medium',
-            'transition-colors',
+            'transition-colors duration-200',
+
             isDark
               ? 'text-slate-400 hover:bg-red-500/10 hover:text-red-400'
               : 'text-slate-500 hover:bg-red-50 hover:text-red-500',

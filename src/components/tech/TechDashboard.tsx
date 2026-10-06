@@ -48,11 +48,10 @@ export default function TechDashboard({
    * TEMA GLOBAL
    * ============================================================
    *
-   * IMPORTANTE:
-   * O Dashboard NÃO possui mais um estado próprio de tema.
+   * O Dashboard utiliza exatamente o mesmo tema da Sidebar,
+   * TechPageContainer e demais páginas técnicas.
    *
-   * Ele utiliza exatamente o mesmo tema da Sidebar e do
-   * TechPageContainer.
+   * A troca de tema é instantânea.
    */
 
   const {
@@ -170,7 +169,6 @@ export default function TechDashboard({
             className={[
               'inline-flex items-center gap-2 rounded-full',
               'border px-3 py-1 text-xs font-semibold',
-              'transition-colors duration-300',
               isDark
                 ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-300'
                 : 'border-emerald-200 bg-emerald-50 text-emerald-700',
@@ -187,7 +185,6 @@ export default function TechDashboard({
             className={[
               'inline-flex items-center gap-2 rounded-full',
               'border px-3 py-1 text-xs font-semibold',
-              'transition-colors duration-300',
               isDark
                 ? 'border-blue-500/30 bg-blue-500/10 text-blue-300'
                 : 'border-blue-200 bg-blue-50 text-blue-700',
@@ -204,7 +201,6 @@ export default function TechDashboard({
             className={[
               'inline-flex items-center gap-2 rounded-full',
               'border px-3 py-1 text-xs font-semibold',
-              'transition-colors duration-300',
               isDark
                 ? 'border-amber-500/30 bg-amber-500/10 text-amber-300'
                 : 'border-amber-200 bg-amber-50 text-amber-700',
@@ -221,7 +217,6 @@ export default function TechDashboard({
             className={[
               'inline-flex items-center gap-2 rounded-full',
               'border px-3 py-1 text-xs font-semibold',
-              'transition-colors duration-300',
               isDark
                 ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-300'
                 : 'border-emerald-200 bg-emerald-50 text-emerald-700',
@@ -238,7 +233,6 @@ export default function TechDashboard({
             className={[
               'inline-flex items-center gap-2 rounded-full',
               'border px-3 py-1 text-xs font-semibold',
-              'transition-colors duration-300',
               isDark
                 ? 'border-white/10 bg-white/5 text-slate-300'
                 : 'border-slate-200 bg-slate-50 text-slate-600',
@@ -260,7 +254,6 @@ export default function TechDashboard({
     <div
       className={[
         'relative min-h-screen w-full overflow-x-hidden',
-        'transition-colors duration-500',
         isDark
           ? 'bg-[#07111d] text-slate-100'
           : 'bg-slate-50 text-slate-900',
@@ -286,7 +279,6 @@ export default function TechDashboard({
         <div
           className={[
             'flex flex-col gap-5 rounded-2xl border p-5 shadow-sm',
-            'transition-colors duration-500',
             'sm:flex-row sm:items-center sm:justify-between',
             isDark
               ? 'border-white/10 bg-[#0b1624]'
@@ -303,7 +295,6 @@ export default function TechDashboard({
               <div
                 className={[
                   'flex h-11 w-11 items-center justify-center rounded-xl',
-                  'transition-colors duration-500',
                   isDark
                     ? 'bg-teal-500/10 text-teal-300'
                     : 'bg-teal-50 text-teal-600',
@@ -316,7 +307,6 @@ export default function TechDashboard({
                 <h1
                   className={[
                     'text-2xl font-bold tracking-tight',
-                    'transition-colors duration-500',
                     isDark
                       ? 'text-white'
                       : 'text-slate-900',
@@ -328,7 +318,6 @@ export default function TechDashboard({
                 <p
                   className={[
                     'mt-1 text-sm',
-                    'transition-colors duration-500',
                     isDark
                       ? 'text-slate-400'
                       : 'text-slate-600',
@@ -375,7 +364,6 @@ export default function TechDashboard({
             <span
               className={[
                 'flex h-8 w-8 items-center justify-center rounded-lg',
-                'transition-all duration-500',
                 isDark
                   ? 'bg-slate-800 text-amber-300 group-hover:bg-amber-400/10'
                   : 'bg-white text-indigo-600 shadow-sm group-hover:bg-indigo-50',
@@ -386,7 +374,7 @@ export default function TechDashboard({
                   className="
                     h-4 w-4
                     transition-transform
-                    duration-500
+                    duration-300
                     group-hover:rotate-45
                   "
                 />
@@ -395,7 +383,7 @@ export default function TechDashboard({
                   className="
                     h-4 w-4
                     transition-transform
-                    duration-500
+                    duration-300
                     group-hover:-rotate-12
                   "
                 />
@@ -480,7 +468,7 @@ export default function TechDashboard({
                     <span
                       className={[
                         'block text-3xl font-bold leading-none',
-                        'transition-colors duration-300',
+                        'transition-colors duration-200',
                         isDark
                           ? 'text-white group-hover:text-teal-300'
                           : 'text-slate-900 group-hover:text-teal-600',
@@ -492,7 +480,7 @@ export default function TechDashboard({
                     <p
                       className={[
                         'mt-2 text-sm font-medium',
-                        'transition-colors duration-300',
+                        'transition-colors duration-200',
                         isDark
                           ? 'text-slate-400 group-hover:text-slate-300'
                           : 'text-slate-600 group-hover:text-slate-700',
@@ -527,7 +515,6 @@ export default function TechDashboard({
         <section
           className={[
             'overflow-hidden rounded-2xl border shadow-sm',
-            'transition-colors duration-500',
             isDark
               ? 'border-white/10 bg-[#0b1624]'
               : 'border-slate-200 bg-white',
@@ -543,7 +530,6 @@ export default function TechDashboard({
           <div
             className={[
               'flex flex-col gap-3 border-b p-5',
-              'transition-colors duration-500',
               'sm:flex-row sm:items-center sm:justify-between',
               isDark
                 ? 'border-white/10'
@@ -555,7 +541,7 @@ export default function TechDashboard({
               <div
                 className={[
                   'flex h-10 w-10 items-center justify-center',
-                  'rounded-xl transition-colors duration-500',
+                  'rounded-xl',
                   isDark
                     ? 'bg-teal-500/10 text-teal-300'
                     : 'bg-teal-50 text-teal-600',
@@ -568,7 +554,6 @@ export default function TechDashboard({
                 <h2
                   className={[
                     'text-base font-bold',
-                    'transition-colors duration-500',
                     isDark
                       ? 'text-white'
                       : 'text-slate-900',
@@ -577,7 +562,14 @@ export default function TechDashboard({
                   Chamados que precisam de atenção
                 </h2>
 
-                <p className="mt-0.5 text-xs text-slate-500">
+                <p
+                  className={[
+                    'mt-0.5 text-xs',
+                    isDark
+                      ? 'text-slate-500'
+                      : 'text-slate-500',
+                  ].join(' ')}
+                >
                   Acompanhe os atendimentos pendentes da equipe.
                 </p>
               </div>
@@ -618,7 +610,7 @@ export default function TechDashboard({
                 <tr
                   className={[
                     'border-b text-xs font-bold uppercase',
-                    'tracking-wider transition-colors duration-500',
+                    'tracking-wider',
                     isDark
                       ? 'border-white/10 bg-white/[0.02] text-slate-400'
                       : 'border-slate-200 bg-slate-50 text-slate-500',
@@ -657,7 +649,6 @@ export default function TechDashboard({
                       colSpan={6}
                       className={[
                         'px-5 py-14 text-center',
-                        'transition-colors duration-500',
                         isDark
                           ? 'text-slate-400'
                           : 'text-slate-500',
@@ -689,7 +680,14 @@ export default function TechDashboard({
                             Tudo em dia!
                           </p>
 
-                          <p className="mt-1 text-sm">
+                          <p
+                            className={[
+                              'mt-1 text-sm',
+                              isDark
+                                ? 'text-slate-500'
+                                : 'text-slate-500',
+                            ].join(' ')}
+                          >
                             Nenhum chamado pendente no momento.
                           </p>
                         </div>
@@ -739,7 +737,7 @@ export default function TechDashboard({
                         <span
                           className={[
                             'font-mono text-sm font-bold',
-                            'transition-colors',
+                            'transition-colors duration-200',
                             isDark
                               ? 'text-slate-200 group-hover:text-teal-300'
                               : 'text-slate-800 group-hover:text-teal-600',
@@ -755,7 +753,7 @@ export default function TechDashboard({
                         <span
                           className={[
                             'block truncate text-sm font-semibold',
-                            'transition-colors',
+                            'transition-colors duration-200',
                             isDark
                               ? 'text-slate-200 group-hover:text-white'
                               : 'text-slate-800 group-hover:text-slate-900',
@@ -770,7 +768,7 @@ export default function TechDashboard({
                       <td className="px-5 py-4">
                         <span
                           className={[
-                            'text-sm transition-colors duration-500',
+                            'text-sm',
                             isDark
                               ? 'text-slate-300'
                               : 'text-slate-700',
@@ -785,7 +783,7 @@ export default function TechDashboard({
                       <td className="px-5 py-4">
                         <span
                           className={[
-                            'text-sm transition-colors duration-500',
+                            'text-sm',
                             isDark
                               ? 'text-slate-400'
                               : 'text-slate-600',
