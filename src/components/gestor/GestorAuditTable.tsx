@@ -1,5 +1,14 @@
 ﻿import React, { useState, useEffect } from 'react';
-import { ShieldCheck, ShieldAlert, RefreshCw, KeyRound, Search, Download, CheckCircle2 } from 'lucide-react';
+import {
+  ShieldCheck,
+  ShieldAlert,
+  RefreshCw,
+  KeyRound,
+  Search,
+  Download,
+  CheckCircle2,
+} from 'lucide-react';
+import { useGestorTheme } from './GestorSidebar';
 
 interface AuditEvent {
   id: number;
@@ -14,16 +23,24 @@ interface AuditEvent {
 }
 
 export default function GestorAuditTable() {
+  const { isDark } = useGestorTheme();
+
   const [events, setEvents] = useState<AuditEvent[]>([]);
   const [loading, setLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
-  const [verificationStatus, setVerificationStatus] = useState<Record<number, { valid: boolean; checking: boolean }>>({});
+  const [verificationStatus, setVerificationStatus] = useState<
+    Record<number, { valid: boolean; checking: boolean }>
+  >({});
   const [batchChecking, setBatchChecking] = useState(false);
 
   const carregarEventos = async () => {
     setLoading(true);
+
     try {
-      const res = await fetch('http://localhost:8081/api/v1/audit/events?size=100');
+      const res = await fetch(
+        'http://localhost:8081/api/v1/audit/events?size=100'
+      );
+
       if (res.ok) {
         const data = await res.json();
         setEvents(data.content || []);
@@ -40,27 +57,64 @@ export default function GestorAuditTable() {
   }, []);
 
   const verificarIntegridade = async (id: number): Promise<boolean> => {
-    setVerificationStatus(prev => ({ ...prev, [id]: { valid: false, checking: true } }));
+    setVerificationStatus((prev) => ({
+      ...prev,
+      [id]: {
+        valid: false,
+        checking: true,
+      },
+    }));
+
     try {
-      const res = await fetch(`http://localhost:8081/api/v1/audit/events/${id}/verificar-integridade`);
+      const res = await fetch(
+        `http://localhost:8081/api/v1/audit/events/${id}/verificar-integridade`
+      );
+
       if (res.ok) {
         const result = await res.json();
-        const valido = result.statusIntegridade === 'INTEGRO' || result.integro === true || 
-                       (result.hashRecalculado && result.hashRecalculado === result.hashArmazenado);
-        setVerificationStatus(prev => ({ ...prev, [id]: { valid: Boolean(valido), checking: false } }));
+
+        const valido =
+          result.statusIntegridade === 'INTEGRO' ||
+          result.integro === true ||
+          (result.hashRecalculado &&
+            result.hashRecalculado === result.hashArmazenado);
+
+        setVerificationStatus((prev) => ({
+          ...prev,
+          [id]: {
+            valid: Boolean(valido),
+            checking: false,
+          },
+        }));
+
         return Boolean(valido);
       } else {
-        setVerificationStatus(prev => ({ ...prev, [id]: { valid: false, checking: false } }));
+        setVerificationStatus((prev) => ({
+          ...prev,
+          [id]: {
+            valid: false,
+            checking: false,
+          },
+        }));
+
         return false;
       }
     } catch {
-      setVerificationStatus(prev => ({ ...prev, [id]: { valid: false, checking: false } }));
+      setVerificationStatus((prev) => ({
+        ...prev,
+        [id]: {
+          valid: false,
+          checking: false,
+        },
+      }));
+
       return false;
     }
   };
 
   const verificarTodosEmLote = async () => {
     if (filteredEvents.length === 0 || batchChecking) return;
+
     setBatchChecking(true);
 
     for (const ev of filteredEvents) {
@@ -71,106 +125,224 @@ export default function GestorAuditTable() {
   };
 
   const exportarAuditoriaCSV = () => {
-    const headers = ['ID', 'Data_Hora', 'Operacao', 'Entidade', 'ID_Entidade', 'Autor', 'Hash_SHA256'];
-    const rows = filteredEvents.map(e => [
+    const headers = [
+      'ID',
+      'Data_Hora',
+      'Operacao',
+      'Entidade',
+      'ID_Entidade',
+      'Autor',
+      'Hash_SHA256',
+    ];
+
+    const rows = filteredEvents.map((e) => [
       e.id,
       `"${new Date(e.dataHoraEvento).toLocaleString('pt-BR')}"`,
       `"${e.tipoOperacao}"`,
       `"${e.entidade}"`,
       `"${e.idEntidade}"`,
       `"${e.autor}"`,
-      `"${e.hashIntegridade}"`
+      `"${e.hashIntegridade}"`,
     ]);
 
-    const csvContent = 'data:text/csv;charset=utf-8,\uFEFF' + [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+    const csvContent =
+      'data:text/csv;charset=utf-8,\uFEFF' +
+      [headers.join(','), ...rows.map((r) => r.join(','))].join('\n');
+
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement('a');
+
     link.setAttribute('href', encodedUri);
-    link.setAttribute('download', `trilha_auditoria_sti_${new Date().toISOString().slice(0, 10)}.csv`);
+    link.setAttribute(
+      'download',
+      `trilha_auditoria_sti_${new Date().toISOString().slice(0, 10)}.csv`
+    );
+
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
   };
 
-  const filteredEvents = events.filter(e => 
-    e.tipoOperacao.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    e.autor.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    e.entidade.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    e.idEntidade.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    e.hashIntegridade.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredEvents = events.filter(
+    (e) =>
+      e.tipoOperacao
+        .toLowerCase()
+        .includes(searchTerm.toLowerCase()) ||
+      e.autor.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      e.entidade.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      e.idEntidade.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      e.hashIntegridade
+        .toLowerCase()
+        .includes(searchTerm.toLowerCase())
   );
 
-  const totalVerificados = Object.values(verificationStatus).filter(s => !s.checking).length;
-  const totalIntegro = Object.values(verificationStatus).filter(s => s.valid && !s.checking).length;
+  const totalVerificados = Object.values(verificationStatus).filter(
+    (s) => !s.checking
+  ).length;
+
+  const totalIntegro = Object.values(verificationStatus).filter(
+    (s) => s.valid && !s.checking
+  ).length;
 
   return (
     <div className="space-y-4">
+      {/* Cabeçalho */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
-          <h2 className="text-xl font-bold text-white flex items-center gap-2">
-            <KeyRound className="h-5 w-5 text-cyan-400" />
+          <h2
+            className={`text-xl font-bold flex items-center gap-2 ${
+              isDark ? 'text-white' : 'text-slate-900'
+            }`}
+          >
+            <KeyRound
+              className={`h-5 w-5 ${
+                isDark ? 'text-cyan-400' : 'text-cyan-600'
+              }`}
+            />
+
             Trilha Criptográfica de Auditoria (SHA-256)
           </h2>
-          <p className="text-xs text-slate-400">
-            Registro imutável em PostgreSQL com verificação de integridade ponto a ponto.
+
+          <p
+            className={`text-xs ${
+              isDark ? 'text-slate-400' : 'text-slate-500'
+            }`}
+          >
+            Registro imutável em PostgreSQL com verificação de integridade
+            ponto a ponto.
           </p>
         </div>
 
+        {/* Ações */}
         <div className="flex flex-wrap items-center gap-2">
+          {/* Busca */}
           <div className="relative">
-            <Search className="h-3.5 w-3.5 absolute left-3 top-2.5 text-slate-500" />
+            <Search
+              className={`h-3.5 w-3.5 absolute left-3 top-2.5 ${
+                isDark ? 'text-slate-500' : 'text-slate-400'
+              }`}
+            />
+
             <input
               type="text"
               placeholder="Filtrar por autor, operação, hash..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-8 pr-3 py-1.5 rounded-xl bg-white/5 border border-white/10 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500"
+              className={`pl-8 pr-3 py-1.5 rounded-xl border text-xs focus:outline-none focus:border-cyan-500 ${
+                isDark
+                  ? 'bg-white/5 border-white/10 text-white placeholder-slate-500'
+                  : 'bg-white border-slate-200 text-slate-900 placeholder-slate-400'
+              }`}
             />
           </div>
 
+          {/* Validar todos */}
           <button
             onClick={verificarTodosEmLote}
             disabled={batchChecking || filteredEvents.length === 0}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-xs font-semibold hover:bg-emerald-500/30 transition-all disabled:opacity-50"
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all disabled:opacity-50 ${
+              isDark
+                ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 hover:bg-emerald-500/30'
+                : 'bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100'
+            }`}
           >
-            <ShieldCheck className={`h-3.5 w-3.5 ${batchChecking ? 'animate-bounce' : ''}`} />
-            {batchChecking ? 'Validando Lote...' : 'Validar Todos (Lote)'}
+            <ShieldCheck
+              className={`h-3.5 w-3.5 ${
+                batchChecking ? 'animate-bounce' : ''
+              }`}
+            />
+
+            {batchChecking
+              ? 'Validando Lote...'
+              : 'Validar Todos (Lote)'}
           </button>
 
+          {/* Exportar */}
           <button
             onClick={exportarAuditoriaCSV}
             disabled={filteredEvents.length === 0}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 text-xs font-semibold hover:bg-cyan-500/30 transition-all disabled:opacity-50"
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all disabled:opacity-50 ${
+              isDark
+                ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 hover:bg-cyan-500/30'
+                : 'bg-cyan-50 text-cyan-700 border border-cyan-200 hover:bg-cyan-100'
+            }`}
           >
             <Download className="h-3.5 w-3.5" />
             Exportar CSV
           </button>
 
+          {/* Atualizar */}
           <button
             onClick={carregarEventos}
             disabled={loading}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/5 text-slate-300 border border-white/10 text-xs font-semibold hover:bg-white/10 transition-all"
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all disabled:opacity-50 ${
+              isDark
+                ? 'bg-white/5 text-slate-300 border border-white/10 hover:bg-white/10'
+                : 'bg-slate-50 text-slate-600 border border-slate-200 hover:bg-slate-100'
+            }`}
           >
-            <RefreshCw className={`h-3.5 w-3.5 ${loading ? 'animate-spin' : ''}`} />
+            <RefreshCw
+              className={`h-3.5 w-3.5 ${
+                loading ? 'animate-spin' : ''
+              }`}
+            />
+
             Atualizar
           </button>
         </div>
       </div>
 
+      {/* Resumo das validações */}
       {totalVerificados > 0 && (
-        <div className="flex items-center justify-between px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-xs">
-          <span className="text-slate-400">
-            Eventos verificados: <strong className="text-white">{totalVerificados}</strong> de <strong className="text-white">{filteredEvents.length}</strong>
+        <div
+          className={`flex items-center justify-between px-4 py-2 rounded-xl border text-xs ${
+            isDark
+              ? 'bg-white/5 border-white/10'
+              : 'bg-white border-slate-200'
+          }`}
+        >
+          <span
+            className={
+              isDark ? 'text-slate-400' : 'text-slate-500'
+            }
+          >
+            Eventos verificados:{' '}
+            <strong
+              className={isDark ? 'text-white' : 'text-slate-900'}
+            >
+              {totalVerificados}
+            </strong>{' '}
+            de{' '}
+            <strong
+              className={isDark ? 'text-white' : 'text-slate-900'}
+            >
+              {filteredEvents.length}
+            </strong>
           </span>
-          <span className="text-emerald-400 font-semibold flex items-center gap-1">
-            <CheckCircle2 className="h-3.5 w-3.5" /> {totalIntegro} íntegro(s)
+
+          <span className="text-emerald-500 font-semibold flex items-center gap-1">
+            <CheckCircle2 className="h-3.5 w-3.5" />
+            {totalIntegro} íntegro(s)
           </span>
         </div>
       )}
 
-      <div className="rounded-2xl border border-white/10 bg-[#0b1624] p-4 overflow-x-auto">
+      {/* Tabela */}
+      <div
+        className={`rounded-2xl border p-4 overflow-x-auto ${
+          isDark
+            ? 'border-white/10 bg-[#0b1624]'
+            : 'border-slate-200 bg-white shadow-sm'
+        }`}
+      >
         <table className="w-full text-left text-xs">
-          <thead className="border-b border-white/10 text-slate-400 uppercase tracking-wider text-[10px]">
+          <thead
+            className={`border-b uppercase tracking-wider text-[10px] ${
+              isDark
+                ? 'border-white/10 text-slate-400'
+                : 'border-slate-200 text-slate-500'
+            }`}
+          >
             <tr>
               <th className="py-2.5 px-2">ID</th>
               <th className="px-2">Data / Hora</th>
@@ -181,51 +353,149 @@ export default function GestorAuditTable() {
               <th className="px-2 text-right">Integridade</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-white/5 text-slate-300">
+
+          <tbody
+            className={`divide-y ${
+              isDark
+                ? 'divide-white/5 text-slate-300'
+                : 'divide-slate-100 text-slate-600'
+            }`}
+          >
             {filteredEvents.length === 0 ? (
               <tr>
-                <td colSpan={7} className="py-6 text-center text-slate-500">
-                  {loading ? 'Consultando nós de auditoria...' : 'Nenhum evento localizado.'}
+                <td
+                  colSpan={7}
+                  className={`py-6 text-center ${
+                    isDark ? 'text-slate-500' : 'text-slate-400'
+                  }`}
+                >
+                  {loading
+                    ? 'Consultando nós de auditoria...'
+                    : 'Nenhum evento localizado.'}
                 </td>
               </tr>
             ) : (
               filteredEvents.map((ev) => {
                 const status = verificationStatus[ev.id];
+
                 return (
-                  <tr key={ev.id} className="hover:bg-white/[0.02] transition-colors">
-                    <td className="py-3 px-2 font-mono text-cyan-400 font-bold">#{ev.id}</td>
-                    <td className="px-2 font-mono text-[11px] text-slate-400 whitespace-nowrap">
-                      {new Date(ev.dataHoraEvento).toLocaleString('pt-BR')}
+                  <tr
+                    key={ev.id}
+                    className={`transition-colors ${
+                      isDark
+                        ? 'hover:bg-white/[0.02]'
+                        : 'hover:bg-slate-50'
+                    }`}
+                  >
+                    {/* ID */}
+                    <td
+                      className={`py-3 px-2 font-mono font-bold ${
+                        isDark
+                          ? 'text-cyan-400'
+                          : 'text-cyan-600'
+                      }`}
+                    >
+                      #{ev.id}
                     </td>
+
+                    {/* Data */}
+                    <td
+                      className={`px-2 font-mono text-[11px] whitespace-nowrap ${
+                        isDark
+                          ? 'text-slate-400'
+                          : 'text-slate-500'
+                      }`}
+                    >
+                      {new Date(
+                        ev.dataHoraEvento
+                      ).toLocaleString('pt-BR')}
+                    </td>
+
+                    {/* Operação */}
                     <td className="px-2">
-                      <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-cyan-500/10 text-cyan-300 border border-cyan-500/20">
+                      <span
+                        className={`px-2 py-0.5 rounded-full text-[10px] font-semibold ${
+                          isDark
+                            ? 'bg-cyan-500/10 text-cyan-300 border border-cyan-500/20'
+                            : 'bg-cyan-50 text-cyan-700 border border-cyan-200'
+                        }`}
+                      >
                         {ev.tipoOperacao}
                       </span>
                     </td>
-                    <td className="px-2 font-medium text-white">
-                      {ev.entidade} <span className="text-slate-500">({ev.idEntidade})</span>
+
+                    {/* Entidade */}
+                    <td
+                      className={`px-2 font-medium ${
+                        isDark
+                          ? 'text-white'
+                          : 'text-slate-900'
+                      }`}
+                    >
+                      {ev.entidade}{' '}
+                      <span
+                        className={
+                          isDark
+                            ? 'text-slate-500'
+                            : 'text-slate-400'
+                        }
+                      >
+                        ({ev.idEntidade})
+                      </span>
                     </td>
-                    <td className="px-2 text-slate-300 truncate max-w-[150px]">{ev.autor}</td>
-                    <td className="px-2 font-mono text-[10px] text-slate-400 truncate max-w-[180px]" title={ev.hashIntegridade}>
-                      {ev.hashIntegridade ? `${ev.hashIntegridade.slice(0, 16)}...` : 'N/A'}
+
+                    {/* Autor */}
+                    <td
+                      className={`px-2 truncate max-w-[150px] ${
+                        isDark
+                          ? 'text-slate-300'
+                          : 'text-slate-600'
+                      }`}
+                    >
+                      {ev.autor}
                     </td>
+
+                    {/* Hash */}
+                    <td
+                      className={`px-2 font-mono text-[10px] truncate max-w-[180px] ${
+                        isDark
+                          ? 'text-slate-400'
+                          : 'text-slate-500'
+                      }`}
+                      title={ev.hashIntegridade}
+                    >
+                      {ev.hashIntegridade
+                        ? `${ev.hashIntegridade.slice(0, 16)}...`
+                        : 'N/A'}
+                    </td>
+
+                    {/* Integridade */}
                     <td className="px-2 text-right">
                       {status?.checking ? (
-                        <span className="inline-flex items-center gap-1 text-[11px] text-amber-400 font-mono">
-                          <RefreshCw className="h-3 w-3 animate-spin" /> Verificando...
+                        <span className="inline-flex items-center gap-1 text-[11px] text-amber-500 font-mono">
+                          <RefreshCw className="h-3 w-3 animate-spin" />
+                          Verificando...
                         </span>
                       ) : status?.valid === true ? (
-                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
-                          <ShieldCheck className="h-3 w-3" /> Íntegro
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-500/20 text-emerald-600 border border-emerald-500/30">
+                          <ShieldCheck className="h-3 w-3" />
+                          Íntegro
                         </span>
                       ) : status?.valid === false ? (
-                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-rose-500/20 text-rose-300 border border-rose-500/30">
-                          <ShieldAlert className="h-3 w-3" /> Adulterado
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-rose-500/20 text-rose-600 border border-rose-500/30">
+                          <ShieldAlert className="h-3 w-3" />
+                          Adulterado
                         </span>
                       ) : (
                         <button
-                          onClick={() => verificarIntegridade(ev.id)}
-                          className="px-2 py-1 rounded-lg bg-white/5 hover:bg-white/10 text-[11px] text-slate-300 border border-white/10 transition-colors"
+                          onClick={() =>
+                            verificarIntegridade(ev.id)
+                          }
+                          className={`px-2 py-1 rounded-lg text-[11px] border transition-colors ${
+                            isDark
+                              ? 'bg-white/5 hover:bg-white/10 text-slate-300 border-white/10'
+                              : 'bg-slate-50 hover:bg-slate-100 text-slate-600 border-slate-200'
+                          }`}
                         >
                           Checar Hash
                         </button>

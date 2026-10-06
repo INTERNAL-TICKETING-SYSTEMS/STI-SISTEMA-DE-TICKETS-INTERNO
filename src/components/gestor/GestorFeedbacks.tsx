@@ -1,4 +1,5 @@
-﻿import React, { useMemo, useState } from 'react';
+
+import React, { useMemo, useState } from 'react';
 import {
   AlertCircle,
   ArrowRight,
@@ -11,10 +12,18 @@ import {
   User,
 } from 'lucide-react';
 
-import { useTechTheme } from '@/components/tech/TechSidebar';
+import { useGestorTheme } from '@/components/gestor/GestorSidebar';
+
+/*
+|--------------------------------------------------------------------------
+| TIPOS
+|--------------------------------------------------------------------------
+*/
 
 type FeedbackType = 'falha' | 'sugestao' | 'demanda_gerencial';
+
 type FeedbackStatus = 'Novo' | 'Em análise' | 'Concluído' | 'Descartado';
+
 type FeedbackPriority = 'alta' | 'media' | 'baixa';
 
 interface FeedbackRecord {
@@ -82,42 +91,34 @@ const typeConfig: Record<
   demanda_gerencial: { label: 'Demanda gerencial', icon: BarChart3 },
 };
 
-const statusConfig: Record<FeedbackStatus, { label: string }> = {
-  Novo: { label: 'Novo' },
-  'Em análise': { label: 'Em análise' },
-  Concluído: { label: 'Concluído' },
-  Descartado: { label: 'Descartado' },
-};
+const statuses: FeedbackStatus[] = [
+  'Novo',
+  'Em análise',
+  'Concluído',
+  'Descartado',
+];
 
-interface FeedbackCenterProps {
+interface GestorFeedbacksProps {
   currentRole?: string;
   activeUserName?: string;
   activeUserDepartment?: string;
 }
 
-export default function FeedbackCenter({
+export default function GestorFeedbacks({
   currentRole,
   activeUserName,
   activeUserDepartment,
-}: FeedbackCenterProps) {
-  const { isDark } = useTechTheme();
+}: GestorFeedbacksProps) {
+  const { isDark } = useGestorTheme();
 
   const [records, setRecords] = useState<FeedbackRecord[]>(initialRecords);
-  const [selectedType, setSelectedType] = useState<'todos' | FeedbackType>(
-    'todos',
-  );
+  const [selectedType, setSelectedType] = useState<'todos' | FeedbackType>('todos');
   const [search, setSearch] = useState('');
 
-  const failureCount = records.filter(
-    (record) => record.type === 'falha',
-  ).length;
-
-  const suggestionCount = records.filter(
-    (record) => record.type === 'sugestao',
-  ).length;
-
+  const failureCount = records.filter((record) => record.type === 'falha').length;
+  const suggestionCount = records.filter((record) => record.type === 'sugestao').length;
   const managementCount = records.filter(
-    (record) => record.type === 'demanda_gerencial',
+    (record) => record.type === 'demanda_gerencial'
   ).length;
 
   const filteredRecords = useMemo(() => {
@@ -142,8 +143,8 @@ export default function FeedbackCenter({
   const updateStatus = (id: string, status: FeedbackStatus) => {
     setRecords((current) =>
       current.map((record) =>
-        record.id === id ? { ...record, status } : record,
-      ),
+        record.id === id ? { ...record, status } : record
+      )
     );
   };
 
@@ -171,24 +172,18 @@ export default function FeedbackCenter({
         return isDark
           ? 'border-blue-500/20 bg-blue-500/10 text-blue-300'
           : 'border-blue-200 bg-blue-50 text-blue-700';
-
       case 'Em análise':
         return isDark
           ? 'border-amber-500/20 bg-amber-500/10 text-amber-300'
           : 'border-amber-200 bg-amber-50 text-amber-700';
-
       case 'Concluído':
         return isDark
           ? 'border-emerald-500/20 bg-emerald-500/10 text-emerald-300'
           : 'border-emerald-200 bg-emerald-50 text-emerald-700';
-
       case 'Descartado':
         return isDark
           ? 'border-slate-500/20 bg-slate-500/10 text-slate-300'
           : 'border-slate-200 bg-slate-50 text-slate-600';
-
-      default:
-        return '';
     }
   };
 
@@ -196,125 +191,69 @@ export default function FeedbackCenter({
     switch (priority) {
       case 'alta':
         return isDark ? 'text-red-300' : 'text-red-600';
-
       case 'media':
         return isDark ? 'text-amber-300' : 'text-amber-600';
-
       case 'baixa':
         return isDark ? 'text-emerald-300' : 'text-emerald-600';
-
-      default:
-        return '';
     }
   };
 
-  const priorityLabel = (priority: FeedbackPriority) => {
-    if (priority === 'alta') return 'alta';
-    if (priority === 'media') return 'média';
-    return 'baixa';
-  };
+  const panelClass = isDark
+    ? 'border-white/10 bg-[#0b1624]'
+    : 'border-slate-200 bg-white';
+
+  const titleClass = isDark ? 'text-white' : 'text-slate-900';
+  const mutedClass = isDark ? 'text-slate-400' : 'text-slate-600';
+  const labelClass = isDark ? 'text-slate-500' : 'text-slate-400';
+  const valueClass = isDark ? 'text-slate-300' : 'text-slate-700';
 
   return (
-    <div
-      className={[
-        'relative min-h-screen w-full overflow-x-hidden',
-        isDark ? 'bg-[#07111d] text-slate-100' : 'bg-slate-50 text-slate-900',
-      ].join(' ')}
-    >
-      <div
-        aria-hidden="true"
-        className={[
-          'pointer-events-none fixed inset-0 -z-10',
-          isDark ? 'bg-[#07111d]' : 'bg-slate-50',
-        ].join(' ')}
-      />
-
-      <div className="mx-auto w-full max-w-[1400px] space-y-6 px-4 py-5 sm:px-6 lg:px-8">
-        {/* Cabeçalho */}
-        <section
-          className={[
-            'rounded-2xl border p-5 shadow-sm',
-            isDark
-              ? 'border-white/10 bg-[#0b1624]'
-              : 'border-slate-200 bg-white',
-          ].join(' ')}
-        >
+    <div className={`w-full ${isDark ? 'text-slate-100' : 'text-slate-900'}`}>
+      <div className="mx-auto w-full max-w-[1400px] space-y-6">
+        <section className={`rounded-2xl border p-5 shadow-sm ${panelClass}`}>
           <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
             <div className="flex items-start gap-4">
               <div
-                className={[
-                  'flex h-12 w-12 shrink-0 items-center justify-center rounded-xl',
+                className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-xl ${
                   isDark
                     ? 'bg-teal-500/10 text-teal-300'
-                    : 'bg-teal-50 text-teal-600',
-                ].join(' ')}
+                    : 'bg-teal-50 text-teal-600'
+                }`}
               >
                 <MessageSquareIcon />
               </div>
 
               <div>
-                <h1
-                  className={[
-                    'text-2xl font-bold tracking-tight',
-                    isDark ? 'text-white' : 'text-slate-900',
-                  ].join(' ')}
-                >
+                <h1 className={`text-2xl font-bold tracking-tight ${titleClass}`}>
                   Central de Feedbacks &amp; Demandas
                 </h1>
-
-                <p
-                  className={[
-                    'mt-1 text-sm',
-                    isDark ? 'text-slate-400' : 'text-slate-600',
-                  ].join(' ')}
-                >
+                <p className={`mt-1 text-sm ${mutedClass}`}>
                   Console Técnico
                 </p>
-
-                <p
-                  className={[
-                    'mt-1 text-sm',
-                    isDark ? 'text-slate-500' : 'text-slate-500',
-                  ].join(' ')}
-                >
+                <p className={`mt-1 text-sm ${mutedClass}`}>
                   Acompanhe problemas, sugestões de aprimoramento e solicitações
                   de relatórios em um único lugar.
                 </p>
               </div>
             </div>
 
-            <div className="flex items-center gap-3">
-              <div
-                className={[
-                  'hidden rounded-xl border px-4 py-3 text-right lg:block',
-                  isDark
-                    ? 'border-white/10 bg-white/[0.03]'
-                    : 'border-slate-200 bg-slate-50',
-                ].join(' ')}
-              >
-                <p
-                  className={[
-                    'text-[10px] font-bold uppercase tracking-wider',
-                    isDark ? 'text-slate-500' : 'text-slate-400',
-                  ].join(' ')}
-                >
-                  Registros ativos
-                </p>
-
-                <p
-                  className={[
-                    'mt-1 text-2xl font-bold',
-                    isDark ? 'text-white' : 'text-slate-900',
-                  ].join(' ')}
-                >
-                  {records.length}
-                </p>
-              </div>
+            <div
+              className={`hidden rounded-xl border px-4 py-3 text-right lg:block ${
+                isDark
+                  ? 'border-white/10 bg-white/[0.03]'
+                  : 'border-slate-200 bg-slate-50'
+              }`}
+            >
+              <p className={`text-[10px] font-bold uppercase tracking-wider ${labelClass}`}>
+                Registros ativos
+              </p>
+              <p className={`mt-1 text-2xl font-bold ${titleClass}`}>
+                {records.length}
+              </p>
             </div>
           </div>
         </section>
 
-        {/* Cards de resumo */}
         <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
           <SummaryCard
             icon={AlertCircle}
@@ -322,11 +261,7 @@ export default function FeedbackCenter({
             description="Ocorrências reportadas"
             count={failureCount}
             isDark={isDark}
-            iconClass={
-              isDark
-                ? 'bg-red-500/10 text-red-300'
-                : 'bg-red-50 text-red-600'
-            }
+            iconClass={isDark ? 'bg-red-500/10 text-red-300' : 'bg-red-50 text-red-600'}
             onClick={() => setSelectedType('falha')}
           />
 
@@ -336,11 +271,7 @@ export default function FeedbackCenter({
             description="Propostas de melhoria"
             count={suggestionCount}
             isDark={isDark}
-            iconClass={
-              isDark
-                ? 'bg-amber-500/10 text-amber-300'
-                : 'bg-amber-50 text-amber-600'
-            }
+            iconClass={isDark ? 'bg-amber-500/10 text-amber-300' : 'bg-amber-50 text-amber-600'}
             onClick={() => setSelectedType('sugestao')}
           />
 
@@ -350,39 +281,16 @@ export default function FeedbackCenter({
             description="Solicitações institucionais"
             count={managementCount}
             isDark={isDark}
-            iconClass={
-              isDark
-                ? 'bg-violet-500/10 text-violet-300'
-                : 'bg-violet-50 text-violet-600'
-            }
+            iconClass={isDark ? 'bg-violet-500/10 text-violet-300' : 'bg-violet-50 text-violet-600'}
             onClick={() => setSelectedType('demanda_gerencial')}
           />
         </div>
 
-        {/* Filtros */}
-        <section
-          className={[
-            'rounded-2xl border p-4',
-            isDark
-              ? 'border-white/10 bg-[#0b1624]'
-              : 'border-slate-200 bg-white',
-          ].join(' ')}
-        >
+        <section className={`rounded-2xl border p-4 ${panelClass}`}>
           <div className="flex flex-col gap-4">
             <div className="flex items-center gap-2">
-              <Filter
-                className={[
-                  'h-4 w-4',
-                  isDark ? 'text-slate-400' : 'text-slate-500',
-                ].join(' ')}
-              />
-
-              <span
-                className={[
-                  'text-sm font-semibold',
-                  isDark ? 'text-slate-200' : 'text-slate-700',
-                ].join(' ')}
-              >
+              <Filter className={`h-4 w-4 ${mutedClass}`} />
+              <span className={`text-sm font-semibold ${isDark ? 'text-slate-200' : 'text-slate-700'}`}>
                 Filtrar registros
               </span>
             </div>
@@ -393,10 +301,7 @@ export default function FeedbackCenter({
                   { key: 'todos' as const, label: `Todos (${records.length})` },
                   { key: 'falha' as const, label: 'Falha' },
                   { key: 'sugestao' as const, label: 'Sugestão' },
-                  {
-                    key: 'demanda_gerencial' as const,
-                    label: 'Demanda gerencial',
-                  },
+                  { key: 'demanda_gerencial' as const, label: 'Demanda gerencial' },
                 ].map((filter) => {
                   const active = selectedType === filter.key;
 
@@ -421,21 +326,14 @@ export default function FeedbackCenter({
               </div>
 
               <div className="relative w-full lg:max-w-xs">
-                <Search
-                  className={[
-                    'pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2',
-                    isDark ? 'text-slate-500' : 'text-slate-400',
-                  ].join(' ')}
-                />
-
+                <Search className={`pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 ${labelClass}`} />
                 <input
                   type="text"
                   value={search}
                   onChange={(event) => setSearch(event.target.value)}
                   placeholder="Buscar registro..."
                   className={[
-                    'h-10 w-full rounded-lg border pl-9 pr-3 text-sm outline-none',
-                    'focus:ring-2 focus:ring-teal-500/30',
+                    'h-10 w-full rounded-lg border pl-9 pr-3 text-sm outline-none focus:ring-2 focus:ring-teal-500/30',
                     isDark
                       ? 'border-white/10 bg-white/[0.03] text-white placeholder:text-slate-500 focus:border-teal-500/50'
                       : 'border-slate-200 bg-slate-50 text-slate-900 placeholder:text-slate-400 focus:border-teal-500',
@@ -446,37 +344,11 @@ export default function FeedbackCenter({
           </div>
         </section>
 
-        {/* Listagem */}
-        <section
-          className={[
-            'overflow-hidden rounded-2xl border shadow-sm',
-            isDark
-              ? 'border-white/10 bg-[#0b1624]'
-              : 'border-slate-200 bg-white',
-          ].join(' ')}
-        >
-          <div
-            className={[
-              'flex items-center justify-between border-b px-5 py-4',
-              isDark ? 'border-white/10' : 'border-slate-200',
-            ].join(' ')}
-          >
+        <section className={`overflow-hidden rounded-2xl border ${panelClass}`}>
+          <div className={`flex items-center justify-between border-b px-5 py-4 ${isDark ? 'border-white/10' : 'border-slate-200'}`}>
             <div>
-              <h2
-                className={[
-                  'text-base font-bold',
-                  isDark ? 'text-white' : 'text-slate-900',
-                ].join(' ')}
-              >
-                Registros
-              </h2>
-
-              <p
-                className={[
-                  'mt-0.5 text-xs',
-                  isDark ? 'text-slate-500' : 'text-slate-500',
-                ].join(' ')}
-              >
+              <h2 className={`text-base font-bold ${titleClass}`}>Registros</h2>
+              <p className={`mt-0.5 text-xs ${labelClass}`}>
                 {filteredRecords.length}{' '}
                 {filteredRecords.length === 1
                   ? 'registro encontrado'
@@ -487,202 +359,116 @@ export default function FeedbackCenter({
 
           {filteredRecords.length === 0 ? (
             <div className="flex flex-col items-center justify-center px-5 py-16 text-center">
-              <div
-                className={[
-                  'flex h-14 w-14 items-center justify-center rounded-full',
-                  isDark
-                    ? 'bg-slate-500/10 text-slate-400'
-                    : 'bg-slate-100 text-slate-400',
-                ].join(' ')}
-              >
+              <div className={`flex h-14 w-14 items-center justify-center rounded-full ${isDark ? 'bg-slate-500/10 text-slate-400' : 'bg-slate-100 text-slate-400'}`}>
                 <Search className="h-6 w-6" />
               </div>
-
-              <p
-                className={[
-                  'mt-4 font-semibold',
-                  isDark ? 'text-slate-200' : 'text-slate-700',
-                ].join(' ')}
-              >
+              <p className={`mt-4 font-semibold ${isDark ? 'text-slate-200' : 'text-slate-700'}`}>
                 Nenhum registro encontrado
               </p>
-
-              <p
-                className={[
-                  'mt-1 text-sm',
-                  isDark ? 'text-slate-500' : 'text-slate-500',
-                ].join(' ')}
-              >
+              <p className={`mt-1 text-sm ${labelClass}`}>
                 Tente alterar o filtro ou a busca.
               </p>
             </div>
           ) : (
-            <div
-              className={[
-                'divide-y',
-                isDark ? 'divide-white/10' : 'divide-slate-200',
-              ].join(' ')}
-            >
+            <div className={`divide-y ${isDark ? 'divide-white/10' : 'divide-slate-200'}`}>
               {filteredRecords.map((record) => {
                 const TypeIcon = typeConfig[record.type].icon;
 
                 return (
                   <article
                     key={record.id}
-                    className={[
-                      'p-5',
-                      isDark ? 'hover:bg-white/[0.02]' : 'hover:bg-slate-50',
-                    ].join(' ')}
+                    className={`p-5 ${isDark ? 'hover:bg-white/[0.02]' : 'hover:bg-slate-50'}`}
                   >
                     <div className="flex flex-col gap-5">
                       <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
                         <div className="flex min-w-0 items-start gap-3">
-                          <div
-                            className={[
-                              'flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border',
-                              getTypeClasses(record.type),
-                            ].join(' ')}
-                          >
+                          <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border ${getTypeClasses(record.type)}`}>
                             <TypeIcon className="h-5 w-5" />
                           </div>
 
                           <div className="min-w-0">
                             <div className="flex flex-wrap items-center gap-2">
-                              <span
-                                className={[
-                                  'rounded-md border px-2 py-1 text-[10px] font-bold uppercase tracking-wide',
-                                  getTypeClasses(record.type),
-                                ].join(' ')}
-                              >
+                              <span className={`rounded-md border px-2 py-1 text-[10px] font-bold uppercase tracking-wide ${getTypeClasses(record.type)}`}>
                                 {typeConfig[record.type].label}
                               </span>
-
-                              <span
-                                className={[
-                                  'font-mono text-xs font-bold',
-                                  isDark ? 'text-slate-400' : 'text-slate-500',
-                                ].join(' ')}
-                              >
+                              <span className={`font-mono text-xs font-bold ${mutedClass}`}>
                                 {record.id}
                               </span>
-
-                              <span
-                                className={[
-                                  'text-xs',
-                                  isDark ? 'text-slate-600' : 'text-slate-400',
-                                ].join(' ')}
-                              >
+                              <span className={`text-xs ${labelClass}`}>
                                 {record.date}
                               </span>
                             </div>
 
-                            <h3
-                              className={[
-                                'mt-3 text-base font-bold',
-                                isDark ? 'text-white' : 'text-slate-900',
-                              ].join(' ')}
-                            >
+                            <h3 className={`mt-3 text-base font-bold ${titleClass}`}>
                               {record.title}
                             </h3>
-
-                            <p
-                              className={[
-                                'mt-2 max-w-4xl text-sm leading-6',
-                                isDark ? 'text-slate-400' : 'text-slate-600',
-                              ].join(' ')}
-                            >
+                            <p className={`mt-2 max-w-4xl text-sm leading-6 ${mutedClass}`}>
                               {record.description}
                             </p>
                           </div>
                         </div>
 
-                        <div className="flex shrink-0 items-center gap-2">
-                          <select
-                            value={record.status}
-                            onChange={(event) =>
-                              updateStatus(
-                                record.id,
-                                event.target.value as FeedbackStatus,
-                              )
-                            }
-                            className={[
-                              'rounded-lg border px-3 py-2 text-xs font-semibold outline-none focus:ring-2 focus:ring-teal-500/30',
-                              getStatusClasses(record.status),
-                              isDark ? 'bg-[#0b1624]' : 'bg-white',
-                            ].join(' ')}
-                            aria-label={`Status do registro ${record.id}`}
-                          >
-                            {Object.keys(statusConfig).map((status) => (
-                              <option key={status} value={status}>
-                                {status}
-                              </option>
-                            ))}
-                          </select>
-                        </div>
+                        <select
+                          value={record.status}
+                          onChange={(event) =>
+                            updateStatus(record.id, event.target.value as FeedbackStatus)
+                          }
+                          className={`rounded-lg border px-3 py-2 text-xs font-semibold outline-none focus:ring-2 focus:ring-teal-500/30 ${getStatusClasses(record.status)} ${isDark ? 'bg-[#0b1624]' : 'bg-white'}`}
+                          aria-label={`Status do registro ${record.id}`}
+                        >
+                          {statuses.map((status) => (
+                            <option key={status} value={status}>
+                              {status}
+                            </option>
+                          ))}
+                        </select>
                       </div>
 
-                      <div
-                        className={[
-                          'flex flex-col gap-4 border-t pt-4 lg:flex-row lg:items-center lg:justify-between',
-                          isDark ? 'border-white/10' : 'border-slate-200',
-                        ].join(' ')}
-                      >
+                      <div className={`flex flex-col gap-4 border-t pt-4 lg:flex-row lg:items-center lg:justify-between ${isDark ? 'border-white/10' : 'border-slate-200'}`}>
                         <div className="flex flex-wrap gap-x-8 gap-y-3">
-                          <MetadataItem
+                          <InfoItem
                             icon={User}
                             label="Solicitante"
                             value={record.requester}
-                            isDark={isDark}
+                            labelClass={labelClass}
+                            valueClass={valueClass}
                           />
-
-                          <MetadataItem
+                          <InfoItem
                             icon={ClipboardList}
                             label="Setor"
                             value={record.department}
-                            isDark={isDark}
+                            labelClass={labelClass}
+                            valueClass={valueClass}
                           />
-
-                          <MetadataItem
+                          <InfoItem
                             icon={ShieldAlert}
                             label="Perfil"
                             value={record.profile}
-                            isDark={isDark}
+                            labelClass={labelClass}
+                            valueClass={valueClass}
                           />
-
                           <div>
-                            <p
-                              className={[
-                                'text-[10px] font-bold uppercase tracking-wide',
-                                isDark ? 'text-slate-600' : 'text-slate-400',
-                              ].join(' ')}
-                            >
+                            <p className={`text-[10px] font-bold uppercase tracking-wide ${labelClass}`}>
                               Prioridade
                             </p>
-
-                            <p
-                              className={[
-                                'text-xs font-bold capitalize',
-                                getPriorityClasses(record.priority),
-                              ].join(' ')}
-                            >
-                              {priorityLabel(record.priority)}
+                            <p className={`text-xs font-bold capitalize ${getPriorityClasses(record.priority)}`}>
+                              {record.priority}
                             </p>
                           </div>
                         </div>
 
                         <button
                           type="button"
-                          onClick={() => {
+                          onClick={() =>
                             window.alert(
-                              `Detalhes do registro ${record.id}\n\n${record.title}\n\n${record.description}`,
-                            );
-                          }}
-                          className={[
-                            'inline-flex items-center gap-2 self-start rounded-lg px-3 py-2 text-xs font-semibold',
+                              `${record.id} — ${record.title}\n\n${record.description}\n\nStatus: ${record.status}`
+                            )
+                          }
+                          className={`inline-flex items-center gap-2 self-start rounded-lg px-3 py-2 text-xs font-semibold ${
                             isDark
                               ? 'text-teal-300 hover:bg-teal-500/10'
-                              : 'text-teal-600 hover:bg-teal-50',
-                          ].join(' ')}
+                              : 'text-teal-600 hover:bg-teal-50'
+                          }`}
                         >
                           Ver detalhes
                           <ArrowRight className="h-4 w-4" />
@@ -743,105 +529,61 @@ function SummaryCard({
       type="button"
       onClick={onClick}
       className={[
-        'group flex min-h-[130px] items-center justify-between rounded-2xl border p-5 text-left',
+        'group flex min-h-[130px] items-center justify-between rounded-2xl border p-5 text-left shadow-sm',
         isDark
           ? 'border-white/10 bg-[#0b1624] hover:border-teal-500/30 hover:bg-[#102033]'
           : 'border-slate-200 bg-white hover:border-teal-300 hover:bg-slate-50',
-        'focus:outline-none focus:ring-2 focus:ring-teal-500/40',
+        'hover:-translate-y-1 hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-teal-500/40',
       ].join(' ')}
     >
       <div className="flex items-center gap-4">
-        <div
-          className={[
-            'flex h-12 w-12 shrink-0 items-center justify-center rounded-xl',
-            iconClass,
-          ].join(' ')}
-        >
+        <div className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-xl ${iconClass}`}>
           <Icon className="h-6 w-6" />
         </div>
 
         <div>
-          <p
-            className={[
-              'text-3xl font-bold',
-              isDark ? 'text-white' : 'text-slate-900',
-            ].join(' ')}
-          >
+          <p className={`text-3xl font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>
             {count}
           </p>
-
-          <p
-            className={[
-              'mt-1 text-sm font-bold',
-              isDark ? 'text-slate-200' : 'text-slate-700',
-            ].join(' ')}
-          >
+          <p className={`mt-1 text-sm font-bold ${isDark ? 'text-slate-200' : 'text-slate-700'}`}>
             {title}
           </p>
-
-          <p
-            className={[
-              'mt-0.5 text-xs',
-              isDark ? 'text-slate-500' : 'text-slate-500',
-            ].join(' ')}
-          >
+          <p className={`mt-0.5 text-xs ${isDark ? 'text-slate-500' : 'text-slate-500'}`}>
             {description}
           </p>
         </div>
       </div>
 
-      <span
-        className={[
-          'flex h-9 w-9 items-center justify-center rounded-lg',
-          isDark
-            ? 'bg-white/5 text-slate-400'
-            : 'bg-slate-50 text-slate-400',
-        ].join(' ')}
-      >
+      <span className={`flex h-9 w-9 items-center justify-center rounded-lg ${isDark ? 'bg-white/5 text-slate-400 group-hover:bg-teal-500/10 group-hover:text-teal-300' : 'bg-slate-50 text-slate-400 group-hover:bg-teal-50 group-hover:text-teal-600'}`}>
         <ArrowRight className="h-4 w-4" />
       </span>
     </button>
   );
 }
 
-interface MetadataItemProps {
+interface InfoItemProps {
   icon: React.ElementType;
   label: string;
   value: string;
-  isDark: boolean;
+  labelClass: string;
+  valueClass: string;
 }
 
-function MetadataItem({
+function InfoItem({
   icon: Icon,
   label,
   value,
-  isDark,
-}: MetadataItemProps) {
+  labelClass,
+  valueClass,
+}: InfoItemProps) {
   return (
     <div className="flex items-center gap-2">
-      <Icon
-        className={[
-          'h-4 w-4',
-          isDark ? 'text-slate-500' : 'text-slate-400',
-        ].join(' ')}
-      />
-
+      <Icon className="h-4 w-4 text-slate-500" />
       <div>
-        <p
-          className={[
-            'text-[10px] font-bold uppercase tracking-wide',
-            isDark ? 'text-slate-600' : 'text-slate-400',
-          ].join(' ')}
-        >
+        <p className={`text-[10px] font-bold uppercase tracking-wide ${labelClass}`}>
           {label}
         </p>
-
-        <p
-          className={[
-            'text-xs font-semibold',
-            isDark ? 'text-slate-300' : 'text-slate-700',
-          ].join(' ')}
-        >
+        <p className={`text-xs font-semibold ${valueClass}`}>
           {value}
         </p>
       </div>

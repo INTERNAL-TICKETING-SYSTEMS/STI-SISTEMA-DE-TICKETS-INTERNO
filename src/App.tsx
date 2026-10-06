@@ -1,13 +1,12 @@
 ﻿import { dbRepository } from '@/services/dbRepository';
 import { AuditCompliancePanel } from './components/tech/AuditCompliancePanel';
 
-import OfficialReportModal from '@/components/gestor/OfficialReportModal';
 import GestorAuditTable from '@/components/gestor/GestorAuditTable';
 import { registrarAuditoria } from './services/auditService';
-import FeedbackCenter from '@/components/FeedbackCenter';
 import GestorSidebar, { GestorPage, GestorPageContainer } from '@/components/gestor/GestorSidebar';
 import GestorDashboard from '@/components/gestor/GestorDashboard';
 import { useState } from 'react';
+import GestorEquipe from '@/components/gestor/GestorEquipe';
 import Sidebar, { Page, PageContainer } from '@/components/Sidebar';
 import Login from '@/components/Login';
 import Register from '@/components/Register';
@@ -15,16 +14,18 @@ import Dashboard from '@/components/Dashboard';
 import OpenTicket from '@/components/OpenTicket';
 import MyTickets from '@/components/MyTickets';
 import TicketDetail from '@/components/TicketDetail';
+import GestorFeedbacks from '@/components/gestor/GestorFeedbacks';
+import FeedbackCenter from '@/components/FeedbackCenter';
 import Profile from '@/components/Profile';
 import TechSidebar, { TechPage, TechPageContainer } from '@/components/tech/TechSidebar';
 import TechDashboard from '@/components/tech/TechDashboard';
 import TechTickets from '@/components/tech/TechTickets';
 import TechMyAttendance from '@/components/tech/TechMyAttendance';
 import TechTicketDetail from '@/components/tech/TechTicketDetail';
+import GestorRelatorios from '@/components/gestor/GestorRelatorios';
 import { mockTickets, currentUser, currentTech, mockTechnicians } from '@/data';
 import { Ticket, UserRole, TicketStatus, User } from '@/types';
 import Logo from '@/components/Logo';
-import { BarChart3, ClipboardList, CheckCircle2, Clock, Users } from 'lucide-react';
 
 type UserView = { page: Page } | { page: 'ticket-detail'; ticketId: string };
 type TechView = { page: TechPage } | { page: 'tech-ticket-detail'; ticketId: string };
@@ -891,107 +892,30 @@ export default function App() {
           )}
 
           {gestorView === 'gestor-equipe' && (
-            <div className="space-y-4">
-              <h2 className="text-xl font-bold text-white">Produtividade da Equipe de TI</h2>
-              <p className="text-xs text-slate-400">Distribuição de chamados atendidos e tempo de resposta por técnico.</p>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-4">
-                {mockTechnicians.map((t) => {
-                  const techTickets = tickets.filter((tk) => tk.assignee === t.name);
-                  const concluidos = techTickets.filter((tk) => tk.status === 'resolvido' || tk.status === 'fechado').length;
-                  return (
-                    <div key={t.email} className="rounded-2xl border border-white/10 bg-[#0b1624] p-4">
-                      <div className="flex items-center gap-3">
-                        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-cyan-500/10 text-cyan-400 font-bold">
-                          {t.name.charAt(0)}
-                        </div>
-                        <div>
-                          <p className="text-sm font-bold text-white">{t.name}</p>
-                          <p className="text-xs text-slate-400">{t.role}</p>
-                        </div>
-                      </div>
-                      <div className="grid grid-cols-2 gap-2 mt-4 pt-4 border-t border-white/5 text-center">
-                        <div className="rounded-lg bg-black/20 p-2">
-                          <span className="block text-base font-bold text-white">{techTickets.length}</span>
-                          <span className="text-[10px] text-slate-400">Atribuídos</span>
-                        </div>
-                        <div className="rounded-lg bg-black/20 p-2">
-                          <span className="block text-base font-bold text-emerald-400">{concluidos}</span>
-                          <span className="text-[10px] text-slate-400">Concluídos</span>
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
+            <GestorEquipe tickets={tickets} />
           )}
 
           {gestorView === 'gestor-auditoria' && (
             <GestorAuditTable />
           )}
 
-          {gestorView === ('gestor-feedbacks' as any) && (
-            <FeedbackCenter
-              currentRole="gestor"
+          {gestorView === 'gestor-feedbacks' && (
+            <GestorFeedbacks
+              currentRole={activeUser.role}
               activeUserName={activeUser.name}
               activeUserDepartment={activeUser.department}
             />
           )}
 
           {gestorView === 'gestor-relatorios' && (
-            <div className="space-y-4">
-              <h2 className="text-xl font-bold text-white">Central de Relatórios Oficiais</h2>
-              <p className="text-xs text-slate-400">Emissão de relatórios consolidados em PDF e CSV.</p>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
-                <div className="rounded-2xl border border-white/10 bg-[#0b1624] p-5">
-                  <h4 className="font-bold text-white text-sm">Relatório Semanal de Atendimentos</h4>
-                  <p className="text-xs text-slate-400 mt-1">Consolidado das demandas e tempos de resolução da semana corrente.</p>
-                  <button
-                    onClick={() => {
-                      setSelectedReportType('SEMANAL');
-                      setReportModalOpen(true);
-                    }}
-                    className="mt-4 w-full rounded-xl bg-cyan-500 py-2 text-xs font-bold text-slate-950 hover:bg-cyan-400 cursor-pointer"
-                  >
-                    Gerar PDF Semanal
-                  </button>
-                </div>
-                <div className="rounded-2xl border border-white/10 bg-[#0b1624] p-5">
-                  <h4 className="font-bold text-white text-sm">Relatório Mensal de Produtividade</h4>
-                  <p className="text-xs text-slate-400 mt-1">Balanço mensal de horas gastas por técnico e peças substituídas.</p>
-                  <button
-                    onClick={() => {
-                      setSelectedReportType('MENSAL');
-                      setReportModalOpen(true);
-                    }}
-                    className="mt-4 w-full rounded-xl bg-[#00A896] py-2 text-xs font-bold text-white hover:bg-teal-500 cursor-pointer"
-                  >
-                    Gerar PDF Mensal
-                  </button>
-                </div>
-                <div className="rounded-2xl border border-white/10 bg-[#0b1624] p-5">
-                  <h4 className="font-bold text-white text-sm">Auditoria Anual de Patrimônio</h4>
-                  <p className="text-xs text-slate-400 mt-1">Histórico completo de equipamentos intervencionados.</p>
-                  <button
-                    onClick={() => {
-                      setSelectedReportType('PATRIMONIO');
-                      setReportModalOpen(true);
-                    }}
-                    className="mt-4 w-full rounded-xl border border-white/15 bg-white/5 py-2 text-xs font-bold text-white hover:bg-white/10 cursor-pointer"
-                  >
-                    Exportar Auditoria Patrimonial
-                  </button>
-                </div>
-              </div>
-
-              <OfficialReportModal
-                isOpen={reportModalOpen}
-                onClose={() => setReportModalOpen(false)}
-                tipoRelatorio={selectedReportType}
-                tickets={tickets}
-                gestorName={activeUser.name}
-              />
-            </div>
+            <GestorRelatorios
+              tickets={tickets}
+              gestorName={activeUser.name}
+              reportModalOpen={reportModalOpen}
+              selectedReportType={selectedReportType}
+              onReportModalOpenChange={setReportModalOpen}
+              onSelectedReportTypeChange={setSelectedReportType}
+            />
           )}
         </GestorPageContainer>
       </div>

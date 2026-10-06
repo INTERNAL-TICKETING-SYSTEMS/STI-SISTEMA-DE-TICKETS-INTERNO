@@ -8,13 +8,10 @@ import {
   AlertCircle,
   ArrowRight,
   LucideIcon,
-  Moon,
-  Sun,
   Sparkles,
 } from 'lucide-react';
 
 import { Ticket, TicketStatus } from '@/types';
-
 import { useTechTheme } from '@/components/tech/TechSidebar';
 
 interface Indicator {
@@ -43,132 +40,57 @@ export default function TechDashboard({
   onNavigateToQueue,
   techName,
 }: TechDashboardProps) {
-  /*
-   * ============================================================
-   * TEMA GLOBAL
-   * ============================================================
-   *
-   * O Dashboard utiliza exatamente o mesmo tema da Sidebar,
-   * TechPageContainer e demais páginas técnicas.
-   *
-   * A troca de tema é instantânea.
-   */
+  const { isDark } = useTechTheme();
 
-  const {
-    isDark,
-    toggleTheme,
-  } = useTechTheme();
-
-  /*
-   * ============================================================
-   * FILTROS DOS CHAMADOS
-   * ============================================================
-   */
-
-  const open = tickets.filter(
-    (t) => t.status === 'aberto'
-  );
-
-  const inProgress = tickets.filter(
-    (t) => t.status === 'em_andamento'
-  );
-
-  const waiting = tickets.filter(
-    (t) => t.status === 'aguardando'
-  );
-
-  const resolved = tickets.filter(
-    (t) => t.status === 'resolvido'
-  );
-
-  /*
-   * ============================================================
-   * INDICADORES
-   * ============================================================
-   */
+  const open = tickets.filter((t) => t.status === 'aberto');
+  const inProgress = tickets.filter((t) => t.status === 'em_andamento');
+  const waiting = tickets.filter((t) => t.status === 'aguardando');
+  const resolved = tickets.filter((t) => t.status === 'resolvido');
 
   const indicators: Indicator[] = [
     {
       label: 'Chamados abertos',
       count: open.length,
       icon: Inbox,
-      iconBg: isDark
-        ? 'bg-teal-500/10'
-        : 'bg-teal-50',
-      iconColor: isDark
-        ? 'text-teal-300'
-        : 'text-teal-600',
+      iconBg: isDark ? 'bg-teal-500/10' : 'bg-teal-50',
+      iconColor: isDark ? 'text-teal-300' : 'text-teal-600',
       status: 'aberto',
     },
-
     {
       label: 'Em atendimento',
       count: inProgress.length,
       icon: Headphones,
-      iconBg: isDark
-        ? 'bg-blue-500/10'
-        : 'bg-blue-50',
-      iconColor: isDark
-        ? 'text-blue-300'
-        : 'text-blue-600',
+      iconBg: isDark ? 'bg-blue-500/10' : 'bg-blue-50',
+      iconColor: isDark ? 'text-blue-300' : 'text-blue-600',
       status: 'em_andamento',
     },
-
     {
       label: 'Aguardando usuário',
       count: waiting.length,
       icon: Clock,
-      iconBg: isDark
-        ? 'bg-amber-500/10'
-        : 'bg-amber-50',
-      iconColor: isDark
-        ? 'text-amber-300'
-        : 'text-amber-600',
+      iconBg: isDark ? 'bg-amber-500/10' : 'bg-amber-50',
+      iconColor: isDark ? 'text-amber-300' : 'text-amber-600',
       status: 'aguardando',
     },
-
     {
       label: 'Resolvidos',
       count: resolved.length,
       icon: CheckCircle2,
-      iconBg: isDark
-        ? 'bg-emerald-500/10'
-        : 'bg-emerald-50',
-      iconColor: isDark
-        ? 'text-emerald-300'
-        : 'text-emerald-600',
+      iconBg: isDark ? 'bg-emerald-500/10' : 'bg-emerald-50',
+      iconColor: isDark ? 'text-emerald-300' : 'text-emerald-600',
       status: 'resolvido',
     },
   ];
 
-  /*
-   * ============================================================
-   * CHAMADOS QUE PRECISAM DE ATENÇÃO
-   * ============================================================
-   */
+  const attention = [...open, ...inProgress, ...waiting].slice(0, 6);
 
-  const attention = [
-    ...open,
-    ...inProgress,
-    ...waiting,
-  ].slice(0, 6);
-
-  /*
-   * ============================================================
-   * BADGES DE STATUS
-   * ============================================================
-   */
-
-  const getStatusBadge = (
-    status: TicketStatus
-  ) => {
+  const getStatusBadge = (status: TicketStatus) => {
     switch (status) {
       case 'aberto':
         return (
           <span
             className={[
-              'inline-flex items-center gap-2 rounded-full',
-              'border px-3 py-1 text-xs font-semibold',
+              'inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs font-semibold',
               isDark
                 ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-300'
                 : 'border-emerald-200 bg-emerald-50 text-emerald-700',
@@ -183,8 +105,7 @@ export default function TechDashboard({
         return (
           <span
             className={[
-              'inline-flex items-center gap-2 rounded-full',
-              'border px-3 py-1 text-xs font-semibold',
+              'inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs font-semibold',
               isDark
                 ? 'border-blue-500/30 bg-blue-500/10 text-blue-300'
                 : 'border-blue-200 bg-blue-50 text-blue-700',
@@ -199,8 +120,7 @@ export default function TechDashboard({
         return (
           <span
             className={[
-              'inline-flex items-center gap-2 rounded-full',
-              'border px-3 py-1 text-xs font-semibold',
+              'inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs font-semibold',
               isDark
                 ? 'border-amber-500/30 bg-amber-500/10 text-amber-300'
                 : 'border-amber-200 bg-amber-50 text-amber-700',
@@ -215,8 +135,7 @@ export default function TechDashboard({
         return (
           <span
             className={[
-              'inline-flex items-center gap-2 rounded-full',
-              'border px-3 py-1 text-xs font-semibold',
+              'inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs font-semibold',
               isDark
                 ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-300'
                 : 'border-emerald-200 bg-emerald-50 text-emerald-700',
@@ -231,8 +150,7 @@ export default function TechDashboard({
         return (
           <span
             className={[
-              'inline-flex items-center gap-2 rounded-full',
-              'border px-3 py-1 text-xs font-semibold',
+              'inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs font-semibold',
               isDark
                 ? 'border-white/10 bg-white/5 text-slate-300'
                 : 'border-slate-200 bg-slate-50 text-slate-600',
@@ -244,12 +162,6 @@ export default function TechDashboard({
     }
   };
 
-  /*
-   * ============================================================
-   * RENDER
-   * ============================================================
-   */
-
   return (
     <div
       className={[
@@ -259,204 +171,82 @@ export default function TechDashboard({
           : 'bg-slate-50 text-slate-900',
       ].join(' ')}
     >
-      <div
-        className="
-          mx-auto
-          w-full
-          max-w-[1400px]
-          space-y-7
-          px-4
-          py-5
-          sm:px-6
-          lg:px-8
-        "
-      >
-
-        {/* =====================================================
-            CABEÇALHO
-        ====================================================== */}
-
+      <div className="mx-auto w-full max-w-[1400px] space-y-7 px-4 py-5 sm:px-6 lg:px-8">
+        {/* CABEÇALHO */}
         <div
           className={[
-            'flex flex-col gap-5 rounded-2xl border p-5 shadow-sm',
-            'sm:flex-row sm:items-center sm:justify-between',
+            'flex flex-col items-start gap-5 rounded-2xl border p-5 shadow-sm',
             isDark
               ? 'border-white/10 bg-[#0b1624]'
               : 'border-slate-200 bg-white',
           ].join(' ')}
-          style={{
-            animation:
-              'stiFadeUp 0.45s ease-out both',
-          }}
         >
-          <div>
-            <div className="flex items-center gap-3">
-
-              <div
-                className={[
-                  'flex h-11 w-11 items-center justify-center rounded-xl',
-                  isDark
-                    ? 'bg-teal-500/10 text-teal-300'
-                    : 'bg-teal-50 text-teal-600',
-                ].join(' ')}
-              >
-                <Sparkles className="h-5 w-5 animate-pulse" />
-              </div>
-
-              <div>
-                <h1
-                  className={[
-                    'text-2xl font-bold tracking-tight',
-                    isDark
-                      ? 'text-white'
-                      : 'text-slate-900',
-                  ].join(' ')}
-                >
-                  Olá, {techName?.trim() || 'Técnico'}!
-                </h1>
-
-                <p
-                  className={[
-                    'mt-1 text-sm',
-                    isDark
-                      ? 'text-slate-400'
-                      : 'text-slate-600',
-                  ].join(' ')}
-                >
-                  Veja os chamados que precisam da sua atenção
-                  e clique nos cards para filtrar.
-                </p>
-              </div>
-
-            </div>
-          </div>
-
-          {/* =================================================
-              BOTÃO DE TEMA
-          ================================================== */}
-
-          <button
-            type="button"
-            onClick={toggleTheme}
-            aria-label={
-              isDark
-                ? 'Ativar modo claro'
-                : 'Ativar modo escuro'
-            }
-            title={
-              isDark
-                ? 'Ativar modo claro'
-                : 'Ativar modo escuro'
-            }
-            className={[
-              'group flex min-h-[46px] items-center justify-center',
-              'gap-3 rounded-xl border px-4 py-2.5',
-              'text-sm font-semibold',
-              'transition-all duration-300',
-              'hover:-translate-y-0.5 hover:shadow-md',
-              'focus:outline-none focus:ring-2',
-              'focus:ring-teal-500/50',
-              isDark
-                ? 'border-white/10 bg-white/5 text-slate-200 hover:border-teal-500/40 hover:bg-teal-500/10'
-                : 'border-slate-200 bg-slate-50 text-slate-700 hover:border-teal-300 hover:bg-teal-50',
-            ].join(' ')}
-          >
-            <span
+          <div className="flex items-center gap-3">
+            <div
               className={[
-                'flex h-8 w-8 items-center justify-center rounded-lg',
+                'flex h-11 w-11 shrink-0 items-center justify-center rounded-xl',
                 isDark
-                  ? 'bg-slate-800 text-amber-300 group-hover:bg-amber-400/10'
-                  : 'bg-white text-indigo-600 shadow-sm group-hover:bg-indigo-50',
+                  ? 'bg-teal-500/10 text-teal-300'
+                  : 'bg-teal-50 text-teal-600',
               ].join(' ')}
             >
-              {isDark ? (
-                <Sun
-                  className="
-                    h-4 w-4
-                    transition-transform
-                    duration-300
-                    group-hover:rotate-45
-                  "
-                />
-              ) : (
-                <Moon
-                  className="
-                    h-4 w-4
-                    transition-transform
-                    duration-300
-                    group-hover:-rotate-12
-                  "
-                />
-              )}
-            </span>
+              <Sparkles className="h-5 w-5" />
+            </div>
 
-            <span>
-              {isDark
-                ? 'Modo claro'
-                : 'Modo escuro'}
-            </span>
-          </button>
+            <div>
+              <h1
+                className={[
+                  'text-2xl font-bold tracking-tight',
+                  isDark ? 'text-white' : 'text-slate-900',
+                ].join(' ')}
+              >
+                Olá, {techName?.trim() || 'Técnico'}!
+              </h1>
+
+              <p
+                className={[
+                  'mt-1 text-sm',
+                  isDark ? 'text-slate-400' : 'text-slate-600',
+                ].join(' ')}
+              >
+                Veja os chamados que precisam da sua atenção e clique nos
+                cards para filtrar.
+              </p>
+            </div>
+          </div>
         </div>
 
-        {/* =====================================================
-            CARDS DE MÉTRICAS
-        ====================================================== */}
-
-        <div
-          className="
-            grid
-            grid-cols-1
-            gap-4
-            sm:grid-cols-2
-            lg:grid-cols-4
-          "
-        >
-          {indicators.map((ind, index) => {
+        {/* CARDS DE MÉTRICAS */}
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          {indicators.map((ind) => {
             const Icon = ind.icon;
 
             return (
               <button
                 key={ind.label}
                 type="button"
-                onClick={() =>
-                  onFilterSelect?.(ind.status)
-                }
+                onClick={() => onFilterSelect?.(ind.status)}
                 className={[
-                  'group relative flex min-h-[112px]',
-                  'items-center justify-between overflow-hidden',
-                  'rounded-2xl border p-5 text-left shadow-sm',
-                  'transition-all duration-300',
-                  'hover:-translate-y-1 hover:shadow-lg',
-                  'focus:outline-none focus:ring-2',
-                  'focus:ring-teal-500/50',
+                  'group relative flex min-h-[112px] items-center justify-between overflow-hidden rounded-2xl border p-5 text-left shadow-sm',
+                  'hover:shadow-lg',
+                  'focus:outline-none focus:ring-2 focus:ring-teal-500/50',
                   isDark
                     ? 'border-white/10 bg-[#0b1624] hover:border-teal-500/40 hover:bg-[#102033]'
                     : 'border-slate-200 bg-white hover:border-teal-300 hover:bg-teal-50/40',
                 ].join(' ')}
-                style={{
-                  animation: `stiFadeUp 0.45s ease-out ${
-                    index * 80
-                  }ms both`,
-                }}
               >
                 <div
                   className={[
-                    'pointer-events-none absolute -right-8 -top-8',
-                    'h-24 w-24 rounded-full blur-2xl',
-                    'transition-opacity duration-500',
-                    isDark
-                      ? 'bg-teal-500/10 opacity-0 group-hover:opacity-100'
-                      : 'bg-teal-300/30 opacity-0 group-hover:opacity-100',
+                    'pointer-events-none absolute -right-8 -top-8 h-24 w-24 rounded-full blur-2xl',
+                    'opacity-0 group-hover:opacity-100',
+                    isDark ? 'bg-teal-500/10' : 'bg-teal-300/30',
                   ].join(' ')}
                 />
 
                 <div className="relative z-10 flex items-center gap-4">
-
                   <div
                     className={[
-                      'flex h-12 w-12 shrink-0 items-center justify-center',
-                      'rounded-xl transition-all duration-300',
-                      'group-hover:scale-110 group-hover:rotate-2',
+                      'flex h-12 w-12 shrink-0 items-center justify-center rounded-xl',
                       ind.iconBg,
                       ind.iconColor,
                     ].join(' ')}
@@ -468,7 +258,6 @@ export default function TechDashboard({
                     <span
                       className={[
                         'block text-3xl font-bold leading-none',
-                        'transition-colors duration-200',
                         isDark
                           ? 'text-white group-hover:text-teal-300'
                           : 'text-slate-900 group-hover:text-teal-600',
@@ -480,7 +269,6 @@ export default function TechDashboard({
                     <p
                       className={[
                         'mt-2 text-sm font-medium',
-                        'transition-colors duration-200',
                         isDark
                           ? 'text-slate-400 group-hover:text-slate-300'
                           : 'text-slate-600 group-hover:text-slate-700',
@@ -489,18 +277,12 @@ export default function TechDashboard({
                       {ind.label}
                     </p>
                   </div>
-
                 </div>
 
                 <ArrowRight
                   className={[
-                    'relative z-10 h-5 w-5 shrink-0',
-                    'translate-x-2 opacity-0',
-                    'transition-all duration-300',
-                    'group-hover:translate-x-0 group-hover:opacity-100',
-                    isDark
-                      ? 'text-teal-300'
-                      : 'text-teal-600',
+                    'relative z-10 h-5 w-5 shrink-0 translate-x-2 opacity-0 group-hover:translate-x-0 group-hover:opacity-100',
+                    isDark ? 'text-teal-300' : 'text-teal-600',
                   ].join(' ')}
                 />
               </button>
@@ -508,10 +290,7 @@ export default function TechDashboard({
           })}
         </div>
 
-        {/* =====================================================
-            CHAMADOS QUE PRECISAM DE ATENÇÃO
-        ====================================================== */}
-
+        {/* CHAMADOS QUE PRECISAM DE ATENÇÃO */}
         <section
           className={[
             'overflow-hidden rounded-2xl border shadow-sm',
@@ -519,29 +298,18 @@ export default function TechDashboard({
               ? 'border-white/10 bg-[#0b1624]'
               : 'border-slate-200 bg-white',
           ].join(' ')}
-          style={{
-            animation:
-              'stiFadeUp 0.55s ease-out 280ms both',
-          }}
         >
-
-          {/* Cabeçalho */}
-
+          {/* CABEÇALHO DA TABELA */}
           <div
             className={[
-              'flex flex-col gap-3 border-b p-5',
-              'sm:flex-row sm:items-center sm:justify-between',
-              isDark
-                ? 'border-white/10'
-                : 'border-slate-200',
+              'flex flex-col items-start gap-3 border-b p-5',
+              isDark ? 'border-white/10' : 'border-slate-200',
             ].join(' ')}
           >
             <div className="flex items-center gap-3">
-
               <div
                 className={[
-                  'flex h-10 w-10 items-center justify-center',
-                  'rounded-xl',
+                  'flex h-10 w-10 items-center justify-center rounded-xl',
                   isDark
                     ? 'bg-teal-500/10 text-teal-300'
                     : 'bg-teal-50 text-teal-600',
@@ -554,9 +322,7 @@ export default function TechDashboard({
                 <h2
                   className={[
                     'text-base font-bold',
-                    isDark
-                      ? 'text-white'
-                      : 'text-slate-900',
+                    isDark ? 'text-white' : 'text-slate-900',
                   ].join(' ')}
                 >
                   Chamados que precisam de atenção
@@ -565,30 +331,21 @@ export default function TechDashboard({
                 <p
                   className={[
                     'mt-0.5 text-xs',
-                    isDark
-                      ? 'text-slate-500'
-                      : 'text-slate-500',
+                    isDark ? 'text-slate-500' : 'text-slate-500',
                   ].join(' ')}
                 >
                   Acompanhe os atendimentos pendentes da equipe.
                 </p>
               </div>
-
             </div>
 
             <button
               type="button"
-              onClick={() =>
-                onNavigateToQueue?.()
-              }
+              onClick={() => onNavigateToQueue?.()}
               className={[
-                'inline-flex min-h-[42px] items-center',
-                'justify-center gap-2 rounded-lg px-3',
-                'text-sm font-semibold',
-                'transition-all duration-200',
+                'inline-flex min-h-[42px] items-center justify-center gap-2 rounded-lg px-3 text-sm font-semibold',
                 'hover:translate-x-0.5',
-                'focus:outline-none focus:ring-2',
-                'focus:ring-teal-500/50',
+                'focus:outline-none focus:ring-2 focus:ring-teal-500/50',
                 isDark
                   ? 'text-teal-300 hover:bg-teal-500/10 hover:text-teal-200'
                   : 'text-teal-600 hover:bg-teal-50 hover:text-teal-700',
@@ -599,46 +356,24 @@ export default function TechDashboard({
             </button>
           </div>
 
-          {/* =================================================
-              TABELA
-          ================================================== */}
-
+          {/* TABELA */}
           <div className="overflow-x-auto">
             <table className="w-full min-w-[780px] text-left">
-
               <thead>
                 <tr
                   className={[
-                    'border-b text-xs font-bold uppercase',
-                    'tracking-wider',
+                    'border-b text-xs font-bold uppercase tracking-wider',
                     isDark
                       ? 'border-white/10 bg-white/[0.02] text-slate-400'
                       : 'border-slate-200 bg-slate-50 text-slate-500',
                   ].join(' ')}
                 >
-                  <th className="px-5 py-4">
-                    Protocolo
-                  </th>
-
-                  <th className="px-5 py-4">
-                    Assunto
-                  </th>
-
-                  <th className="px-5 py-4">
-                    Solicitante
-                  </th>
-
-                  <th className="px-5 py-4">
-                    Setor
-                  </th>
-
-                  <th className="px-5 py-4">
-                    Status
-                  </th>
-
-                  <th className="px-5 py-4 text-right">
-                    Ação
-                  </th>
+                  <th className="px-5 py-4">Protocolo</th>
+                  <th className="px-5 py-4">Assunto</th>
+                  <th className="px-5 py-4">Solicitante</th>
+                  <th className="px-5 py-4">Setor</th>
+                  <th className="px-5 py-4">Status</th>
+                  <th className="px-5 py-4 text-right">Ação</th>
                 </tr>
               </thead>
 
@@ -649,17 +384,13 @@ export default function TechDashboard({
                       colSpan={6}
                       className={[
                         'px-5 py-14 text-center',
-                        isDark
-                          ? 'text-slate-400'
-                          : 'text-slate-500',
+                        isDark ? 'text-slate-400' : 'text-slate-500',
                       ].join(' ')}
                     >
                       <div className="flex flex-col items-center justify-center gap-3">
-
                         <div
                           className={[
-                            'flex h-12 w-12 items-center justify-center',
-                            'rounded-full',
+                            'flex h-12 w-12 items-center justify-center rounded-full',
                             isDark
                               ? 'bg-emerald-500/10 text-emerald-300'
                               : 'bg-emerald-50 text-emerald-600',
@@ -672,9 +403,7 @@ export default function TechDashboard({
                           <p
                             className={[
                               'font-semibold',
-                              isDark
-                                ? 'text-slate-200'
-                                : 'text-slate-700',
+                              isDark ? 'text-slate-200' : 'text-slate-700',
                             ].join(' ')}
                           >
                             Tudo em dia!
@@ -683,61 +412,39 @@ export default function TechDashboard({
                           <p
                             className={[
                               'mt-1 text-sm',
-                              isDark
-                                ? 'text-slate-500'
-                                : 'text-slate-500',
+                              isDark ? 'text-slate-500' : 'text-slate-500',
                             ].join(' ')}
                           >
                             Nenhum chamado pendente no momento.
                           </p>
                         </div>
-
                       </div>
                     </td>
                   </tr>
                 ) : (
-                  attention.map((t, index) => (
+                  attention.map((t) => (
                     <tr
                       key={t.id}
-                      onClick={() =>
-                        onOpenTicket(t.id)
-                      }
+                      onClick={() => onOpenTicket(t.id)}
                       tabIndex={0}
                       onKeyDown={(e) => {
-                        if (
-                          e.key === 'Enter' ||
-                          e.key === ' '
-                        ) {
+                        if (e.key === 'Enter' || e.key === ' ') {
                           e.preventDefault();
                           onOpenTicket(t.id);
                         }
                       }}
                       className={[
-                        'group cursor-pointer border-b',
-                        'transition-colors duration-200',
-                        'last:border-b-0',
-                        'focus:outline-none focus:ring-2',
-                        'focus:ring-inset focus:ring-teal-500/50',
+                        'group cursor-pointer border-b last:border-b-0',
+                        'focus:outline-none focus:ring-2 focus:ring-inset focus:ring-teal-500/50',
                         isDark
                           ? 'border-white/[0.06] hover:bg-teal-500/[0.04]'
                           : 'border-slate-100 hover:bg-teal-50/60',
                       ].join(' ')}
-                      style={{
-                        animation: `stiFadeIn ${
-                          0.35
-                        }s ease-out ${
-                          350 + index * 60
-                        }ms both`,
-                      }}
                     >
-
-                      {/* Protocolo */}
-
                       <td className="px-5 py-4">
                         <span
                           className={[
                             'font-mono text-sm font-bold',
-                            'transition-colors duration-200',
                             isDark
                               ? 'text-slate-200 group-hover:text-teal-300'
                               : 'text-slate-800 group-hover:text-teal-600',
@@ -747,13 +454,10 @@ export default function TechDashboard({
                         </span>
                       </td>
 
-                      {/* Assunto */}
-
                       <td className="max-w-[280px] px-5 py-4">
                         <span
                           className={[
                             'block truncate text-sm font-semibold',
-                            'transition-colors duration-200',
                             isDark
                               ? 'text-slate-200 group-hover:text-white'
                               : 'text-slate-800 group-hover:text-slate-900',
@@ -763,119 +467,51 @@ export default function TechDashboard({
                         </span>
                       </td>
 
-                      {/* Solicitante */}
-
                       <td className="px-5 py-4">
                         <span
                           className={[
                             'text-sm',
-                            isDark
-                              ? 'text-slate-300'
-                              : 'text-slate-700',
+                            isDark ? 'text-slate-300' : 'text-slate-700',
                           ].join(' ')}
                         >
                           {t.requesterName}
                         </span>
                       </td>
 
-                      {/* Setor */}
-
                       <td className="px-5 py-4">
                         <span
                           className={[
                             'text-sm',
-                            isDark
-                              ? 'text-slate-400'
-                              : 'text-slate-600',
+                            isDark ? 'text-slate-400' : 'text-slate-600',
                           ].join(' ')}
                         >
                           {t.requesterDepartment}
                         </span>
                       </td>
 
-                      {/* Status */}
-
                       <td className="px-5 py-4">
                         {getStatusBadge(t.status)}
                       </td>
 
-                      {/* Ação */}
-
                       <td className="px-5 py-4 text-right">
                         <span
                           className={[
-                            'inline-flex items-center gap-1.5',
-                            'text-sm font-bold',
-                            'transition-all duration-200',
-                            'group-hover:translate-x-0.5',
-                            isDark
-                              ? 'text-teal-300'
-                              : 'text-teal-600',
+                            'inline-flex items-center gap-1.5 text-sm font-bold group-hover:translate-x-0.5',
+                            isDark ? 'text-teal-300' : 'text-teal-600',
                           ].join(' ')}
                         >
                           Atender
-
-                          <ArrowRight
-                            className="
-                              h-4 w-4
-                              transition-transform
-                              duration-200
-                              group-hover:translate-x-1
-                            "
-                          />
+                          <ArrowRight className="h-4 w-4 group-hover:translate-x-1" />
                         </span>
                       </td>
-
                     </tr>
                   ))
                 )}
               </tbody>
-
             </table>
           </div>
         </section>
       </div>
-
-      {/* =======================================================
-          ANIMAÇÕES
-      ======================================================== */}
-
-      <style>{`
-        @keyframes stiFadeUp {
-          from {
-            opacity: 0;
-            transform: translateY(14px);
-          }
-
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-
-        @keyframes stiFadeIn {
-          from {
-            opacity: 0;
-            transform: translateY(4px);
-          }
-
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-
-        @media (prefers-reduced-motion: reduce) {
-          *,
-          *::before,
-          *::after {
-            animation-duration: 0.01ms !important;
-            animation-iteration-count: 1 !important;
-            transition-duration: 0.01ms !important;
-            scroll-behavior: auto !important;
-          }
-        }
-      `}</style>
     </div>
   );
 }
