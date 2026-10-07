@@ -191,7 +191,7 @@ export default function OpenTicket({
       new Date().toLocaleString('pt-BR')
     );
 
-    const ticketData: OpenTicketData = {
+    const ticketData: any = {
       title,
       category:
         categories.find(
