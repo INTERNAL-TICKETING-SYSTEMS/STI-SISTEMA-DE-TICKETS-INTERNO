@@ -10,46 +10,8 @@ export const currentUser: User = {
   roles: ['usuario'],
 };
 
-export const mockManagersAndMultiRoles: User[] = [
-  {
-    name: 'Wanderson Silveira',
-    email: 'wanderson.ti@orgao.to.gov.br',
-    department: 'Diretoria de TI',
-    role: 'Chefe de Setor / TI',
-    phone: '(63) 98400-1001',
-    userRole: 'gestor',
-    roles: ['tecnico', 'gestor'],
-  },
-  {
-    name: 'Dr. Carlos Eduardo Lima',
-    email: 'diretor.geral@orgao.to.gov.br',
-    department: 'Gabinete da Diretoria',
-    role: 'Diretor Geral',
-    phone: '(63) 98400-1002',
-    userRole: 'gestor',
-    roles: ['usuario', 'gestor'],
-  },
-  {
-    name: 'Roberto Albuquerque',
-    email: 'roberto.gerencia@orgao.to.gov.br',
-    department: 'Gerência Operacional',
-    role: 'Gerente Administrativo',
-    phone: '(63) 98400-1003',
-    userRole: 'gestor',
-    roles: ['usuario', 'gestor'],
-  },
-];
-
 export const mockTechnicians: User[] = [
-  {
-    name: 'Wanderson Silveira',
-    email: 'wanderson.ti@orgao.to.gov.br',
-    department: 'Diretoria de TI',
-    role: 'Chefe de Setor / TI',
-    phone: '(63) 98400-1001',
-    userRole: 'tecnico',
-    roles: ['tecnico', 'gestor'],
-  },
+
   {
     name: 'Daniel Santos',
     email: 'danielandsanfer@gmail.com',
@@ -58,14 +20,7 @@ export const mockTechnicians: User[] = [
     phone: '(63) 99999-0001',
     userRole: 'tecnico',
   },
-  {
-    name: 'João Pedro Moreira',
-    email: 'joaopedromms20@gmail.com',
-    department: 'Manutenção / TI',
-    role: 'Técnico de Suporte',
-    phone: '(63) 99999-0002',
-    userRole: 'tecnico',
-  },
+
   {
     name: 'Guilherme Ferreira',
     email: 'guidetranto@gmail.com',
@@ -74,11 +29,21 @@ export const mockTechnicians: User[] = [
     phone: '(63) 99999-0003',
     userRole: 'tecnico',
   },
+
+  {
+    name: 'João Pedro Moreira',
+    email: 'joaopedromms20@gmail.com',
+    department: 'Manutenção / TI',
+    role: 'Técnico de Suporte',
+    phone: '(63) 99999-0002',
+    userRole: 'tecnico',
+  },
+
   {
     name: 'Wanderson Alves',
     email: 'wandersonmaior@gmail.com',
     department: 'Manutenção / TI',
-    role: 'Técnico de Suporte',
+    role: ' Chefe TI/Técnico de Suporte',
     phone: '(63) 99999-0004',
     userRole: 'tecnico',
   },

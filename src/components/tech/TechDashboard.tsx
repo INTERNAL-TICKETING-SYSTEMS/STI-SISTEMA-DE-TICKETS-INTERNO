@@ -8,7 +8,6 @@ import {
   AlertCircle,
   ArrowRight,
   LucideIcon,
-  Sparkles,
 } from 'lucide-react';
 
 import { Ticket, TicketStatus } from '@/types';
@@ -182,17 +181,6 @@ export default function TechDashboard({
           ].join(' ')}
         >
           <div className="flex items-center gap-3">
-            <div
-              className={[
-                'flex h-11 w-11 shrink-0 items-center justify-center rounded-xl',
-                isDark
-                  ? 'bg-teal-500/10 text-teal-300'
-                  : 'bg-teal-50 text-teal-600',
-              ].join(' ')}
-            >
-              <Sparkles className="h-5 w-5" />
-            </div>
-
             <div>
               <h1
                 className={[
