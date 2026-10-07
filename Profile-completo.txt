@@ -1,4 +1,4 @@
-import { registrarAuditoria } from '../services/auditService';
+﻿import { registrarAuditoria } from '../services/auditService';
 import React, { useState } from 'react';
 
 import { User } from '@/types';
@@ -42,7 +42,7 @@ export default function Profile({
       '(63) 98400-0000',
     department:
       user.department ||
-      'DTI - Diretoria de Tecnologia da Informação',
+      'DTI - Diretoria de Tecnologia da InformaÃ§Ã£o',
     role:
       user.role ||
       'Servidor / Colaborador',
@@ -127,7 +127,7 @@ export default function Profile({
   |--------------------------------------------------------------------------
   |
   | Tudo que depende de tema fica definido aqui.
-  | Não usamos transition-colors para troca de tema.
+  | NÃ£o usamos transition-colors para troca de tema.
   |
   */
 
@@ -174,7 +174,7 @@ export default function Profile({
 
   /*
   |--------------------------------------------------------------------------
-  | INPUT EDITÁVEL
+  | INPUT EDITÃVEL
   |--------------------------------------------------------------------------
   */
 
@@ -183,19 +183,17 @@ export default function Profile({
     'focus:!ring-[#14b8a6]/20',
     isDark
       ? [
-        '!border-slate-700',
-        '!bg-[#111f2e]',
-        '!text-slate-100',
-        'placeholder:!text-slate-500',
-        '[color-scheme:dark]',
-      ].join(' ')
+          '!border-slate-700',
+          '!bg-[#111f2e]',
+          '!text-slate-100',
+          'placeholder:!text-slate-500',
+        ].join(' ')
       : [
-        '!border-slate-300',
-        '!bg-white',
-        '!text-slate-900',
-        'placeholder:!text-slate-400',
-        '[color-scheme:light]',
-      ].join(' '),
+          '!border-slate-300',
+          '!bg-white',
+          '!text-slate-900',
+          'placeholder:!text-slate-400',
+        ].join(' '),
   ].join(' ');
 
   /*
@@ -209,24 +207,24 @@ export default function Profile({
     'disabled:opacity-100',
     isDark
       ? [
-        '!border-slate-700',
-        '!bg-[#101c2a]',
-        '!text-slate-200',
-        'disabled:!bg-[#101c2a]',
-        'disabled:!text-slate-200',
-      ].join(' ')
+          '!border-slate-700',
+          '!bg-[#101c2a]',
+          '!text-slate-200',
+          'disabled:!bg-[#101c2a]',
+          'disabled:!text-slate-200',
+        ].join(' ')
       : [
-        '!border-slate-300',
-        '!bg-slate-100',
-        '!text-slate-700',
-        'disabled:!bg-slate-100',
-        'disabled:!text-slate-700',
-      ].join(' '),
+          '!border-slate-300',
+          '!bg-slate-100',
+          '!text-slate-700',
+          'disabled:!bg-slate-100',
+          'disabled:!text-slate-700',
+        ].join(' '),
   ].join(' ');
 
   /*
   |--------------------------------------------------------------------------
-  | ÍCONE DOS CAMPOS
+  | ÃCONE DOS CAMPOS
   |--------------------------------------------------------------------------
   */
 
@@ -243,12 +241,11 @@ export default function Profile({
       className={[
         'max-w-5xl space-y-6 pb-8',
         pageText,
-        isDark ? '[color-scheme:dark]' : '[color-scheme:light]',
       ].join(' ')}
     >
 
       {/* =========================================================
-          CABEÇALHO
+          CABEÃ‡ALHO
       ========================================================= */}
 
       <div>
@@ -259,7 +256,7 @@ export default function Profile({
               headingText,
             ].join(' ')}
           >
-            Perfil Técnico
+            Perfil TÃ©cnico
           </h1>
 
           <span
@@ -284,14 +281,14 @@ export default function Profile({
             secondaryText,
           ].join(' ')}
         >
-          Informações profissionais e dados
+          InformaÃ§Ãµes profissionais e dados
           de contato utilizados no Sistema de
           Tickets do DETRAN-TO.
         </p>
       </div>
 
       {/* =========================================================
-          IDENTIDADE DO TÉCNICO
+          IDENTIDADE DO TÃ‰CNICO
       ========================================================= */}
 
       <section
@@ -458,7 +455,7 @@ export default function Profile({
           ].join(' ')}
         >
 
-          {/* Função */}
+          {/* FunÃ§Ã£o */}
 
           <div
             className={[
@@ -480,7 +477,7 @@ export default function Profile({
             >
               <Briefcase className="h-4 w-4" />
 
-              Função
+              FunÃ§Ã£o
             </div>
 
             <p
@@ -573,7 +570,7 @@ export default function Profile({
       </section>
 
       {/* =========================================================
-          INFORMAÇÕES PROFISSIONAIS
+          INFORMAÃ‡Ã•ES PROFISSIONAIS
       ========================================================= */}
 
       <form
@@ -588,7 +585,7 @@ export default function Profile({
         ].join(' ')}
       >
 
-        {/* Cabeçalho da seção */}
+        {/* CabeÃ§alho da seÃ§Ã£o */}
 
         <div
           className={[
@@ -619,7 +616,7 @@ export default function Profile({
                     headingText,
                   ].join(' ')}
                 >
-                  Informações profissionais
+                  InformaÃ§Ãµes profissionais
                 </h3>
 
                 <p
@@ -628,7 +625,7 @@ export default function Profile({
                     secondaryText,
                   ].join(' ')}
                 >
-                  Dados utilizados para identificação dentro do STI.
+                  Dados utilizados para identificaÃ§Ã£o dentro do STI.
                 </p>
               </div>
 
@@ -645,7 +642,7 @@ export default function Profile({
             >
               <Pencil className="h-3.5 w-3.5" />
 
-              Campos editáveis
+              Campos editÃ¡veis
             </div>
 
           </div>
@@ -654,7 +651,7 @@ export default function Profile({
         <div className="space-y-6 p-6">
 
           {/* =====================================================
-              IDENTIFICAÇÃO
+              IDENTIFICAÃ‡ÃƒO
           ===================================================== */}
 
           <div>
@@ -670,7 +667,7 @@ export default function Profile({
                     : 'text-[#0f766e]',
                 ].join(' ')}
               >
-                Identificação
+                IdentificaÃ§Ã£o
               </h4>
             </div>
 
@@ -713,7 +710,7 @@ export default function Profile({
               {/* Cargo */}
 
               <Field
-                label="Cargo / Função"
+                label="Cargo / FunÃ§Ã£o"
                 className={fieldLabelClass}
               >
                 <div className="relative">
@@ -749,7 +746,7 @@ export default function Profile({
               {/* Setor */}
 
               <Field
-                label="Setor / Lotação"
+                label="Setor / LotaÃ§Ã£o"
                 className={fieldLabelClass}
               >
                 <div className="relative">
@@ -822,7 +819,7 @@ export default function Profile({
           </div>
 
           {/* =====================================================
-              COMUNICAÇÃO
+              COMUNICAÃ‡ÃƒO
           ===================================================== */}
 
           <div
@@ -855,7 +852,7 @@ export default function Profile({
                       : 'text-[#0f766e]',
                   ].join(' ')}
                 >
-                  Canais de comunicação
+                  Canais de comunicaÃ§Ã£o
                 </h4>
 
                 <p
@@ -864,7 +861,7 @@ export default function Profile({
                     secondaryText,
                   ].join(' ')}
                 >
-                  Utilizados para comunicações e notificações relacionadas aos chamados.
+                  Utilizados para comunicaÃ§Ãµes e notificaÃ§Ãµes relacionadas aos chamados.
                 </p>
               </div>
 
@@ -944,7 +941,7 @@ export default function Profile({
         </div>
 
         {/* =========================================================
-            RODAPÉ
+            RODAPÃ‰
         ========================================================= */}
 
         <div
@@ -973,7 +970,7 @@ export default function Profile({
                 secondaryText,
               ].join(' ')}
             >
-              Alterações realizadas neste perfil são
+              AlteraÃ§Ãµes realizadas neste perfil sÃ£o
               registradas na auditoria do sistema.
             </p>
 
@@ -985,7 +982,7 @@ export default function Profile({
               <span className="flex items-center gap-1.5 text-xs font-semibold text-emerald-500">
                 <CheckCircle2 className="h-4 w-4" />
 
-                Alterações salvas!
+                AlteraÃ§Ãµes salvas!
               </span>
             )}
 
@@ -993,7 +990,7 @@ export default function Profile({
               type="submit"
               variant="primary"
             >
-              Salvar alterações
+              Salvar alteraÃ§Ãµes
             </Button>
 
           </div>
@@ -1002,7 +999,7 @@ export default function Profile({
       </form>
 
       {/* =========================================================
-          SEGURANÇA E CONTA
+          SEGURANÃ‡A E CONTA
       ========================================================= */}
 
       <section
@@ -1015,7 +1012,7 @@ export default function Profile({
         ].join(' ')}
       >
 
-        {/* Cabeçalho */}
+        {/* CabeÃ§alho */}
 
         <div
           className={[
@@ -1045,7 +1042,7 @@ export default function Profile({
                   headingText,
                 ].join(' ')}
               >
-                Segurança e conta
+                SeguranÃ§a e conta
               </h3>
 
               <p
@@ -1054,7 +1051,7 @@ export default function Profile({
                   secondaryText,
                 ].join(' ')}
               >
-                Informações relacionadas ao acesso do usuário ao sistema.
+                InformaÃ§Ãµes relacionadas ao acesso do usuÃ¡rio ao sistema.
               </p>
             </div>
 
@@ -1126,7 +1123,7 @@ export default function Profile({
 
           </div>
 
-          {/* Identificação */}
+          {/* IdentificaÃ§Ã£o */}
 
           <div
             className={[
@@ -1148,7 +1145,7 @@ export default function Profile({
                     : 'text-slate-600',
                 ].join(' ')}
               >
-                Identificação da conta
+                IdentificaÃ§Ã£o da conta
               </p>
 
               <p

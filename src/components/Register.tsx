@@ -91,10 +91,7 @@ function RegisterWelcomePanel() {
       </div>
 
       <div className="relative z-10 mx-auto w-full max-w-lg py-8">
-        <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-teal-400/20 bg-teal-400/10 px-3 py-1.5 text-xs font-semibold text-teal-300">
-          <Sparkles className="h-4 w-4" />
-          Seu suporte de TI, mais simples
-        </div>
+        
 
         <h1 className="text-3xl font-bold leading-tight lg:text-4xl">
           Seu primeiro acesso começa aqui.
