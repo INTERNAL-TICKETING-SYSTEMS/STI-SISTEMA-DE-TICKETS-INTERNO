@@ -1,4 +1,5 @@
-﻿/**
+﻿import { smtpEmailService } from './smtpEmailService';
+/**
  * Repositório Central de Dados - STI
  * Integrado ao subsistema oficial Spring Boot: DATA-AUDIT (porta 8081)
  */

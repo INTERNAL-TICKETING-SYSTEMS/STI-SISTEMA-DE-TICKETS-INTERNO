@@ -1,5 +1,4 @@
 ﻿import { dbRepository } from '../services/dbRepository';
-import { enviarOtpMetaWhatsApp } from '../services/metaWhatsappService';
 import React, { useEffect, useState } from 'react';
 import {
   Lock,
@@ -209,72 +208,33 @@ export default function Login({
 
   const handleGenerateRecoveryCode = async () => {
     setForgotErrorMessage('');
-
+    setForgotSuccessMessage('');
     const input = forgotInput.trim().toLowerCase();
-    const rawPhone = forgotPhone.replace(/\D/g, '');
-
+    const emailPessoal = forgotPhone.trim();
     if (!input) {
-      setForgotErrorMessage(
-        'Informe seu e-mail cadastrado ou matrícula.'
-      );
+      setForgotErrorMessage('Informe seu e-mail cadastrado ou matrícula.');
       return;
     }
-
-    if (rawPhone.length < 10) {
-      setForgotErrorMessage(
-        'Informe seu número de WhatsApp com DDD (ex: 63984000000).'
-      );
+    if (!emailPessoal || !emailPessoal.includes('@')) {
+      setForgotErrorMessage('Informe um e-mail pessoal válido para o envio do OTP.');
       return;
     }
-
     setSendingOtp(true);
-
     try {
-      const code = Math.floor(
-        100000 + Math.random() * 900000
-      ).toString();
-
-      setGeneratedOtp(code);
-      setForgotTargetAccount(input);
-
-      const result = await enviarOtpMetaWhatsApp({
-        phoneNumber: rawPhone,
-        otpCode: code,
-        accountEmail: input,
-      });
-
-      const user =
-        await dbRepository.buscarUsuarioPorLogin(input);
-
-      const userId = user
-        ? user.id
-        : 'b0000000-0000-0000-0000-000000000003';
-
-      await dbRepository.salvarRecuperacaoOtp(
-        userId,
-        code,
-        result.messageId
-      );
-
-      if (!result.success) {
-        setForgotErrorMessage(
-          `Erro Meta: ${result.error}`
-        );
-
-        console.error(
-          'Detalhes do erro Meta:',
-          result.metaDetails
-        );
-
+      const user = await dbRepository.buscarUsuarioPorLogin(input);
+      if (!user) {
+        setForgotErrorMessage('Usuário não encontrado no sistema.');
+        setSendingOtp(false);
         return;
       }
-
+      const code = Math.floor(100000 + Math.random() * 900000).toString();
+      setGeneratedOtp(code);
+      setForgotTargetAccount(user.email);
+      await dbRepository.salvarRecuperacaoOtp(user.id, code, emailPessoal);
+      setForgotSuccessMessage('Código de segurança enviado com sucesso para o seu e-mail pessoal!');
       setForgotStep('VERIFY');
     } catch (err: any) {
-      setForgotErrorMessage(
-        err?.message ||
-          'Erro de conexão ao solicitar recuperação.'
-      );
+      setForgotErrorMessage(err?.message || 'Erro de conexão ao solicitar recuperação.');
     } finally {
       setSendingOtp(false);
     }
@@ -1100,7 +1060,7 @@ export default function Login({
                         </h3>
 
                         <p className="mt-1 text-sm text-slate-400">
-                          Validação rápida via WhatsApp
+                          Validação segura via E-mail (SMTP)
                         </p>
                       </div>
                     </div>
@@ -1125,7 +1085,7 @@ export default function Login({
                     ) : forgotStep === 'IDENTIFY' ? (
                       <div className="space-y-5">
                         <p className="text-sm leading-relaxed text-slate-300">
-                          Informe seu e-mail e o número do seu WhatsApp com DDD para receber o código de segurança.
+                          Informe seu e-mail institucional e o seu e-mail pessoal para receber o código de segurança.
                         </p>
 
                         <div>
@@ -1148,7 +1108,7 @@ export default function Login({
 
                         <div>
                           <label className="mb-2 block text-sm font-semibold text-slate-300">
-                            Seu WhatsApp (com DDD)
+                            E-mail Pessoal (para envio do OTP)
                           </label>
 
                           <input
@@ -1159,7 +1119,7 @@ export default function Login({
                                 e.target.value
                               )
                             }
-                            placeholder="Ex: (63) 98400-0000"
+                            placeholder="Ex: seu.email@gmail.com"
                             className="h-14 w-full rounded-xl border border-white/10 bg-white/5 px-4 text-base text-white outline-none transition-colors placeholder:text-slate-500 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20"
                           />
                         </div>
@@ -1190,8 +1150,8 @@ export default function Login({
                             className="min-h-12 rounded-xl bg-emerald-600 px-5 text-sm font-bold text-white shadow-lg shadow-emerald-600/20 transition-colors hover:bg-emerald-500 disabled:cursor-not-allowed disabled:opacity-50"
                           >
                             {sendingOtp
-                              ? 'Enviando via Meta API...'
-                              : 'Enviar Código via WhatsApp Oficial →'}
+                              ? 'Enviando e-mail via SMTP...'
+                              : 'Enviar Código via E-mail (SMTP) →'}
                           </button>
                         </div>
                       </div>
@@ -1208,7 +1168,7 @@ export default function Login({
                           </span>
 
                           <span className="mt-1 block text-sm text-slate-300">
-                            Verifique a mensagem oficial recebida no WhatsApp do número informado.
+                            Verifique a caixa de entrada ou spam do e-mail pessoal informado.
                           </span>
                         </div>
 
@@ -1308,3 +1268,4 @@ export default function Login({
     </div>
   );
 }
+
