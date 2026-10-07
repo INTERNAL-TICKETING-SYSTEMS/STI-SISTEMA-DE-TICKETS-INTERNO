@@ -132,3 +132,40 @@ CREATE TABLE IF NOT EXISTS auditoria_logs (
 CREATE INDEX IF NOT EXISTS idx_auditoria_usuario ON auditoria_logs(usuario_id);
 CREATE INDEX IF NOT EXISTS idx_auditoria_entidade ON auditoria_logs(entidade, entidade_id);
 CREATE INDEX IF NOT EXISTS idx_auditoria_criado_em ON auditoria_logs(criado_em DESC);
+
+
+-- --------------------------------------------------------------------
+-- 8. TABELA: feedbacks_demandas (Central de Feedbacks, Falhas e Demandas Gerenciais)
+-- --------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS feedbacks_demandas (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    codigo VARCHAR(20) NOT NULL UNIQUE,
+    tipo VARCHAR(30) NOT NULL CHECK (tipo IN ('falha', 'sugestao', 'demanda_gerencial')),
+    titulo VARCHAR(180) NOT NULL,
+    descricao TEXT NOT NULL,
+    solicitante_nome VARCHAR(150) NOT NULL,
+    departamento VARCHAR(120) NOT NULL,
+    perfil VARCHAR(30) NOT NULL CHECK (perfil IN ('Servidor', 'Gestor')),
+    prioridade VARCHAR(20) NOT NULL DEFAULT 'media' CHECK (prioridade IN ('alta', 'media', 'baixa')),
+    status VARCHAR(30) NOT NULL DEFAULT 'Novo' CHECK (status IN ('Novo', 'Em análise', 'Concluído', 'Descartado')),
+    criado_em TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_feedbacks_tipo ON feedbacks_demandas(tipo);
+CREATE INDEX IF NOT EXISTS idx_feedbacks_status ON feedbacks_demandas(status);
+
+
+-- --------------------------------------------------------------------
+-- 9. TABELA: chamados_anexos (Evidências, Prints e Documentos dos Tickets)
+-- --------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS chamados_anexos (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    chamado_id UUID NOT NULL REFERENCES chamados(id) ON DELETE CASCADE,
+    nome_arquivo VARCHAR(255) NOT NULL,
+    caminho_url TEXT NOT NULL,
+    tipo_mime VARCHAR(100),
+    enviado_por VARCHAR(150),
+    criado_em TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_anexos_chamado ON chamados_anexos(chamado_id);
