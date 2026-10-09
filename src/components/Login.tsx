@@ -1,4 +1,5 @@
-﻿import { dbRepository } from '../services/dbRepository';
+﻿
+import { dbRepository } from '../services/dbRepository';
 import React, { useEffect, useState } from 'react';
 import {
   Lock,
@@ -55,7 +56,6 @@ const multiRoleAccountsConfig: Record<
       },
     ],
   },
-
   'luigue.brandao@sti.chamados.com': {
     name: 'Luigue Soares Brandão',
     roles: [
@@ -73,7 +73,6 @@ const multiRoleAccountsConfig: Record<
       },
     ],
   },
-
   'elias.junior@sti.chamados.com': {
     name: 'Elias Nunes da Silva Junior',
     roles: [
@@ -98,12 +97,32 @@ interface LoginProps {
   onGoToRegister: () => void;
 }
 
+function getInitialTheme(): ThemeMode {
+  try {
+    const savedTheme = localStorage.getItem(THEME_STORAGE_KEY);
+
+    if (savedTheme === 'dark' || savedTheme === 'light') {
+      return savedTheme;
+    }
+  } catch {
+    // Continua com o tema do sistema caso o armazenamento não esteja disponível.
+  }
+
+  if (
+    typeof window !== 'undefined' &&
+    window.matchMedia?.('(prefers-color-scheme: dark)').matches
+  ) {
+    return 'dark';
+  }
+
+  return 'light';
+}
+
 export default function Login({
   onLogin,
   onGoToRegister,
 }: LoginProps) {
   const [isForgotOpen, setIsForgotOpen] = useState(false);
-
   const [forgotInput, setForgotInput] = useState('');
   const [forgotPhone, setForgotPhone] = useState('');
   const [forgotStep, setForgotStep] =
@@ -111,18 +130,11 @@ export default function Login({
 
   const [generatedOtp, setGeneratedOtp] = useState('');
   const [userOtpInput, setUserOtpInput] = useState('');
-
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-
-  const [forgotTargetAccount, setForgotTargetAccount] =
-    useState<string>('');
-
-  const [forgotSuccessMessage, setForgotSuccessMessage] =
-    useState('');
-
-  const [forgotErrorMessage, setForgotErrorMessage] =
-    useState('');
+  const [forgotTargetAccount, setForgotTargetAccount] = useState('');
+  const [forgotSuccessMessage, setForgotSuccessMessage] = useState('');
+  const [forgotErrorMessage, setForgotErrorMessage] = useState('');
 
   const [email, setEmail] = useState('');
   const [senha, setSenha] = useState('');
@@ -139,181 +151,159 @@ export default function Login({
   } | null>(null);
 
   const [sendingOtp, setSendingOtp] = useState(false);
-
-  /*
-   * ============================================================
-   * TEMA
-   * ============================================================
-   *
-   * Primeiro acesso:
-   * - respeita o sistema operacional/navegador.
-   *
-   * Depois:
-   * - se o usuário trocar manualmente, salvamos a escolha.
-   */
-
-  const getInitialTheme = (): ThemeMode => {
-    const savedTheme = localStorage.getItem(
-      THEME_STORAGE_KEY
-    ) as ThemeMode | null;
-
-    if (savedTheme === 'dark' || savedTheme === 'light') {
-      return savedTheme;
-    }
-
-    if (
-      typeof window !== 'undefined' &&
-      window.matchMedia('(prefers-color-scheme: dark)').matches
-    ) {
-      return 'dark';
-    }
-
-    return 'light';
-  };
-
-  const [theme, setTheme] =
-    useState<ThemeMode>(getInitialTheme);
-
+  const [theme, setTheme] = useState<ThemeMode>(getInitialTheme);
   const isDark = theme === 'dark';
 
   useEffect(() => {
-    document.documentElement.classList.toggle('dark', isDark);
+    const root = document.documentElement;
+    const body = document.body;
 
-    document.documentElement.style.colorScheme = isDark
-      ? 'dark'
-      : 'light';
+    root.setAttribute('data-theme', theme);
+    root.classList.toggle('dark', isDark);
+    root.style.colorScheme = theme;
 
-    return () => {
-      document.documentElement.style.colorScheme = '';
-    };
-  }, [isDark]);
+    body.style.backgroundColor = isDark ? '#06111d' : '#f1f5f9';
+    body.style.color = isDark ? '#f1f5f9' : '#0f172a';
+
+    try {
+      localStorage.setItem(THEME_STORAGE_KEY, theme);
+    } catch {
+      // A tela continua funcionando mesmo sem persistência.
+    }
+  }, [theme, isDark]);
 
   const toggleTheme = () => {
-    const nextTheme: ThemeMode =
-      theme === 'dark' ? 'light' : 'dark';
-
-    setTheme(nextTheme);
-
-    localStorage.setItem(
-      THEME_STORAGE_KEY,
-      nextTheme
-    );
+    setTheme((current) => (current === 'dark' ? 'light' : 'dark'));
   };
 
-  /*
-   * ============================================================
-   * RECUPERAÇÃO DE SENHA
-   * ============================================================
-   */
+  const pageBackground = isDark ? 'bg-[#06111d]' : 'bg-slate-100';
+  const loginPanelBackground = isDark ? 'bg-[#071421]' : 'bg-slate-50';
+  const cardBackground = isDark ? 'bg-[#0b1727]' : 'bg-white';
+  const cardBorder = isDark ? 'border-slate-700/80' : 'border-slate-200';
+  const headingColor = isDark ? 'text-white' : 'text-slate-950';
+  const bodyColor = isDark ? 'text-slate-300' : 'text-slate-600';
+  const mutedColor = isDark ? 'text-slate-400' : 'text-slate-500';
+
+  const inputBackground = isDark ? 'bg-[#101e30]' : 'bg-white';
+  const inputBorder = isDark ? 'border-slate-600' : 'border-slate-300';
+  const inputText = isDark ? 'text-white' : 'text-slate-900';
+  const inputPlaceholder = isDark
+    ? 'placeholder:text-slate-500'
+    : 'placeholder:text-slate-400';
+
+  const labelColor = isDark ? 'text-slate-200' : 'text-slate-700';
+  const modalBackground = isDark ? 'bg-[#0b1624]' : 'bg-white';
+  const modalText = isDark ? 'text-white' : 'text-slate-900';
+  const modalMuted = isDark ? 'text-slate-400' : 'text-slate-600';
+  const modalBorder = isDark ? 'border-slate-700' : 'border-slate-200';
+  const modalFieldBackground = isDark ? 'bg-white/5' : 'bg-slate-50';
+  const modalFieldBorder = isDark ? 'border-white/10' : 'border-slate-300';
 
   const handleGenerateRecoveryCode = async () => {
     setForgotErrorMessage('');
     setForgotSuccessMessage('');
+
     const input = forgotInput.trim().toLowerCase();
     const emailPessoal = forgotPhone.trim();
+
     if (!input) {
       setForgotErrorMessage('Informe seu e-mail cadastrado ou matrícula.');
       return;
     }
+
     if (!emailPessoal || !emailPessoal.includes('@')) {
-      setForgotErrorMessage('Informe um e-mail pessoal válido para o envio do OTP.');
+      setForgotErrorMessage(
+        'Informe um e-mail pessoal válido para o envio do OTP.',
+      );
       return;
     }
+
     setSendingOtp(true);
+
     try {
       const user = await dbRepository.buscarUsuarioPorLogin(input);
+
       if (!user) {
         setForgotErrorMessage('Usuário não encontrado no sistema.');
-        setSendingOtp(false);
         return;
       }
+
       const code = Math.floor(100000 + Math.random() * 900000).toString();
+
       setGeneratedOtp(code);
       setForgotTargetAccount(user.email);
-      await dbRepository.salvarRecuperacaoOtp(user.id, code, emailPessoal);
-      setForgotSuccessMessage('Código de segurança enviado com sucesso para o seu e-mail pessoal!');
+
+      await dbRepository.salvarRecuperacaoOtp(
+        user.id,
+        code,
+        emailPessoal,
+      );
+
+      setForgotSuccessMessage(
+        'Código de segurança enviado com sucesso para o seu e-mail pessoal!',
+      );
       setForgotStep('VERIFY');
     } catch (err: any) {
-      setForgotErrorMessage(err?.message || 'Erro de conexão ao solicitar recuperação.');
+      setForgotErrorMessage(
+        err?.message || 'Erro de conexão ao solicitar recuperação.',
+      );
     } finally {
       setSendingOtp(false);
     }
   };
 
-  const handleConfirmNewPassword = (
-    e: React.FormEvent
-  ) => {
+  const handleConfirmNewPassword = (e: React.FormEvent) => {
     e.preventDefault();
-
     setForgotErrorMessage('');
 
     if (userOtpInput.trim() !== generatedOtp) {
-      setForgotErrorMessage(
-        'Código de segurança incorreto ou expirado.'
-      );
+      setForgotErrorMessage('Código de segurança incorreto ou expirado.');
       return;
     }
 
     if (newPassword.length < 4) {
-      setForgotErrorMessage(
-        'A nova senha deve ter no mínimo 4 caracteres.'
-      );
+      setForgotErrorMessage('A nova senha deve ter no mínimo 4 caracteres.');
       return;
     }
 
     if (newPassword !== confirmPassword) {
-      setForgotErrorMessage(
-        'As senhas não coincidem.'
-      );
+      setForgotErrorMessage('As senhas não coincidem.');
       return;
     }
 
     const customPasswords = JSON.parse(
-      localStorage.getItem(
-        'sti_custom_passwords'
-      ) || '{}'
+      localStorage.getItem('sti_custom_passwords') || '{}',
     );
 
-    customPasswords[forgotTargetAccount] =
-      newPassword;
+    customPasswords[forgotTargetAccount] = newPassword;
 
     localStorage.setItem(
       'sti_custom_passwords',
-      JSON.stringify(customPasswords)
+      JSON.stringify(customPasswords),
     );
 
     const registeredUsers = JSON.parse(
-      localStorage.getItem(
-        'sti_registered_users'
-      ) || '[]'
+      localStorage.getItem('sti_registered_users') || '[]',
     );
 
-    const updatedUsers = registeredUsers.map(
-      (u: any) => {
-        if (
-          u.email.toLowerCase() ===
-          forgotTargetAccount
-        ) {
-          return {
-            ...u,
-            password: newPassword,
-          };
-        }
-
-        return u;
+    const updatedUsers = registeredUsers.map((u: any) => {
+      if (u.email.toLowerCase() === forgotTargetAccount.toLowerCase()) {
+        return { ...u, password: newPassword };
       }
-    );
+
+      return u;
+    });
 
     localStorage.setItem(
       'sti_registered_users',
-      JSON.stringify(updatedUsers)
+      JSON.stringify(updatedUsers),
     );
 
     setForgotSuccessMessage(
-      'Senha redefinida com sucesso! Você já pode entrar com a nova credencial.'
+      'Senha redefinida com sucesso! Você já pode entrar com a nova credencial.',
     );
 
-    setTimeout(() => {
+    window.setTimeout(() => {
       setIsForgotOpen(false);
       setForgotStep('IDENTIFY');
       setForgotSuccessMessage('');
@@ -323,19 +313,10 @@ export default function Login({
     }, 2000);
   };
 
-  /*
-   * ============================================================
-   * LOGIN
-   * ============================================================
-   */
-
-  const handleSubmit = (
-    e: React.FormEvent
-  ) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
-    const cleanEmail =
-      email.toLowerCase().trim();
+    const cleanEmail = email.toLowerCase().trim();
 
     if (!cleanEmail) return;
 
@@ -347,143 +328,78 @@ export default function Login({
     ].includes(cleanEmail);
 
     const customPasswords = JSON.parse(
-      localStorage.getItem(
-        'sti_custom_passwords'
-      ) || '{}'
+      localStorage.getItem('sti_custom_passwords') || '{}',
     );
 
-    const customPass =
-      customPasswords[cleanEmail];
+    const customPass = customPasswords[cleanEmail];
 
     if (
       isTechEmail &&
       senha &&
       senha !== '.\\ati@!#$%2020' &&
       senha !== 'ati2020' &&
-      (!customPass ||
-        customPass !== senha)
+      (!customPass || customPass !== senha)
     ) {
       alert(
-        'Senha incorreta para perfil técnico de suporte STI. Use a credencial operacional autorizada.'
+        'Senha incorreta para perfil técnico de suporte STI. Use a credencial operacional autorizada.',
       );
-
       return;
     }
 
-    if (
-      multiRoleAccountsConfig[cleanEmail]
-    ) {
+    if (multiRoleAccountsConfig[cleanEmail]) {
       setMultiRoleData({
         email: cleanEmail,
-        ...multiRoleAccountsConfig[
-          cleanEmail
-        ],
+        ...multiRoleAccountsConfig[cleanEmail],
       });
-
       return;
     }
 
     onLogin(cleanEmail);
   };
 
-  const handleSelectRoleAndEnter = (
-    role: UserRole
-  ) => {
+  const handleSelectRoleAndEnter = (role: UserRole) => {
     if (multiRoleData) {
-      onLogin(
-        multiRoleData.email,
-        role
-      );
+      onLogin(multiRoleData.email, role);
     }
   };
 
-  /*
-   * ============================================================
-   * CLASSES VISUAIS
-   * ============================================================
-   */
+  const inputClassName = `
+    h-14 w-full rounded-xl border px-4 pl-12 text-base
+    outline-none transition-colors sm:text-lg
+    ${inputBackground} ${inputText} ${inputBorder}
+    ${inputPlaceholder}
+    focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20
+  `;
 
-  const pageBackground = isDark
-    ? 'bg-[#06111d]'
-    : 'bg-slate-100';
-
-  const loginPanelBackground = isDark
-    ? 'bg-[#071421]'
-    : 'bg-slate-50';
-
-  const cardBackground = isDark
-    ? 'bg-[#0b1727]'
-    : 'bg-white';
-
-  const cardBorder = isDark
-    ? 'border-slate-700/80'
-    : 'border-slate-200';
-
-  const headingColor = isDark
-    ? 'text-white'
-    : 'text-slate-950';
-
-  const bodyColor = isDark
-    ? 'text-slate-300'
-    : 'text-slate-600';
-
-  const mutedColor = isDark
-    ? 'text-slate-400'
-    : 'text-slate-500';
-
-  const inputBackground = isDark
-    ? 'bg-[#101e30]'
-    : 'bg-slate-50';
-
-  const inputBorder = isDark
-    ? 'border-slate-600'
-    : 'border-slate-200';
-
-  const inputText = isDark
-    ? 'text-white'
-    : 'text-slate-900';
-
-  const inputPlaceholder = isDark
-    ? 'placeholder:text-slate-500'
-    : 'placeholder:text-slate-400';
+  const modalInputClassName = `
+    h-14 w-full rounded-xl border px-4 text-base outline-none
+    transition-colors ${modalFieldBackground} ${modalFieldBorder}
+    ${inputText} ${inputPlaceholder}
+    focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20
+  `;
 
   return (
     <div
-      className={`relative min-h-screen transition-colors duration-300 ${pageBackground} md:flex`}
+      className={`relative min-h-screen ${pageBackground} md:flex`}
     >
-      {/* =====================================================
-          MODAL MULTI-ROLE
-      ====================================================== */}
-
+      {/* Modal de seleção de perfil */}
       {multiRoleData && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 p-4 backdrop-blur-sm">
           <div
-            className="
-              w-full
-              max-w-2xl
-              rounded-3xl
-              border
-              border-white/10
-              bg-[#0b1624]
-              p-7
-              text-white
-              shadow-2xl
-              sm:p-9
-            "
+            className={`w-full max-w-2xl rounded-3xl border p-7 shadow-2xl sm:p-9 ${modalBackground} ${modalText} ${modalBorder}`}
           >
-            <div className="flex items-center gap-4 border-b border-white/10 pb-5">
-              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-cyan-500/20 text-cyan-400">
+            <div className={`flex items-center gap-4 border-b pb-5 ${modalBorder}`}>
+              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-cyan-500/20 text-cyan-500">
                 <ShieldCheck className="h-6 w-6" />
               </div>
 
               <div>
-                <h3 className="text-xl font-bold text-white">
+                <h3 className={`text-xl font-bold ${modalText}`}>
                   Selecione o Ambiente de Acesso
                 </h3>
-
-                <p className="mt-1 text-sm text-slate-400">
+                <p className={`mt-1 text-sm ${modalMuted}`}>
                   Olá,{' '}
-                  <span className="font-semibold text-cyan-300">
+                  <span className="font-semibold text-cyan-500">
                     {multiRoleData.name}
                   </span>
                   . Escolha o perfil operacional para esta sessão.
@@ -499,47 +415,26 @@ export default function Login({
                   <button
                     key={r.id}
                     type="button"
-                    onClick={() =>
-                      handleSelectRoleAndEnter(
-                        r.id
-                      )
-                    }
-                    className="
-                      group
-                      flex
-                      w-full
-                      items-start
-                      gap-4
-                      rounded-2xl
-                      border
-                      border-white/10
-                      bg-white/[0.04]
-                      p-5
-                      text-left
-                      transition-all
-                      hover:border-cyan-500/50
-                      hover:bg-cyan-950/30
-                      focus:outline-none
-                      focus:ring-2
-                      focus:ring-cyan-400
-                    "
+                    onClick={() => handleSelectRoleAndEnter(r.id)}
+                    className={`group flex w-full items-start gap-4 rounded-2xl border p-5 text-left transition-all focus:outline-none focus:ring-2 focus:ring-cyan-400 ${isDark
+                        ? 'border-white/10 bg-white/[0.04] hover:border-cyan-500/50 hover:bg-cyan-950/30'
+                        : 'border-slate-200 bg-slate-50 hover:border-cyan-400 hover:bg-cyan-50'
+                      }`}
                   >
-                    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-cyan-500/10 text-cyan-400 transition-colors group-hover:bg-cyan-500 group-hover:text-slate-950">
+                    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-cyan-500/10 text-cyan-500">
                       <Icon className="h-6 w-6" />
                     </div>
 
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center justify-between gap-4">
-                        <h4 className="text-base font-bold text-white group-hover:text-cyan-300">
+                        <h4 className={`text-base font-bold ${modalText}`}>
                           {r.title}
                         </h4>
-
-                        <span className="hidden text-sm font-semibold text-cyan-400 opacity-0 transition-opacity group-hover:opacity-100 sm:block">
+                        <span className="hidden text-sm font-semibold text-cyan-500 sm:block">
                           Acessar →
                         </span>
                       </div>
-
-                      <p className="mt-1.5 text-sm leading-relaxed text-slate-400">
+                      <p className={`mt-1.5 text-sm leading-relaxed ${modalMuted}`}>
                         {r.desc}
                       </p>
                     </div>
@@ -548,13 +443,14 @@ export default function Login({
               })}
             </div>
 
-            <div className="mt-7 flex justify-end border-t border-white/10 pt-5">
+            <div className={`mt-7 flex justify-end border-t pt-5 ${modalBorder}`}>
               <button
                 type="button"
-                onClick={() =>
-                  setMultiRoleData(null)
-                }
-                className="min-h-11 rounded-xl px-4 text-sm font-semibold text-slate-400 transition-colors hover:bg-white/5 hover:text-white"
+                onClick={() => setMultiRoleData(null)}
+                className={`min-h-11 rounded-xl px-4 text-sm font-semibold transition-colors ${isDark
+                    ? 'text-slate-400 hover:bg-white/5 hover:text-white'
+                    : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+                  }`}
               >
                 Cancelar e voltar ao login
               </button>
@@ -563,85 +459,60 @@ export default function Login({
         </div>
       )}
 
-      {/* =====================================================
-          BOTÃO DE TEMA
-      ====================================================== */}
-
+      {/* Botão de tema */}
       <div className="absolute right-5 top-5 z-40 sm:right-7 sm:top-7">
         <button
           type="button"
           onClick={toggleTheme}
-          aria-label={
-            isDark
-              ? 'Ativar modo claro'
-              : 'Ativar modo escuro'
-          }
-          title={
-            isDark
-              ? 'Ativar modo claro'
-              : 'Ativar modo escuro'
-          }
-          className={`
-            flex
-            min-h-11
-            items-center
-            gap-2
-            rounded-xl
-            border
-            px-3
-            text-sm
-            font-semibold
-            transition-all
-            focus:outline-none
-            focus:ring-2
-            focus:ring-cyan-400
-            ${
-              isDark
-                ? 'border-slate-600 bg-slate-900/90 text-cyan-300 hover:border-cyan-500/60 hover:bg-slate-800'
-                : 'border-slate-300 bg-white/95 text-slate-700 shadow-sm hover:border-cyan-400 hover:text-cyan-700'
-            }
-          `}
+          aria-label={isDark ? 'Ativar modo claro' : 'Ativar modo escuro'}
+          title={isDark ? 'Ativar modo claro' : 'Ativar modo escuro'}
+          className={`flex min-h-11 items-center gap-2 rounded-xl border px-3 text-sm font-semibold transition-all focus:outline-none focus:ring-2 focus:ring-cyan-400 ${isDark
+              ? 'border-slate-600 bg-slate-900/90 text-cyan-300 hover:border-cyan-500/60 hover:bg-slate-800'
+              : 'border-slate-300 bg-white text-slate-700 shadow-sm hover:border-cyan-400 hover:text-cyan-700'
+            }`}
         >
           {isDark ? (
             <>
               <Sun className="h-5 w-5" />
-              <span className="hidden sm:inline">
-                Modo claro
-              </span>
+              <span className="hidden sm:inline">Modo claro</span>
             </>
           ) : (
             <>
               <Moon className="h-5 w-5" />
-              <span className="hidden sm:inline">
-                Modo escuro
-              </span>
+              <span className="hidden sm:inline">Modo escuro</span>
             </>
           )}
         </button>
       </div>
 
-      {/* =====================================================
-          PAINEL ESQUERDO
-      ====================================================== */}
+      {/* Painel esquerdo */}
+      <section
+        className={`relative hidden overflow-hidden md:flex md:w-[42%] md:flex-col lg:w-[44%] ${isDark
+            ? 'bg-[#081522]'
+            : 'bg-slate-200'
+          }`}
+      >
+        <div
+          className={`pointer-events-none absolute -left-32 -top-32 h-96 w-96 rounded-full blur-3xl ${isDark ? 'bg-cyan-500/10' : 'bg-cyan-400/20'
+            }`}
+        />
 
-      <section className="relative hidden overflow-hidden bg-[#081522] md:flex md:w-[42%] md:flex-col lg:w-[44%]">
-        <div className="pointer-events-none absolute -left-32 -top-32 h-96 w-96 rounded-full bg-cyan-500/10 blur-3xl" />
-
-        <div className="pointer-events-none absolute -bottom-32 -right-32 h-96 w-96 rounded-full bg-teal-500/10 blur-3xl" />
-
-        <div className="relative z-10 flex min-h-screen w-full flex-col justify-between p-8 text-white lg:p-12">
+        <div className={`relative z-10 flex min-h-screen w-full flex-col justify-between p-8 lg:p-12 ${isDark ? 'text-white' : 'text-slate-900'
+          }`}>
           <div className="w-fit max-w-full animate-sti-logo">
             <Logo
               variant="login"
-              light
+              light={isDark}
               className="drop-shadow-[0_0_18px_rgba(20,184,166,0.16)]"
             />
           </div>
 
           <div className="my-10 max-w-xl space-y-7">
-            <div className="inline-flex items-center gap-2 rounded-full border border-cyan-500/20 bg-cyan-500/10 px-4 py-2 text-sm font-semibold text-cyan-300">
+            <div className={`inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-semibold ${isDark
+                ? 'border-cyan-500/20 bg-cyan-500/10 text-cyan-300'
+                : 'border-cyan-600/20 bg-cyan-500/10 text-cyan-800'
+              }`}>
               <span className="h-2.5 w-2.5 animate-pulse rounded-full bg-teal-400" />
-
               Suporte de TI em um só lugar
             </div>
 
@@ -651,233 +522,130 @@ export default function Login({
                 <br />
                 ajuda?
               </h2>
-
-              <p className="max-w-lg text-base leading-relaxed text-slate-300 lg:text-lg">
+              <p className={`max-w-lg text-base leading-relaxed lg:text-lg ${isDark ? 'text-slate-300' : 'text-slate-600'
+                }`}>
                 Abra seu chamado, acompanhe o atendimento e veja as atualizações sem complicação.
               </p>
             </div>
 
             <div className="space-y-4 pt-2">
-              <div className="group flex items-center gap-4 rounded-2xl border border-white/10 bg-white/[0.04] p-5 transition-all duration-300 hover:border-cyan-400/40 hover:bg-cyan-400/[0.07]">
-                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-cyan-500/15 text-cyan-300">
-                  <MessagesSquare className="h-6 w-6" />
-                </div>
+              {[
+                {
+                  title: '1. Peça ajuda',
+                  desc: 'Conte o que aconteceu e envie sua solicitação.',
+                  icon: MessagesSquare,
+                  accent: 'cyan',
+                },
+                {
+                  title: '2. Acompanhe',
+                  desc: 'Veja o andamento do seu chamado.',
+                  icon: Activity,
+                  accent: 'teal',
+                },
+                {
+                  title: '3. Confira a solução',
+                  desc: 'Consulte a conclusão do atendimento.',
+                  icon: CheckCircle2,
+                  accent: 'emerald',
+                },
+              ].map((item) => {
+                const Icon = item.icon;
 
-                <div className="min-w-0 flex-1">
-                  <h3 className="text-base font-semibold text-white">
-                    1. Peça ajuda
-                  </h3>
+                return (
+                  <div
+                    key={item.title}
+                    className={`group flex items-center gap-4 rounded-2xl border p-5 transition-all duration-300 ${isDark
+                        ? 'border-white/10 bg-white/[0.04] hover:bg-white/[0.07]'
+                        : 'border-slate-300 bg-white/60 hover:bg-white/90'
+                      }`}
+                  >
+                    <div className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-xl ${item.accent === 'cyan'
+                        ? 'bg-cyan-500/15 text-cyan-500'
+                        : item.accent === 'teal'
+                          ? 'bg-teal-500/15 text-teal-500'
+                          : 'bg-emerald-500/15 text-emerald-600'
+                      }`}>
+                      <Icon className="h-6 w-6" />
+                    </div>
 
-                  <p className="mt-1 text-sm leading-relaxed text-slate-400">
-                    Conte o que aconteceu e envie sua solicitação.
-                  </p>
-                </div>
+                    <div className="min-w-0 flex-1">
+                      <h3 className={`text-base font-semibold ${isDark ? 'text-white' : 'text-slate-900'
+                        }`}>
+                        {item.title}
+                      </h3>
+                      <p className={`mt-1 text-sm leading-relaxed ${isDark ? 'text-slate-400' : 'text-slate-600'
+                        }`}>
+                        {item.desc}
+                      </p>
+                    </div>
 
-                <ArrowRight className="h-5 w-5 shrink-0 text-cyan-400" />
-              </div>
-
-              <div className="group flex items-center gap-4 rounded-2xl border border-white/10 bg-white/[0.04] p-5 transition-all duration-300 hover:border-teal-400/40 hover:bg-teal-400/[0.07]">
-                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-teal-500/15 text-teal-300">
-                  <Activity className="h-6 w-6" />
-                </div>
-
-                <div className="min-w-0 flex-1">
-                  <h3 className="text-base font-semibold text-white">
-                    2. Acompanhe
-                  </h3>
-
-                  <p className="mt-1 text-sm leading-relaxed text-slate-400">
-                    Veja o andamento do seu chamado.
-                  </p>
-                </div>
-
-                <ArrowRight className="h-5 w-5 shrink-0 text-teal-400" />
-              </div>
-
-              <div className="group flex items-center gap-4 rounded-2xl border border-white/10 bg-white/[0.04] p-5 transition-all duration-300 hover:border-emerald-400/40 hover:bg-emerald-400/[0.07]">
-                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-emerald-500/15 text-emerald-300">
-                  <CheckCircle2 className="h-6 w-6" />
-                </div>
-
-                <div className="min-w-0 flex-1">
-                  <h3 className="text-base font-semibold text-white">
-                    3. Confira a solução
-                  </h3>
-
-                  <p className="mt-1 text-sm leading-relaxed text-slate-400">
-                    Consulte a conclusão do atendimento.
-                  </p>
-                </div>
-
-                <CheckCircle2 className="h-5 w-5 shrink-0 text-emerald-400" />
-              </div>
+                    <ArrowRight className={`h-5 w-5 shrink-0 ${item.accent === 'emerald'
+                        ? 'text-emerald-500'
+                        : item.accent === 'teal'
+                          ? 'text-teal-500'
+                          : 'text-cyan-500'
+                      }`} />
+                  </div>
+                );
+              })}
             </div>
           </div>
 
-          <p className="text-sm text-slate-500">
+          <p className={`text-sm ${isDark ? 'text-slate-500' : 'text-slate-600'}`}>
             STI © {new Date().getFullYear()}
           </p>
         </div>
       </section>
 
-      {/* =====================================================
-          LADO DIREITO — LOGIN
-      ====================================================== */}
-
+      {/* Lado direito — login */}
       <section
-        className={`
-          flex
-          min-h-screen
-          flex-1
-          items-center
-          justify-center
-          px-5
-          py-16
-          transition-colors
-          duration-300
-          sm:px-8
-          lg:px-12
-          xl:px-16
-          ${loginPanelBackground}
-        `}
+        className={`flex min-h-screen flex-1 items-center justify-center px-5 py-16 sm:px-8 lg:px-12 xl:px-16 ${loginPanelBackground}`}
       >
         <div className="w-full max-w-xl">
           <div
-            className={`
-              space-y-7
-              rounded-3xl
-              border
-              p-8
-              shadow-2xl
-              transition-colors
-              duration-300
-              sm:p-10
-              lg:p-12
-              ${cardBackground}
-              ${cardBorder}
-              ${
-                isDark
-                  ? 'shadow-black/30'
-                  : 'shadow-slate-300/50'
-              }
-            `}
+            className={`space-y-7 rounded-3xl border p-8 shadow-2xl sm:p-10 lg:p-12 ${cardBackground} ${cardBorder} ${isDark ? 'shadow-black/30' : 'shadow-slate-300/50'
+              }`}
           >
-            {/* Cabeçalho */}
-
             <div className="space-y-3">
-              <h1
-                className={`text-3xl font-bold tracking-tight sm:text-4xl ${headingColor}`}
-              >
+              <h1 className={`text-3xl font-bold tracking-tight sm:text-4xl ${headingColor}`}>
                 Acesse sua conta
               </h1>
-
-              <p
-                className={`text-base leading-relaxed sm:text-lg ${bodyColor}`}
-              >
+              <p className={`text-base leading-relaxed sm:text-lg ${bodyColor}`}>
                 Entre com seu e-mail corporativo institucional.
               </p>
             </div>
 
-            {/* Formulário */}
-
-            <form
-              onSubmit={handleSubmit}
-              className="space-y-6"
-            >
-              <Field label="E-mail corporativo">
+            <form onSubmit={handleSubmit} className="space-y-6">
+              <Field label="E-mail corporativo" labelClassName={labelColor}>
                 <div className="relative">
-                  <Mail
-                    className={`
-                      pointer-events-none
-                      absolute
-                      left-4
-                      top-1/2
-                      h-5
-                      w-5
-                      -translate-y-1/2
-                      ${
-                        isDark
-                          ? 'text-slate-400'
-                          : 'text-slate-400'
-                      }
-                    `}
-                  />
-
+                  <Mail className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
                   <Input
                     type="email"
                     required
-                    placeholder="seu.nome@orgao.to.gov.br"
+                    autoComplete="username"
+                    placeholder="seu.nome@sti.chamados.com"
                     value={email}
-                    onChange={(
-                      e: React.ChangeEvent<HTMLInputElement>
-                    ) =>
-                      setEmail(
-                        e.target.value
-                      )
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                      setEmail(e.target.value)
                     }
-                    className={`
-                      h-14
-                      rounded-xl
-                      pl-12
-                      text-base
-                      sm:text-lg
-                      ${inputBackground}
-                      ${inputBorder}
-                      ${inputText}
-                      ${inputPlaceholder}
-                      focus:border-cyan-500
-                      focus:ring-2
-                      focus:ring-cyan-500/20
-                    `}
+                    className={inputClassName}
                   />
                 </div>
               </Field>
 
-              <Field label="Senha de acesso">
+              <Field label="Senha de acesso" labelClassName={labelColor}>
                 <div className="relative">
-                  <Lock
-                    className={`
-                      pointer-events-none
-                      absolute
-                      left-4
-                      top-1/2
-                      h-5
-                      w-5
-                      -translate-y-1/2
-                      ${
-                        isDark
-                          ? 'text-slate-400'
-                          : 'text-slate-400'
-                      }
-                    `}
-                  />
-
+                  <Lock className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
                   <Input
                     type="password"
                     required
+                    autoComplete="current-password"
                     placeholder="••••••••••••"
                     value={senha}
-                    onChange={(
-                      e: React.ChangeEvent<HTMLInputElement>
-                    ) =>
-                      setSenha(
-                        e.target.value
-                      )
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                      setSenha(e.target.value)
                     }
-                    className={`
-                      h-14
-                      rounded-xl
-                      pl-12
-                      text-base
-                      sm:text-lg
-                      ${inputBackground}
-                      ${inputBorder}
-                      ${inputText}
-                      ${inputPlaceholder}
-                      focus:border-cyan-500
-                      focus:ring-2
-                      focus:ring-cyan-500/20
-                    `}
+                    className={inputClassName}
                   />
                 </div>
               </Field>
@@ -891,19 +659,7 @@ export default function Login({
                     setForgotStep('IDENTIFY');
                     setIsForgotOpen(true);
                   }}
-                  className="
-                    min-h-11
-                    rounded-lg
-                    px-2
-                    text-sm
-                    font-semibold
-                    text-cyan-500
-                    transition-colors
-                    hover:text-cyan-400
-                    focus:outline-none
-                    focus:ring-2
-                    focus:ring-cyan-400
-                  "
+                  className="min-h-11 rounded-lg px-2 text-sm font-semibold text-cyan-600 transition-colors hover:text-cyan-500 focus:outline-none focus:ring-2 focus:ring-cyan-400"
                 >
                   Esqueceu sua senha?
                 </button>
@@ -911,59 +667,19 @@ export default function Login({
 
               <Button
                 type="submit"
-                className="
-                  flex
-                  h-14
-                  w-full
-                  items-center
-                  justify-center
-                  gap-3
-                  rounded-xl
-                  bg-cyan-600
-                  text-base
-                  font-bold
-                  text-white
-                  shadow-lg
-                  shadow-cyan-600/20
-                  transition-all
-                  hover:bg-cyan-500
-                  hover:shadow-cyan-500/30
-                  focus:outline-none
-                  focus:ring-2
-                  focus:ring-cyan-400
-                  focus:ring-offset-2
-                "
+                className="flex h-14 w-full items-center justify-center gap-3 rounded-xl bg-cyan-600 text-base font-bold text-white shadow-lg shadow-cyan-600/20 transition-all hover:bg-cyan-500 hover:shadow-cyan-500/30 focus:outline-none focus:ring-2 focus:ring-cyan-400 focus:ring-offset-2"
               >
                 <span>Entrar no Sistema</span>
-
                 <ArrowRight className="h-5 w-5" />
               </Button>
 
-              {/* Separador */}
-
               <div className="pt-1">
                 <div className="relative my-5 flex items-center justify-center">
-                  <div
-                    className={`
-                      w-full border-t
-                      ${
-                        isDark
-                          ? 'border-slate-700'
-                          : 'border-slate-200'
-                      }
-                    `}
-                  />
-
-                  <span
-                    className={`
-                      absolute px-4 text-xs font-semibold uppercase tracking-wider
-                      ${
-                        isDark
-                          ? 'bg-[#0b1727] text-slate-500'
-                          : 'bg-white text-slate-400'
-                      }
-                    `}
-                  >
+                  <div className={`w-full border-t ${modalBorder}`} />
+                  <span className={`absolute px-4 text-xs font-semibold uppercase tracking-wider ${isDark
+                      ? 'bg-[#0b1727] text-slate-500'
+                      : 'bg-white text-slate-400'
+                    }`}>
                     ou
                   </span>
                 </div>
@@ -971,301 +687,217 @@ export default function Login({
                 <button
                   type="button"
                   onClick={onGoToRegister}
-                  className={`
-                    flex
-                    min-h-14
-                    w-full
-                    items-center
-                    justify-center
-                    gap-3
-                    rounded-xl
-                    border
-                    text-sm
-                    font-semibold
-                    transition-all
-                    focus:outline-none
-                    focus:ring-2
-                    focus:ring-cyan-400
-                    ${
-                      isDark
-                        ? 'border-slate-600 bg-slate-800/70 text-slate-200 hover:border-cyan-500/60 hover:bg-slate-800'
-                        : 'border-slate-200 bg-slate-50 text-slate-700 hover:border-cyan-300 hover:bg-slate-100'
-                    }
-                  `}
+                  className={`flex min-h-14 w-full items-center justify-center gap-3 rounded-xl border text-sm font-semibold transition-none focus:outline-none focus:ring-2 focus:ring-cyan-400 ${isDark
+                      ? 'border-slate-600 bg-slate-800/70 text-slate-200 hover:border-cyan-500/60 hover:bg-slate-800'
+                      : 'border-slate-200 bg-slate-50 text-slate-700 hover:border-cyan-300 hover:bg-slate-100'
+                    }`}
                 >
                   <UserPlus className="h-5 w-5 text-cyan-500" />
-
-                  <span>
-                    Primeiro Acesso / Cadastrar Servidor
-                  </span>
+                  <span>Primeiro Acesso / Cadastrar Servidor</span>
                 </button>
               </div>
             </form>
 
-            {/* Contas multi-role */}
-
-            <div
-              className={`
-                space-y-2
-                border-t
-                pt-5
-                ${
-                  isDark
-                    ? 'border-slate-700'
-                    : 'border-slate-200'
-                }
-              `}
-            >
-              <p
-                className={`font-mono text-xs ${mutedColor}`}
-              >
-                wanderson.maior@sti.chamados.com
-                {' '}
-                (Gestor + Técnico)
+            <div className={`space-y-2 border-t pt-5 ${cardBorder}`}>
+              <p className={`font-mono text-xs ${mutedColor}`}>
+                wanderson.maior@sti.chamados.com (Gestor + Técnico)
               </p>
-
-              <p
-                className={`font-mono text-xs ${mutedColor}`}
-              >
-                luigue.brandao@sti.chamados.com
-                {' '}
-                (Gestor + Solicitante)
+              <p className={`font-mono text-xs ${mutedColor}`}>
+                luigue.brandao@sti.chamados.com (Gestor + Solicitante)
               </p>
-
-              <p
-                className={`font-mono text-xs ${mutedColor}`}
-              >
-                elias.junior@sti.chamados.com
-                {' '}
-                (Gestor + Solicitante)
+              <p className={`font-mono text-xs ${mutedColor}`}>
+                elias.junior@sti.chamados.com (Gestor + Solicitante)
               </p>
             </div>
-
-            {/* =================================================
-                MODAL RECUPERAÇÃO DE SENHA
-            ================================================== */}
-
-            {isForgotOpen && (
-              <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 p-4 backdrop-blur-sm">
-                <div className="w-full max-w-xl rounded-3xl border border-white/10 bg-[#0b1624] p-7 text-white shadow-2xl sm:p-9">
-                  <div className="flex items-start justify-between border-b border-white/10 pb-5">
-                    <div className="flex items-center gap-3">
-                      <div className="rounded-xl bg-cyan-500/20 p-3 text-cyan-400">
-                        <Shield className="h-6 w-6" />
-                      </div>
-
-                      <div>
-                        <h3 className="text-xl font-bold text-white">
-                          Recuperar Senha
-                        </h3>
-
-                        <p className="mt-1 text-sm text-slate-400">
-                          Validação segura via E-mail (SMTP)
-                        </p>
-                      </div>
-                    </div>
-
-                    <button
-                      type="button"
-                      onClick={() =>
-                        setIsForgotOpen(false)
-                      }
-                      aria-label="Fechar recuperação de senha"
-                      className="flex h-11 w-11 items-center justify-center rounded-xl text-slate-400 transition-colors hover:bg-white/10 hover:text-white focus:outline-none focus:ring-2 focus:ring-cyan-400"
-                    >
-                      <X className="h-5 w-5" />
-                    </button>
-                  </div>
-
-                  <div className="mt-6 space-y-5">
-                    {forgotSuccessMessage ? (
-                      <div className="rounded-2xl border border-emerald-500/30 bg-emerald-500/10 p-5 text-center text-sm font-semibold text-emerald-400">
-                        {forgotSuccessMessage}
-                      </div>
-                    ) : forgotStep === 'IDENTIFY' ? (
-                      <div className="space-y-5">
-                        <p className="text-sm leading-relaxed text-slate-300">
-                          Informe seu e-mail institucional e o seu e-mail pessoal para receber o código de segurança.
-                        </p>
-
-                        <div>
-                          <label className="mb-2 block text-sm font-semibold text-slate-300">
-                            E-mail ou Matrícula
-                          </label>
-
-                          <input
-                            type="text"
-                            value={forgotInput}
-                            onChange={(e) =>
-                              setForgotInput(
-                                e.target.value
-                              )
-                            }
-                            placeholder="Ex: wanderson.maior@sti.chamados.com"
-                            className="h-14 w-full rounded-xl border border-white/10 bg-white/5 px-4 text-base text-white outline-none transition-colors placeholder:text-slate-500 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20"
-                          />
-                        </div>
-
-                        <div>
-                          <label className="mb-2 block text-sm font-semibold text-slate-300">
-                            E-mail Pessoal (para envio do OTP)
-                          </label>
-
-                          <input
-                            type="text"
-                            value={forgotPhone}
-                            onChange={(e) =>
-                              setForgotPhone(
-                                e.target.value
-                              )
-                            }
-                            placeholder="Ex: seu.email@gmail.com"
-                            className="h-14 w-full rounded-xl border border-white/10 bg-white/5 px-4 text-base text-white outline-none transition-colors placeholder:text-slate-500 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20"
-                          />
-                        </div>
-
-                        {forgotErrorMessage && (
-                          <p className="rounded-xl border border-rose-500/20 bg-rose-500/10 p-3 text-sm font-medium text-rose-400">
-                            {forgotErrorMessage}
-                          </p>
-                        )}
-
-                        <div className="flex flex-col-reverse gap-3 pt-2 sm:flex-row sm:items-center sm:justify-end">
-                          <button
-                            type="button"
-                            onClick={() =>
-                              setIsForgotOpen(false)
-                            }
-                            className="min-h-12 rounded-xl px-5 text-sm font-semibold text-slate-400 hover:bg-white/5 hover:text-white"
-                          >
-                            Cancelar
-                          </button>
-
-                          <button
-                            type="button"
-                            disabled={sendingOtp}
-                            onClick={
-                              handleGenerateRecoveryCode
-                            }
-                            className="min-h-12 rounded-xl bg-emerald-600 px-5 text-sm font-bold text-white shadow-lg shadow-emerald-600/20 transition-colors hover:bg-emerald-500 disabled:cursor-not-allowed disabled:opacity-50"
-                          >
-                            {sendingOtp
-                              ? 'Enviando e-mail via SMTP...'
-                              : 'Enviar Código via E-mail (SMTP) →'}
-                          </button>
-                        </div>
-                      </div>
-                    ) : (
-                      <form
-                        onSubmit={
-                          handleConfirmNewPassword
-                        }
-                        className="space-y-5"
-                      >
-                        <div className="rounded-2xl border border-emerald-500/20 bg-emerald-500/10 p-4 text-sm text-emerald-300">
-                          <span className="block font-semibold">
-                            Código de segurança enviado!
-                          </span>
-
-                          <span className="mt-1 block text-sm text-slate-300">
-                            Verifique a caixa de entrada ou spam do e-mail pessoal informado.
-                          </span>
-                        </div>
-
-                        <div>
-                          <label className="mb-2 block text-sm font-semibold text-slate-300">
-                            Código de 6 Dígitos
-                          </label>
-
-                          <input
-                            type="text"
-                            maxLength={6}
-                            value={userOtpInput}
-                            onChange={(e) =>
-                              setUserOtpInput(
-                                e.target.value
-                              )
-                            }
-                            placeholder="Ex: 849201"
-                            required
-                            className="h-14 w-full rounded-xl border border-white/10 bg-white/5 px-4 text-center font-mono text-xl font-bold tracking-[0.35em] text-cyan-400 outline-none focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20"
-                          />
-                        </div>
-
-                        <div>
-                          <label className="mb-2 block text-sm font-semibold text-slate-300">
-                            Nova Senha
-                          </label>
-
-                          <input
-                            type="password"
-                            value={newPassword}
-                            onChange={(e) =>
-                              setNewPassword(
-                                e.target.value
-                              )
-                            }
-                            placeholder="Digite sua nova senha"
-                            required
-                            className="h-14 w-full rounded-xl border border-white/10 bg-white/5 px-4 text-base text-white outline-none placeholder:text-slate-500 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20"
-                          />
-                        </div>
-
-                        <div>
-                          <label className="mb-2 block text-sm font-semibold text-slate-300">
-                            Confirmar Nova Senha
-                          </label>
-
-                          <input
-                            type="password"
-                            value={confirmPassword}
-                            onChange={(e) =>
-                              setConfirmPassword(
-                                e.target.value
-                              )
-                            }
-                            placeholder="Digite novamente sua senha"
-                            required
-                            className="h-14 w-full rounded-xl border border-white/10 bg-white/5 px-4 text-base text-white outline-none placeholder:text-slate-500 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20"
-                          />
-                        </div>
-
-                        {forgotErrorMessage && (
-                          <p className="rounded-xl border border-rose-500/20 bg-rose-500/10 p-3 text-sm font-medium text-rose-400">
-                            {forgotErrorMessage}
-                          </p>
-                        )}
-
-                        <div className="flex flex-col-reverse gap-3 pt-2 sm:flex-row sm:items-center sm:justify-between">
-                          <button
-                            type="button"
-                            onClick={() =>
-                              setForgotStep(
-                                'IDENTIFY'
-                              )
-                            }
-                            className="min-h-12 rounded-xl px-4 text-sm font-semibold text-slate-400 hover:bg-white/5 hover:text-white"
-                          >
-                            ← Voltar
-                          </button>
-
-                          <button
-                            type="submit"
-                            className="min-h-12 rounded-xl bg-cyan-500 px-5 text-sm font-bold text-slate-950 shadow-lg shadow-cyan-500/20 transition-colors hover:bg-cyan-400"
-                          >
-                            Redefinir Senha
-                          </button>
-                        </div>
-                      </form>
-                    )}
-                  </div>
-                </div>
-              </div>
-            )}
           </div>
         </div>
       </section>
+
+      {/* Modal de recuperação de senha */}
+      {isForgotOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-slate-950/80 p-4 backdrop-blur-sm">
+          <div className={`my-auto w-full max-w-xl rounded-3xl border p-7 shadow-2xl sm:p-9 ${modalBackground} ${modalText} ${modalBorder}`}>
+            <div className={`flex items-start justify-between border-b pb-5 ${modalBorder}`}>
+              <div className="flex items-center gap-3">
+                <div className="rounded-xl bg-cyan-500/20 p-3 text-cyan-500">
+                  <Shield className="h-6 w-6" />
+                </div>
+                <div>
+                  <h3 className={`text-xl font-bold ${modalText}`}>
+                    Recuperar Senha
+                  </h3>
+                  <p className={`mt-1 text-sm ${modalMuted}`}>
+                    Validação segura via E-mail (SMTP)
+                  </p>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setIsForgotOpen(false)}
+                aria-label="Fechar recuperação de senha"
+                className={`flex h-11 w-11 items-center justify-center rounded-xl transition-colors ${isDark
+                    ? 'text-slate-400 hover:bg-white/10 hover:text-white'
+                    : 'text-slate-500 hover:bg-slate-100 hover:text-slate-900'
+                  }`}
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            <div className="mt-6 space-y-5">
+              {forgotSuccessMessage ? (
+                <div className="rounded-2xl border border-emerald-500/30 bg-emerald-500/10 p-5 text-center text-sm font-semibold text-emerald-600">
+                  {forgotSuccessMessage}
+                </div>
+              ) : forgotStep === 'IDENTIFY' ? (
+                <div className="space-y-5">
+                  <p className={`text-sm leading-relaxed ${bodyColor}`}>
+                    Informe seu e-mail institucional e o seu e-mail pessoal para receber o código de segurança.
+                  </p>
+
+                  <div>
+                    <label className={`mb-2 block text-sm font-semibold ${labelColor}`}>
+                      E-mail ou Matrícula
+                    </label>
+                    <input
+                      type="text"
+                      value={forgotInput}
+                      onChange={(e) => setForgotInput(e.target.value)}
+                      placeholder="Ex: wanderson.maior@sti.chamados.com"
+                      className={modalInputClassName}
+                    />
+                  </div>
+
+                  <div>
+                    <label className={`mb-2 block text-sm font-semibold ${labelColor}`}>
+                      E-mail Pessoal (para envio do OTP)
+                    </label>
+                    <input
+                      type="email"
+                      value={forgotPhone}
+                      onChange={(e) => setForgotPhone(e.target.value)}
+                      placeholder="Ex: seu.email@gmail.com"
+                      className={modalInputClassName}
+                    />
+                  </div>
+
+                  {forgotErrorMessage && (
+                    <p className="rounded-xl border border-rose-500/20 bg-rose-500/10 p-3 text-sm font-medium text-rose-500">
+                      {forgotErrorMessage}
+                    </p>
+                  )}
+
+                  <div className="flex flex-col-reverse gap-3 pt-2 sm:flex-row sm:items-center sm:justify-end">
+                    <button
+                      type="button"
+                      onClick={() => setIsForgotOpen(false)}
+                      className={`min-h-12 rounded-xl px-5 text-sm font-semibold ${isDark
+                          ? 'text-slate-400 hover:bg-white/5 hover:text-white'
+                          : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+                        }`}
+                    >
+                      Cancelar
+                    </button>
+                    <button
+                      type="button"
+                      disabled={sendingOtp}
+                      onClick={handleGenerateRecoveryCode}
+                      className="min-h-12 rounded-xl bg-emerald-600 px-5 text-sm font-bold text-white shadow-lg shadow-emerald-600/20 transition-colors hover:bg-emerald-500 disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      {sendingOtp
+                        ? 'Enviando e-mail via SMTP...'
+                        : 'Enviar Código via E-mail (SMTP) →'}
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <form onSubmit={handleConfirmNewPassword} className="space-y-5">
+                  <div className="rounded-2xl border border-emerald-500/20 bg-emerald-500/10 p-4 text-sm text-emerald-600">
+                    <span className="block font-semibold">
+                      Código de segurança enviado!
+                    </span>
+                    <span className={`mt-1 block text-sm ${modalMuted}`}>
+                      Verifique a caixa de entrada ou spam do e-mail pessoal informado.
+                    </span>
+                  </div>
+
+                  <div>
+                    <label className={`mb-2 block text-sm font-semibold ${labelColor}`}>
+                      Código de 6 Dígitos
+                    </label>
+                    <input
+                      type="text"
+                      inputMode="numeric"
+                      maxLength={6}
+                      value={userOtpInput}
+                      onChange={(e) => setUserOtpInput(e.target.value)}
+                      placeholder="Ex: 849201"
+                      required
+                      className={`${modalInputClassName} text-center font-mono text-xl font-bold tracking-[0.35em]`}
+                    />
+                  </div>
+
+                  <div>
+                    <label className={`mb-2 block text-sm font-semibold ${labelColor}`}>
+                      Nova Senha
+                    </label>
+                    <input
+                      type="password"
+                      autoComplete="new-password"
+                      value={newPassword}
+                      onChange={(e) => setNewPassword(e.target.value)}
+                      placeholder="Digite sua nova senha"
+                      required
+                      className={modalInputClassName}
+                    />
+                  </div>
+
+                  <div>
+                    <label className={`mb-2 block text-sm font-semibold ${labelColor}`}>
+                      Confirmar Nova Senha
+                    </label>
+                    <input
+                      type="password"
+                      autoComplete="new-password"
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                      placeholder="Digite novamente sua senha"
+                      required
+                      className={modalInputClassName}
+                    />
+                  </div>
+
+                  {forgotErrorMessage && (
+                    <p className="rounded-xl border border-rose-500/20 bg-rose-500/10 p-3 text-sm font-medium text-rose-500">
+                      {forgotErrorMessage}
+                    </p>
+                  )}
+
+                  <div className="flex flex-col-reverse gap-3 pt-2 sm:flex-row sm:items-center sm:justify-between">
+                    <button
+                      type="button"
+                      onClick={() => setForgotStep('IDENTIFY')}
+                      className={`min-h-12 rounded-xl px-4 text-sm font-semibold ${isDark
+                          ? 'text-slate-400 hover:bg-white/5 hover:text-white'
+                          : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+                        }`}
+                    >
+                      ← Voltar
+                    </button>
+                    <button
+                      type="submit"
+                      className="min-h-12 rounded-xl bg-cyan-500 px-5 text-sm font-bold text-slate-950 shadow-lg shadow-cyan-500/20 transition-colors hover:bg-cyan-400"
+                    >
+                      Redefinir Senha
+                    </button>
+                  </div>
+                </form>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
-

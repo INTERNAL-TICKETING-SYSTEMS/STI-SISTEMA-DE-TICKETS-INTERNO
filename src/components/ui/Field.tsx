@@ -1,4 +1,3 @@
-
 import {
   ReactNode,
   InputHTMLAttributes,
@@ -11,6 +10,7 @@ interface FieldProps {
   children: ReactNode;
   hint?: string;
   className?: string;
+  labelClassName?: string;
 }
 
 export function Field({
@@ -18,17 +18,28 @@ export function Field({
   children,
   hint,
   className = '',
+  labelClassName = '',
 }: FieldProps) {
   return (
     <div className={`flex flex-col gap-1.5 ${className}`}>
-      <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
+      <label
+        className={`text-sm font-medium ${labelClassName}`}
+        style={{
+          color: 'var(--field-label-color)',
+        }}
+      >
         {label}
       </label>
 
       {children}
 
       {hint && (
-        <p className="text-xs text-slate-500 dark:text-slate-400">
+        <p
+          className="text-xs"
+          style={{
+            color: 'var(--field-hint-color)',
+          }}
+        >
           {hint}
         </p>
       )}
@@ -36,14 +47,23 @@ export function Field({
   );
 }
 
-const inputBase =
-  'w-full rounded-lg border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-800 placeholder:text-slate-400 transition-colors focus:outline-none focus:border-sti-teal-400 focus:ring-2 focus:ring-sti-teal-100 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:placeholder:text-slate-500 dark:focus:ring-sti-teal-900';
+const inputBase = [
+  'w-full rounded-lg border px-4 py-2.5 text-sm',
+  'transition-colors',
+  'placeholder:text-slate-400',
+  'focus:outline-none focus:border-sti-teal-400',
+  'focus:ring-2 focus:ring-sti-teal-100',
+].join(' ');
+
+function mergeInputClasses(customClassName?: string) {
+  return `${inputBase} ${customClassName ?? ''}`;
+}
 
 export function Input(props: InputHTMLAttributes<HTMLInputElement>) {
   return (
     <input
       {...props}
-      className={`${inputBase} ${props.className ?? ''}`}
+      className={mergeInputClasses(props.className)}
     />
   );
 }
@@ -54,7 +74,7 @@ export function Textarea(
   return (
     <textarea
       {...props}
-      className={`${inputBase} resize-none ${props.className ?? ''}`}
+      className={`${mergeInputClasses(props.className)} resize-none`}
     />
   );
 }
@@ -63,7 +83,7 @@ export function Select(props: SelectHTMLAttributes<HTMLSelectElement>) {
   return (
     <select
       {...props}
-      className={`${inputBase} appearance-none bg-no-repeat bg-[right_1rem_center] pr-10 ${props.className ?? ''}`}
+      className={`${mergeInputClasses(props.className)} appearance-none bg-no-repeat bg-[right_1rem_center] pr-10`}
     >
       {props.children}
     </select>
