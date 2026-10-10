@@ -4,8 +4,13 @@ import {
   IntegrityCheckResponse,
 } from '../../services/dataAuditService';
 import { CloseTicketModal } from './CloseTicketModal';
-import React, { useEffect, useState } from 'react';
-import { Ticket, TicketStatus, User } from '@/types';
+import React, { useEffect, useRef, useState } from 'react';
+import {
+  Ticket,
+  TicketStatus,
+  User,
+  MessageAttachment,
+} from '@/types';
 import StatusBadge from '@/components/ui/StatusBadge';
 import Button from '@/components/ui/Button';
 import { Textarea, Select } from '@/components/ui/Field';
@@ -42,8 +47,17 @@ import {
 interface TechTicketDetailProps {
   ticket: Ticket;
   onNavigate: (p: TechPage) => void;
-  onSendMessage: (id: string, message: string) => void;
-  onRequestInfo: (id: string, question: string) => void;
+  onSendMessage: (
+    id: string,
+    message: string,
+    attachments?: MessageAttachment[]
+  ) => void;
+
+  onRequestInfo: (
+    id: string,
+    question: string,
+    attachments?: MessageAttachment[]
+  ) => void;
   onChangeStatus: (id: string, status: TicketStatus) => void;
   onResolve: (
     id: string,
@@ -58,6 +72,7 @@ interface TechTicketDetailProps {
 }
 
 type Tab = 'interactions' | 'solution' | 'notes';
+type MessageMode = 'message' | 'request';
 
 export default function TechTicketDetail({
   ticket,
@@ -82,17 +97,94 @@ export default function TechTicketDetail({
 
   const [selectedTransferTech, setSelectedTransferTech] = useState('');
   const [showTransferSelect, setShowTransferSelect] = useState(false);
+
   const [tab, setTab] = useState<Tab>('interactions');
+
   const [message, setMessage] = useState('');
-  const [requestMsg, setRequestMsg] = useState('');
-  const [showRequest, setShowRequest] = useState(false);
+
+  const [pendingFiles, setPendingFiles] = useState<File[]>([]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleSelectFiles = (
+    event: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const selected = Array.from(event.target.files ?? []);
+    const maxSize = 10 * 1024 * 1024; // 10 MB por arquivo
+    const allowed = selected.filter(
+      (file) =>
+        file.type.startsWith('image/') ||
+        file.type === 'application/pdf' ||
+        file.type.startsWith('text/') ||
+        file.type ===
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document' ||
+        file.type === 'application/msword' ||
+        file.type ===
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' ||
+        file.type === 'application/vnd.ms-excel'
+    );
+
+    const valid = allowed.filter((file) => file.size <= maxSize);
+
+    if (valid.length !== selected.length) {
+      window.alert(
+        'Alguns arquivos não foram aceitos. Escolha imagens ou documentos compatíveis de até 10 MB cada.'
+      );
+    }
+
+    setPendingFiles((previous) => [...previous, ...valid].slice(0, 10));
+
+    // Permite selecionar novamente o mesmo arquivo.
+    event.target.value = '';
+  };
+
+  const removePendingFile = (index: number) => {
+    setPendingFiles((previous) =>
+      previous.filter((_, i) => i !== index)
+    );
+  };
+
+  const [messageMode, setMessageMode] =
+    useState<MessageMode>('message');
+
   const [statusSelect, setStatusSelect] =
     useState<TicketStatus>(ticket.status);
+
   const [solution, setSolution] = useState(ticket.solution ?? '');
   const [assetTag, setAssetTag] = useState(ticket.assetTag ?? '');
+
   const [replacedParts, setReplacedParts] = useState(
     ticket.replacedParts ?? ''
   );
+
+
+  useEffect(() => {
+    setStatusSelect(ticket.status);
+  }, [ticket.id, ticket.status]);
+
+  useEffect(() => {
+    setSolution(ticket.solution ?? '');
+    setAssetTag(ticket.assetTag ?? '');
+    setReplacedParts(ticket.replacedParts ?? '');
+  }, [
+    ticket.id,
+    ticket.solution,
+    ticket.assetTag,
+    ticket.replacedParts,
+  ]);
+
+  useEffect(() => {
+    // Limpa os rascunhos somente ao trocar de chamado.
+    setMessage('');
+    setMessageMode('message');
+    setNote('');
+    setSelectedAttachment(null);
+    setSelectedTransferTech('');
+    setShowTransferSelect(false);
+    setIntegrityStatus(null);
+    setForensicEvent(null);
+  }, [ticket.id]);
+
+
   const [note, setNote] = useState('');
 
   // Anexo atualmente aberto em tela cheia
@@ -103,6 +195,7 @@ export default function TechTicketDetail({
     const fetchAudit = async () => {
       try {
         const protocolo = ticket.protocol || ticket.id;
+
         const events = await dataAuditService.buscarPorEntidade(
           'CHAMADOS',
           protocolo
@@ -149,27 +242,56 @@ export default function TechTicketDetail({
     }
   };
 
+
   const handleConfirmClose = async (
     parecerTecnico: string
   ) => {
-    onResolve(ticket.id, parecerTecnico);
+    onResolve(
+      ticket.id,
+      parecerTecnico,
+      assetTag.trim() || undefined,
+      replacedParts.trim() || undefined
+    );
+
     setIsCloseModalOpen(false);
   };
 
+
+  // Envia mensagem normal ou solicitação de informação
+
   const handleSend = () => {
-    if (!message.trim()) return;
+    const text = message.trim();
 
-    onSendMessage(ticket.id, message.trim());
+    if (ticket.status === 'fechado') return;
+
+    if (messageMode === 'request' && !text) {
+      window.alert('Digite a informação que você precisa solicitar.');
+      return;
+    }
+
+    if (!text && pendingFiles.length === 0) return;
+
+    const attachments: MessageAttachment[] = pendingFiles.map(
+      (file, index) => ({
+        id: `${Date.now()}-${index}`,
+        name: file.name,
+        type: file.type || 'application/octet-stream',
+        size: file.size,
+        url: URL.createObjectURL(file),
+      })
+    );
+
+    if (messageMode === 'request') {
+      onRequestInfo(ticket.id, text, attachments);
+    } else {
+      onSendMessage(ticket.id, text, attachments);
+    }
+
     setMessage('');
+    setPendingFiles([]);
+    setMessageMode('message');
   };
 
-  const handleRequest = () => {
-    if (!requestMsg.trim()) return;
-
-    onRequestInfo(ticket.id, requestMsg.trim());
-    setRequestMsg('');
-    setShowRequest(false);
-  };
 
   const handleStatus = () => {
     if (statusSelect !== ticket.status) {
@@ -240,8 +362,8 @@ export default function TechTicketDetail({
           type="button"
           onClick={() => onNavigate('tech-chamados')}
           className={`mb-6 inline-flex items-center gap-1.5 text-sm font-medium ${colors.textMuted} transition-colors ${isDark
-              ? 'hover:text-teal-300'
-              : 'hover:text-teal-700'
+            ? 'hover:text-teal-300'
+            : 'hover:text-teal-700'
             }`}
         >
           <ArrowLeft className="h-4 w-4" />
@@ -299,7 +421,7 @@ export default function TechTicketDetail({
                 active={tab === 'interactions'}
                 onClick={() => setTab('interactions')}
                 icon={MessageCircle}
-                label="Interações"
+                label="Conversa"
                 isDark={isDark}
               />
 
@@ -315,189 +437,312 @@ export default function TechTicketDetail({
                 active={tab === 'notes'}
                 onClick={() => setTab('notes')}
                 icon={StickyNote}
-                label="Observações internas"
+                label="Notas internas"
                 isDark={isDark}
               />
             </div>
 
-            {/* INTERAÇÕES */}
+
+            {/* CONVERSA — visual inspirado no WhatsApp */}
             {tab === 'interactions' && (
               <div
-                className={`rounded-2xl border p-6 shadow-sti animate-fade-in ${colors.card}`}
+                className={`overflow-hidden rounded-xl border shadow-sm ${isDark
+                  ? 'border-slate-700 bg-[#0b141a]'
+                  : 'border-[#d5ddd7] bg-[#efeae2]'
+                  }`}
               >
-                <h2
-                  className={`mb-5 text-sm font-semibold ${colors.textPrimary}`}
+                <div className="flex min-h-[76px] items-center gap-3 bg-[#075e54] px-4 py-3 text-white">
+                  <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-white/15 font-bold">
+                    {ticket.requesterName?.charAt(0)?.toUpperCase() || 'U'}
+                  </div>
+
+                  <div className="min-w-0 flex-1">
+                    <h2 className="truncate text-sm font-semibold">
+                      {ticket.requesterName}
+                    </h2>
+                    <p className="truncate text-xs text-white/75">
+                      {ticket.protocol || ticket.id} · {ticket.title}
+                    </p>
+                  </div>
+
+                  <span className="rounded-full bg-white/15 px-2.5 py-1 text-[11px]">
+                    {ticket.status === 'fechado'
+                      ? 'Fechado'
+                      : ticket.status === 'resolvido'
+                        ? 'Resolvido'
+                        : ticket.status === 'aguardando'
+                          ? 'Aguardando'
+                          : 'Em atendimento'}
+                  </span>
+                </div>
+
+                <div
+                  className={`h-[420px] space-y-4 overflow-y-auto px-3 py-5 sm:h-[500px] sm:px-6 ${isDark ? 'bg-[#0b141a]' : 'bg-[#efeae2]'
+                    }`}
+                  style={{
+                    backgroundImage: isDark
+                      ? 'radial-gradient(circle, rgba(255,255,255,.035) 1px, transparent 1px)'
+                      : 'radial-gradient(circle, rgba(70,90,75,.07) 1px, transparent 1px)',
+                    backgroundSize: '24px 24px',
+                  }}
                 >
-                  Linha do tempo
-                </h2>
+                  <div className="flex justify-center">
+                    <span
+                      className={`rounded-lg px-3 py-1.5 text-[11px] shadow-sm ${isDark
+                        ? 'bg-[#182229] text-slate-300'
+                        : 'bg-[#fdf7df] text-slate-600'
+                        }`}
+                    >
+                      Chamado aberto em {formatDate(ticket.createdAt)}
+                    </span>
+                  </div>
 
-                <div className="flex flex-col gap-4">
-                  {/* Solicitação original */}
-                  <div className="flex gap-3">
-                    <Avatar
-                      author="usuario"
-                      name={ticket.requesterName}
-                    />
-
-                    <div className="flex-1">
-                      <div
-                        className={`rounded-xl rounded-tl-sm px-4 py-3 ${colors.inner}`}
-                      >
-                        <p
-                          className={`text-sm leading-relaxed ${colors.textSecondary}`}
-                        >
-                          {ticket.description}
-                        </p>
-                      </div>
-
-                      <p
-                        className={`mt-1 text-xs ${colors.textFaint}`}
-                      >
-                        {ticket.requesterName} — Solicitante ·{' '}
-                        {formatDate(ticket.createdAt)}
+                  <div className="flex justify-start">
+                    <div
+                      className={`max-w-[88%] rounded-lg rounded-tl-none px-3 py-2 shadow-sm sm:max-w-[78%] ${isDark
+                        ? 'bg-[#202c33] text-slate-100'
+                        : 'bg-white text-slate-800'
+                        }`}
+                    >
+                      <p className="mb-1 text-[11px] font-semibold text-emerald-700 dark:text-emerald-300">
+                        {ticket.requesterName}
+                      </p>
+                      <p className="whitespace-pre-wrap break-words text-sm leading-relaxed">
+                        {ticket.description}
+                      </p>
+                      <p className="mt-1.5 text-right text-[10px] opacity-60">
+                        {formatMessageTime(ticket.createdAt)}
                       </p>
                     </div>
                   </div>
 
-                  {/* Atualizações */}
-                  {ticket.updates.map((u) => (
-                    <div
-                      key={u.id}
-                      className={`flex gap-3 ${u.author === 'tecnico'
-                          ? 'flex-row-reverse'
-                          : ''
-                        }`}
-                    >
-                      <Avatar
-                        author={u.author}
-                        name={u.authorName}
-                      />
+                  {ticket.updates.map((u) => {
+                    const isTech = u.author === 'tecnico';
 
+                    return (
                       <div
-                        className={`flex-1 ${u.author === 'tecnico'
-                            ? 'flex flex-col items-end'
-                            : ''
+                        key={u.id}
+                        className={`flex ${isTech ? 'justify-end' : 'justify-start'
                           }`}
                       >
                         <div
-                          className={`max-w-[85%] rounded-xl px-4 py-3 ${u.author === 'tecnico'
-                              ? 'rounded-tr-sm bg-sti-navy-800 text-white'
-                              : `rounded-tl-sm ${colors.inner}`
+                          className={`max-w-[88%] rounded-lg px-3 py-2 shadow-sm sm:max-w-[78%] ${isTech
+                            ? 'rounded-tr-none bg-[#d9fdd3] text-[#172b20] dark:bg-[#005c4b] dark:text-slate-100'
+                            : isDark
+                              ? 'rounded-tl-none bg-[#202c33] text-slate-100'
+                              : 'rounded-tl-none bg-white text-slate-800'
                             }`}
                         >
                           <p
-                            className={`text-sm leading-relaxed ${u.author === 'tecnico'
-                                ? 'text-slate-100'
-                                : colors.textSecondary
+                            className={`mb-1 text-[11px] font-semibold ${isTech
+                              ? 'text-emerald-800 dark:text-emerald-200'
+                              : 'text-slate-500 dark:text-slate-300'
                               }`}
                           >
+                            {isTech ? 'Você · Técnico' : u.authorName}
+                          </p>
+
+                          <p className="whitespace-pre-wrap break-words text-sm leading-relaxed">
                             {u.message}
                           </p>
-                        </div>
 
-                        <p
-                          className={`mt-1 text-xs ${colors.textFaint}`}
-                        >
-                          {u.authorName} —{' '}
-                          {u.author === 'tecnico'
-                            ? 'Técnico'
-                            : 'Solicitante'}{' '}
-                          · {formatDate(u.createdAt)}
-                        </p>
+                          {u.attachments && u.attachments.length > 0 && (
+                            <div className="mt-2 flex flex-col gap-2">
+                              {u.attachments.map((attachment) => {
+                                const isImage = attachment.type.startsWith('image/');
+
+                                return (
+                                  <div key={attachment.id}>
+                                    {isImage ? (
+                                      <button
+                                        type="button"
+                                        onClick={() => setSelectedAttachment(attachment.url)}
+                                        className="block max-w-full overflow-hidden rounded-lg"
+                                        aria-label={`Visualizar ${attachment.name}`}
+                                      >
+                                        <img
+                                          src={attachment.url}
+                                          alt={attachment.name}
+                                          className="max-h-64 max-w-full rounded-lg object-contain"
+                                        />
+                                      </button>
+                                    ) : (
+                                      <a
+                                        href={attachment.url}
+                                        target="_blank"
+                                        rel="noreferrer"
+                                        download={attachment.name}
+                                        className="flex items-center gap-2 rounded-lg border border-black/10 bg-white/70 p-2 text-sm text-slate-800 hover:bg-white"
+                                      >
+                                        <FileText className="h-5 w-5 shrink-0 text-emerald-700" />
+                                        <span className="min-w-0 break-all">
+                                          {attachment.name}
+                                        </span>
+                                        <ExternalLink className="h-4 w-4 shrink-0" />
+                                      </a>
+                                    )}
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          )}
+
+                          <p className="mt-1.5 text-right text-[10px] opacity-60">
+                            {formatMessageTime(u.createdAt)}
+                          </p>
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
 
-                {/* Caixa de resposta */}
-                {ticket.status !== 'fechado' && (
+                {ticket.status !== 'fechado' ? (
                   <div
-                    className={`mt-6 border-t pt-5 ${colors.borderSoft}`}
+                    className={`border-t p-3 sm:px-4 ${isDark
+                      ? 'border-slate-700 bg-[#202c33]'
+                      : 'border-[#d5ddd7] bg-[#f0f2f5]'
+                      }`}
                   >
-                    {showRequest ? (
-                      <div className="rounded-xl border border-amber-200 bg-amber-50/70 p-4 dark:border-amber-500/30 dark:bg-amber-500/10">
-                        <label
-                          className={`mb-2 block text-sm font-medium ${isDark
-                              ? 'text-amber-100'
-                              : 'text-amber-900'
-                            }`}
-                        >
-                          Solicitar informações ao usuário
-                        </label>
+                    <div className="mb-2 flex items-center justify-between gap-2">
+                      <span
+                        className={`text-xs ${isDark ? 'text-slate-400' : 'text-slate-500'
+                          }`}
+                      >
+                        {messageMode === 'request'
+                          ? 'Solicitando informação'
+                          : 'Mensagem para o solicitante'}
+                      </span>
 
-                        <Textarea
-                          value={requestMsg}
-                          onChange={(e) =>
-                            setRequestMsg(e.target.value)
-                          }
-                          placeholder="Escreva a pergunta para o solicitante…"
-                          rows={2}
-                        />
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setMessageMode((current) =>
+                            current === 'message' ? 'request' : 'message'
+                          );
+                          setMessage('');
+                        }}
+                        className="text-xs font-medium text-emerald-700 hover:text-emerald-600 dark:text-emerald-300"
+                      >
+                        {messageMode === 'request'
+                          ? 'Cancelar solicitação'
+                          : 'Solicitar informação'}
+                      </button>
+                    </div>
 
-                        <div className="mt-3 flex justify-end gap-2">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() =>
-                              setShowRequest(false)
-                            }
+
+
+                    {pendingFiles.length > 0 && (
+                      <div className="mb-3 flex flex-wrap gap-2">
+                        {pendingFiles.map((file, index) => (
+                          <div
+                            key={`${file.name}-${index}`}
+                            className={`flex max-w-full items-center gap-2 rounded-xl border px-3 py-2 text-xs ${isDark
+                              ? 'border-slate-600 bg-slate-800 text-slate-200'
+                              : 'border-slate-200 bg-white text-slate-700'
+                              }`}
                           >
-                            Cancelar
-                          </Button>
+                            {file.type.startsWith('image/') ? (
+                              <ImageIcon className="h-4 w-4 shrink-0 text-emerald-600" />
+                            ) : (
+                              <FileText className="h-4 w-4 shrink-0 text-emerald-600" />
+                            )}
 
-                          <Button
-                            size="sm"
-                            onClick={handleRequest}
-                            disabled={!requestMsg.trim()}
-                          >
-                            <Send className="h-3.5 w-3.5" />
-                            Enviar pergunta
-                          </Button>
-                        </div>
+                            <span className="max-w-[180px] truncate">
+                              {file.name}
+                            </span>
+
+                            <button
+                              type="button"
+                              onClick={() => removePendingFile(index)}
+                              aria-label={`Remover ${file.name}`}
+                              className="rounded-full p-1 hover:bg-black/10 dark:hover:bg-white/10"
+                            >
+                              <X className="h-4 w-4" />
+                            </button>
+                          </div>
+                        ))}
                       </div>
-                    ) : (
-                      <>
-                        <label
-                          className={`mb-2 block text-sm font-medium ${colors.textPrimary}`}
-                        >
-                          Escreva uma mensagem
-                        </label>
+                    )}
 
+                    <form
+                      onSubmit={(e) => {
+                        e.preventDefault();
+                        handleSend();
+                      }}
+                      className="flex items-end gap-2"
+                    >
+
+
+                      <input
+                        ref={fileInputRef}
+                        type="file"
+                        multiple
+                        accept="image/*,.pdf,.txt,.doc,.docx,.xls,.xlsx"
+                        className="hidden"
+                        onChange={handleSelectFiles}
+                      />
+
+                      <button
+                        type="button"
+                        onClick={() => fileInputRef.current?.click()}
+                        aria-label="Anexar fotos ou documentos"
+                        title="Anexar fotos ou documentos"
+                        className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-emerald-700 hover:bg-black/5 dark:text-emerald-300 dark:hover:bg-white/5"
+                      >
+                        <Paperclip className="h-5 w-5" />
+                      </button>
+
+                      <div
+                        className={`min-w-0 flex-1 rounded-xl border px-3 py-1 ${isDark
+                          ? 'border-slate-600 bg-[#2a3942]'
+                          : 'border-slate-200 bg-white'
+                          }`}
+                      >
                         <Textarea
                           value={message}
-                          onChange={(e) =>
-                            setMessage(e.target.value)
-                          }
-                          placeholder="Escreva aqui sua resposta…"
-                          rows={3}
-                        />
-
-                        <div className="mt-3 flex justify-end gap-2">
-                          <Button
-                            variant="secondary"
-                            size="sm"
-                            onClick={() =>
-                              setShowRequest(true)
+                          onChange={(e) => setMessage(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (
+                              e.key === 'Enter' &&
+                              !e.shiftKey &&
+                              !e.nativeEvent.isComposing
+                            ) {
+                              e.preventDefault();
+                              handleSend();
                             }
-                          >
-                            Solicitar informações
-                          </Button>
+                          }}
+                          placeholder={
+                            messageMode === 'request'
+                              ? 'Digite a informação necessária...'
+                              : 'Digite uma mensagem'
+                          }
+                          rows={2}
+                        />
+                      </div>
 
-                          <Button
-                            size="sm"
-                            onClick={handleSend}
-                            disabled={!message.trim()}
-                          >
-                            <Send className="h-3.5 w-3.5" />
-                            Enviar mensagem
-                          </Button>
-                        </div>
-                      </>
-                    )}
+                      <button
+                        type="submit"
+                        disabled={!message.trim() && pendingFiles.length === 0}
+                        aria-label="Enviar mensagem"
+                        className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#075e54] text-white transition-colors hover:bg-[#064e46] disabled:cursor-not-allowed disabled:opacity-40"
+                      >
+                        <Send className="h-4 w-4" />
+                      </button>
+                    </form>
+                  </div>
+                ) : (
+                  <div
+                    className={`border-t px-4 py-4 text-center text-sm ${isDark
+                      ? 'border-slate-700 bg-[#202c33] text-slate-400'
+                      : 'border-[#d5ddd7] bg-[#f0f2f5] text-slate-500'
+                      }`}
+                  >
+                    Este chamado está fechado. Não é possível enviar mensagens.
                   </div>
                 )}
               </div>
             )}
+
 
             {/* SOLUÇÃO */}
             {tab === 'solution' && (
@@ -534,10 +779,10 @@ export default function TechTicketDetail({
                                 <Star
                                   key={s}
                                   className={`h-4 w-4 ${s <= (ticket.rating ?? 0)
-                                      ? 'fill-amber-400 text-amber-400'
-                                      : isDark
-                                        ? 'text-slate-600'
-                                        : 'text-slate-300'
+                                    ? 'fill-amber-400 text-amber-400'
+                                    : isDark
+                                      ? 'text-slate-600'
+                                      : 'text-slate-300'
                                     }`}
                                 />
                               ))}
@@ -547,8 +792,8 @@ export default function TechTicketDetail({
                           {ticket.ratingComment && (
                             <p
                               className={`rounded-lg border p-2.5 text-xs italic ${isDark
-                                  ? 'border-amber-500/20 bg-slate-900/40 text-slate-300'
-                                  : 'border-amber-100 bg-white/80 text-slate-700'
+                                ? 'border-amber-500/20 bg-slate-900/40 text-slate-300'
+                                : 'border-amber-100 bg-white/80 text-slate-700'
                                 }`}
                             >
                               "{ticket.ratingComment}"
@@ -559,8 +804,8 @@ export default function TechTicketDetail({
 
                       <div
                         className={`mb-2 flex items-center gap-2 text-sm font-semibold ${isDark
-                            ? 'text-emerald-300'
-                            : 'text-emerald-800'
+                          ? 'text-emerald-300'
+                          : 'text-emerald-800'
                           }`}
                       >
                         <CheckCircle2 className="h-4 w-4 text-emerald-600" />
@@ -575,48 +820,47 @@ export default function TechTicketDetail({
                     </div>
 
                     {/* Patrimônio / peças */}
-                    {(ticket.assetTag ||
-                      ticket.replacedParts) && (
-                        <div className="grid gap-3 sm:grid-cols-2">
-                          {ticket.assetTag && (
-                            <div
-                              className={`rounded-xl border p-3.5 ${colors.cardSecondary}`}
+                    {(ticket.assetTag || ticket.replacedParts) && (
+                      <div className="grid gap-3 sm:grid-cols-2">
+                        {ticket.assetTag && (
+                          <div
+                            className={`rounded-xl border p-3.5 ${colors.cardSecondary}`}
+                          >
+                            <span
+                              className={`mb-1 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider ${colors.textMuted}`}
                             >
-                              <span
-                                className={`mb-1 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider ${colors.textMuted}`}
-                              >
-                                <Tag className="h-3.5 w-3.5 text-sti-teal-600" />
-                                Patrimônio / Tombamento
-                              </span>
+                              <Tag className="h-3.5 w-3.5 text-sti-teal-600" />
+                              Patrimônio / Tombamento
+                            </span>
 
-                              <span
-                                className={`font-mono text-sm font-bold ${colors.textPrimary}`}
-                              >
-                                {ticket.assetTag}
-                              </span>
-                            </div>
-                          )}
-
-                          {ticket.replacedParts && (
-                            <div
-                              className={`rounded-xl border p-3.5 ${colors.cardSecondary}`}
+                            <span
+                              className={`font-mono text-sm font-bold ${colors.textPrimary}`}
                             >
-                              <span
-                                className={`mb-1 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider ${colors.textMuted}`}
-                              >
-                                <Wrench className="h-3.5 w-3.5 text-amber-600" />
-                                Peças / Insumos Utilizados
-                              </span>
+                              {ticket.assetTag}
+                            </span>
+                          </div>
+                        )}
 
-                              <span
-                                className={`text-sm font-medium ${colors.textSecondary}`}
-                              >
-                                {ticket.replacedParts}
-                              </span>
-                            </div>
-                          )}
-                        </div>
-                      )}
+                        {ticket.replacedParts && (
+                          <div
+                            className={`rounded-xl border p-3.5 ${colors.cardSecondary}`}
+                          >
+                            <span
+                              className={`mb-1 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider ${colors.textMuted}`}
+                            >
+                              <Wrench className="h-3.5 w-3.5 text-amber-600" />
+                              Peças / Insumos Utilizados
+                            </span>
+
+                            <span
+                              className={`text-sm font-medium ${colors.textSecondary}`}
+                            >
+                              {ticket.replacedParts}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
                 ) : (
                   <div className="mb-5 space-y-4">
@@ -629,9 +873,7 @@ export default function TechTicketDetail({
 
                       <Textarea
                         value={solution}
-                        onChange={(e) =>
-                          setSolution(e.target.value)
-                        }
+                        onChange={(e) => setSolution(e.target.value)}
                         placeholder="Registre: diagnóstico técnico realizado, procedimento aplicado e validação funcional..."
                         rows={5}
                       />
@@ -651,9 +893,7 @@ export default function TechTicketDetail({
                         <input
                           type="text"
                           value={assetTag}
-                          onChange={(e) =>
-                            setAssetTag(e.target.value)
-                          }
+                          onChange={(e) => setAssetTag(e.target.value)}
                           placeholder="Ex: PAT-2024-0891 ou Placa 10423"
                           className={`w-full rounded-xl border px-3 py-2 text-sm focus:border-sti-teal-500 focus:outline-none focus:ring-1 focus:ring-sti-teal-500 ${colors.input}`}
                         />
@@ -672,9 +912,7 @@ export default function TechTicketDetail({
                         <input
                           type="text"
                           value={replacedParts}
-                          onChange={(e) =>
-                            setReplacedParts(e.target.value)
-                          }
+                          onChange={(e) => setReplacedParts(e.target.value)}
                           placeholder="Ex: Cabo de rede Cat6 2m, SSD 256GB, Fonte ATX"
                           className={`w-full rounded-xl border px-3 py-2 text-sm focus:border-sti-teal-500 focus:outline-none focus:ring-1 focus:ring-sti-teal-500 ${colors.input}`}
                         />
@@ -684,34 +922,31 @@ export default function TechTicketDetail({
                 )}
 
                 {/* Concluir chamado */}
-                {!ticket.solution &&
-                  ticket.status !== 'fechado' && (
-                    <div className="flex justify-end">
-                      <Button
-                        onClick={() =>
-                          setIsCloseModalOpen(true)
-                        }
-                        className="bg-emerald-600 font-medium text-white hover:bg-emerald-500"
-                      >
-                        Concluir Chamado (Parecer Técnico)
-                      </Button>
-                    </div>
-                  )}
+                {!ticket.solution && ticket.status !== 'fechado' && (
+                  <div className="flex justify-end">
+                    <Button
+                      onClick={() => setIsCloseModalOpen(true)}
+                      className="bg-emerald-600 font-medium text-white hover:bg-emerald-500"
+                    >
+                      Concluir Chamado (Parecer Técnico)
+                    </Button>
+                  </div>
+                )}
 
                 {/* DATA-AUDIT */}
                 {ticket.status === 'resolvido' && (
                   <div
                     className={`mt-6 rounded-xl border p-4 shadow-lg ${isDark
-                        ? 'border-slate-700 bg-slate-900/80'
-                        : 'border-slate-200 bg-slate-50'
+                      ? 'border-slate-700 bg-slate-900/80'
+                      : 'border-slate-200 bg-slate-50'
                       }`}
                   >
                     <div className="flex flex-col items-start justify-between gap-4 md:flex-row md:items-center">
                       <div className="flex items-center gap-3">
                         <div
                           className={`rounded-lg border p-2.5 ${isDark
-                              ? 'border-emerald-500/20 bg-emerald-500/10 text-emerald-400'
-                              : 'border-emerald-200 bg-emerald-50 text-emerald-600'
+                            ? 'border-emerald-500/20 bg-emerald-500/10 text-emerald-400'
+                            : 'border-emerald-200 bg-emerald-50 text-emerald-600'
                             }`}
                         >
                           <CheckCircle2 className="h-5 w-5" />
@@ -722,14 +957,13 @@ export default function TechTicketDetail({
                             <h4
                               className={`text-sm font-bold tracking-wide ${colors.textPrimary}`}
                             >
-                              Trilha de Auditoria Forense
-                              (SHA-256)
+                              Trilha de Auditoria Forense (SHA-256)
                             </h4>
 
                             <span
                               className={`rounded px-2 py-0.5 text-[10px] font-bold uppercase ${isDark
-                                  ? 'border border-blue-500/30 bg-blue-500/20 text-blue-400'
-                                  : 'border border-blue-200 bg-blue-50 text-blue-700'
+                                ? 'border border-blue-500/30 bg-blue-500/20 text-blue-400'
+                                : 'border border-blue-200 bg-blue-50 text-blue-700'
                                 }`}
                             >
                               DATA-AUDIT Microservice
@@ -753,18 +987,16 @@ export default function TechTicketDetail({
                         <div className="flex flex-wrap items-center gap-3">
                           {integrityStatus && (
                             <span
-                              className={`flex items-center gap-1.5 rounded-lg border px-2.5 py-1 text-xs font-semibold ${integrityStatus.statusIntegridade ===
-                                  'VALIDO'
-                                  ? isDark
-                                    ? 'border-emerald-500/30 bg-emerald-500/20 text-emerald-300'
-                                    : 'border-emerald-200 bg-emerald-50 text-emerald-700'
-                                  : isDark
-                                    ? 'border-red-500/30 bg-red-500/20 text-red-300'
-                                    : 'border-red-200 bg-red-50 text-red-700'
+                              className={`flex items-center gap-1.5 rounded-lg border px-2.5 py-1 text-xs font-semibold ${integrityStatus.statusIntegridade === 'VALIDO'
+                                ? isDark
+                                  ? 'border-emerald-500/30 bg-emerald-500/20 text-emerald-300'
+                                  : 'border-emerald-200 bg-emerald-50 text-emerald-700'
+                                : isDark
+                                  ? 'border-red-500/30 bg-red-500/20 text-red-300'
+                                  : 'border-red-200 bg-red-50 text-red-700'
                                 }`}
                             >
-                              {integrityStatus.statusIntegridade ===
-                                'VALIDO'
+                              {integrityStatus.statusIntegridade === 'VALIDO'
                                 ? '✅ Integridade Verificada'
                                 : '❌ Adulteração Detectada'}
                             </span>
@@ -774,8 +1006,8 @@ export default function TechTicketDetail({
                             onClick={handleCheckForensic}
                             disabled={checkingIntegrity}
                             className={`border px-3 py-1.5 text-xs ${isDark
-                                ? 'border-slate-600 bg-slate-800 text-slate-200 hover:bg-slate-700'
-                                : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-100'
+                              ? 'border-slate-600 bg-slate-800 text-slate-200 hover:bg-slate-700'
+                              : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-100'
                               }`}
                           >
                             {checkingIntegrity
@@ -790,37 +1022,29 @@ export default function TechTicketDetail({
 
                 <CloseTicketModal
                   isOpen={isCloseModalOpen}
-                  ticketProtocolo={
-                    ticket.protocol || ticket.id
-                  }
-                  onClose={() =>
-                    setIsCloseModalOpen(false)
-                  }
+                  ticketProtocolo={ticket.protocol || ticket.id}
+                  onClose={() => setIsCloseModalOpen(false)}
                   onConfirm={handleConfirmClose}
                 />
 
                 {/* Fechar chamado */}
-                {ticket.solution &&
-                  ticket.status === 'resolvido' && (
-                    <div className="mt-5 flex justify-end">
-                      <Button
-                        onClick={() =>
-                          onChangeStatus(
-                            ticket.id,
-                            'fechado'
-                          )
-                        }
-                      >
-                        Fechar chamado
-                      </Button>
-                    </div>
-                  )}
+                {ticket.solution && ticket.status === 'resolvido' && (
+                  <div className="mt-5 flex justify-end">
+                    <Button
+                      onClick={() =>
+                        onChangeStatus(ticket.id, 'fechado')
+                      }
+                    >
+                      Fechar chamado
+                    </Button>
+                  </div>
+                )}
 
                 {ticket.status === 'fechado' && (
                   <div
                     className={`rounded-lg px-4 py-3 text-center text-sm ${isDark
-                        ? 'bg-slate-800/70 text-slate-400'
-                        : 'bg-slate-50 text-slate-500'
+                      ? 'bg-slate-800/70 text-slate-400'
+                      : 'bg-slate-50 text-slate-500'
                       }`}
                   >
                     Este chamado está fechado.
@@ -829,7 +1053,7 @@ export default function TechTicketDetail({
               </div>
             )}
 
-            {/* OBSERVAÇÕES */}
+            {/* NOTAS INTERNAS */}
             {tab === 'notes' && (
               <div
                 className={`rounded-2xl border p-6 shadow-sti animate-fade-in ${colors.card}`}
@@ -859,8 +1083,8 @@ export default function TechTicketDetail({
                     <div
                       key={n.id}
                       className={`rounded-xl border px-4 py-3 ${isDark
-                          ? 'border-slate-700/60 bg-slate-800/50'
-                          : 'border-slate-100 bg-slate-50/80'
+                        ? 'border-slate-700/60 bg-slate-800/50'
+                        : 'border-slate-100 bg-slate-50/80'
                         }`}
                     >
                       <div className="mb-1 flex items-center gap-2">
@@ -902,9 +1126,7 @@ export default function TechTicketDetail({
 
                     <Textarea
                       value={note}
-                      onChange={(e) =>
-                        setNote(e.target.value)
-                      }
+                      onChange={(e) => setNote(e.target.value)}
                       placeholder="Anote algo relevante para a equipe de TI…"
                       rows={2}
                     />
@@ -997,9 +1219,7 @@ export default function TechTicketDetail({
                 <InfoRow
                   icon={Clock}
                   label="Data aproximada"
-                  value={formatDateShort(
-                    ticket.approximateDate
-                  )}
+                  value={formatDateShort(ticket.approximateDate)}
                   isDark={isDark}
                 />
 
@@ -1025,9 +1245,7 @@ export default function TechTicketDetail({
                   </dd>
                 </div>
 
-                {/* =====================================================
-                    ANEXOS
-                   ===================================================== */}
+                {/* ANEXOS */}
                 {ticket.attachments.length > 0 && (
                   <div>
                     <dt
@@ -1049,25 +1267,23 @@ export default function TechTicketDetail({
                               key={i}
                               type="button"
                               onClick={() =>
-                                setSelectedAttachment(
-                                  attachment
-                                )
+                                setSelectedAttachment(attachment)
                               }
                               className={`group relative w-full overflow-hidden rounded-xl border text-left ${isDark
-                                  ? 'border-slate-700 bg-slate-900 hover:border-teal-500/60'
-                                  : 'border-slate-200 bg-slate-50 hover:border-teal-500'
+                                ? 'border-slate-700 bg-slate-900 hover:border-teal-500/60'
+                                : 'border-slate-200 bg-slate-50 hover:border-teal-500'
                                 }`}
                             >
                               <img
                                 src={attachment}
                                 alt={`Anexo ${i + 1}`}
-                                className="block max-h-56 w-full object-contain bg-black/5"
+                                className="block max-h-56 w-full bg-black/5 object-contain"
                               />
 
                               <div
                                 className={`flex items-center justify-between border-t px-3 py-2 text-xs ${isDark
-                                    ? 'border-slate-700 text-slate-300'
-                                    : 'border-slate-200 text-slate-600'
+                                  ? 'border-slate-700 text-slate-300'
+                                  : 'border-slate-200 text-slate-600'
                                   }`}
                               >
                                 <span className="flex items-center gap-1.5">
@@ -1088,8 +1304,8 @@ export default function TechTicketDetail({
                           <div
                             key={i}
                             className={`flex items-center gap-2 rounded-lg border px-3 py-2 text-sm ${isDark
-                                ? 'border-slate-700 bg-slate-800/60 text-slate-300'
-                                : 'border-slate-200 bg-slate-50 text-slate-600'
+                              ? 'border-slate-700 bg-slate-800/60 text-slate-300'
+                              : 'border-slate-200 bg-slate-50 text-slate-600'
                               }`}
                           >
                             <Paperclip className="h-3.5 w-3.5 shrink-0 text-teal-500" />
@@ -1144,137 +1360,114 @@ export default function TechTicketDetail({
                   </dd>
 
                   {/* Gestão de custódia */}
-                  {onAssign &&
-                    ticket.status !== 'fechado' && (
-                      <div
-                        className={`mt-3 space-y-2 border-t pt-3 ${colors.borderSoft}`}
-                      >
-                        {ticket.assignee !== techName ? (
-                          <button
-                            type="button"
-                            onClick={() =>
-                              onAssign(
-                                ticket.id,
-                                techName
+                  {onAssign && ticket.status !== 'fechado' && (
+                    <div
+                      className={`mt-3 space-y-2 border-t pt-3 ${colors.borderSoft}`}
+                    >
+                      {ticket.assignee !== techName ? (
+                        <button
+                          type="button"
+                          onClick={() =>
+                            onAssign(ticket.id, techName)
+                          }
+                          className={`flex w-full items-center justify-center gap-2 rounded-xl px-3 py-2 text-xs font-semibold shadow-sm transition-colors ${isDark
+                            ? 'bg-slate-800 text-white hover:bg-slate-700'
+                            : 'bg-slate-900 text-white hover:bg-slate-800'
+                            }`}
+                        >
+                          <UserCheck className="h-3.5 w-3.5 text-emerald-400" />
+                          Assumir Atendimento
+                        </button>
+                      ) : (
+                        <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-2 text-center text-xs font-medium text-emerald-800 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-300">
+                          Você é o responsável por este chamado
+                        </div>
+                      )}
+
+                      {!showTransferSelect ? (
+                        <button
+                          type="button"
+                          onClick={() => setShowTransferSelect(true)}
+                          className={`flex w-full items-center justify-center gap-1.5 rounded-xl border px-3 py-1.5 text-xs font-medium transition-colors ${colors.border} ${colors.textSecondary} ${colors.hover}`}
+                        >
+                          <ArrowRightLeft
+                            className={`h-3.5 w-3.5 ${colors.textFaint}`}
+                          />
+                          Transferir para outro colega
+                        </button>
+                      ) : (
+                        <div
+                          className={`space-y-1.5 rounded-xl border p-2.5 ${colors.border} ${colors.inner}`}
+                        >
+                          <label
+                            className={`block text-[11px] font-semibold ${colors.textSecondary}`}
+                          >
+                            Selecione o técnico de destino:
+                          </label>
+
+                          <select
+                            value={selectedTransferTech}
+                            onChange={(e) =>
+                              setSelectedTransferTech(e.target.value)
+                            }
+                            className={`w-full rounded-lg border px-2.5 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-sti-teal-500 ${colors.input}`}
+                          >
+                            <option value="">
+                              Escolha na equipe...
+                            </option>
+
+                            {technicians
+                              .filter(
+                                (t) => t.name !== ticket.assignee
                               )
-                            }
-                            className={`flex w-full items-center justify-center gap-2 rounded-xl px-3 py-2 text-xs font-semibold shadow-sm transition-colors ${isDark
-                                ? 'bg-slate-800 text-white hover:bg-slate-700'
-                                : 'bg-slate-900 text-white hover:bg-slate-800'
-                              }`}
-                          >
-                            <UserCheck className="h-3.5 w-3.5 text-emerald-400" />
-                            Assumir Atendimento
-                          </button>
-                        ) : (
-                          <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-2 text-center text-xs font-medium text-emerald-800 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-300">
-                            Você é o responsável por este chamado
-                          </div>
-                        )}
+                              .map((t) => (
+                                <option
+                                  key={t.email}
+                                  value={t.name}
+                                >
+                                  {t.name} (Manutenção / TI)
+                                </option>
+                              ))}
+                          </select>
 
-                        {!showTransferSelect ? (
-                          <button
-                            type="button"
-                            onClick={() =>
-                              setShowTransferSelect(true)
-                            }
-                            className={`flex w-full items-center justify-center gap-1.5 rounded-xl border px-3 py-1.5 text-xs font-medium transition-colors ${colors.border} ${colors.textSecondary} ${colors.hover}`}
-                          >
-                            <ArrowRightLeft
-                              className={`h-3.5 w-3.5 ${colors.textFaint}`}
-                            />
-                            Transferir para outro colega
-                          </button>
-                        ) : (
-                          <div
-                            className={`space-y-1.5 rounded-xl border p-2.5 ${colors.border} ${colors.inner}`}
-                          >
-                            <label
-                              className={`block text-[11px] font-semibold ${colors.textSecondary}`}
-                            >
-                              Selecione o técnico de destino:
-                            </label>
-
-                            <select
-                              value={selectedTransferTech}
-                              onChange={(e) =>
-                                setSelectedTransferTech(
-                                  e.target.value
-                                )
-                              }
-                              className={`w-full rounded-lg border px-2.5 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-sti-teal-500 ${colors.input}`}
-                            >
-                              <option value="">
-                                Escolha na equipe...
-                              </option>
-
-                              {technicians
-                                .filter(
-                                  (t) =>
-                                    t.name !==
-                                    ticket.assignee
-                                )
-                                .map((t) => (
-                                  <option
-                                    key={t.email}
-                                    value={t.name}
-                                  >
-                                    {t.name} (Manutenção / TI)
-                                  </option>
-                                ))}
-                            </select>
-
-                            <div className="flex gap-1.5 pt-1">
-                              <button
-                                type="button"
-                                disabled={
-                                  !selectedTransferTech
-                                }
-                                onClick={() => {
-                                  if (
+                          <div className="flex gap-1.5 pt-1">
+                            <button
+                              type="button"
+                              disabled={!selectedTransferTech}
+                              onClick={() => {
+                                if (selectedTransferTech) {
+                                  onAssign(
+                                    ticket.id,
                                     selectedTransferTech
-                                  ) {
-                                    onAssign(
-                                      ticket.id,
-                                      selectedTransferTech
-                                    );
-
-                                    setShowTransferSelect(
-                                      false
-                                    );
-
-                                    setSelectedTransferTech(
-                                      ''
-                                    );
-                                  }
-                                }}
-                                className={`flex-1 rounded-lg py-1.5 text-xs font-semibold text-white disabled:opacity-40 ${isDark
-                                    ? 'bg-slate-800 hover:bg-slate-700'
-                                    : 'bg-slate-900 hover:bg-slate-800'
-                                  }`}
-                              >
-                                Confirmar
-                              </button>
-
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  setShowTransferSelect(
-                                    false
                                   );
-                                  setSelectedTransferTech(
-                                    ''
-                                  );
-                                }}
-                                className={`rounded-lg border px-2.5 py-1.5 text-xs ${colors.border} ${colors.textMuted} ${colors.hover}`}
-                              >
-                                Cancelar
-                              </button>
-                            </div>
+
+                                  setShowTransferSelect(false);
+                                  setSelectedTransferTech('');
+                                }
+                              }}
+                              className={`flex-1 rounded-lg py-1.5 text-xs font-semibold text-white disabled:opacity-40 ${isDark
+                                ? 'bg-slate-800 hover:bg-slate-700'
+                                : 'bg-slate-900 hover:bg-slate-800'
+                                }`}
+                            >
+                              Confirmar
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setShowTransferSelect(false);
+                                setSelectedTransferTech('');
+                              }}
+                              className={`rounded-lg border px-2.5 py-1.5 text-xs ${colors.border} ${colors.textMuted} ${colors.hover}`}
+                            >
+                              Cancelar
+                            </button>
                           </div>
-                        )}
-                      </div>
-                    )}
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
 
                 <div>
@@ -1294,9 +1487,7 @@ export default function TechTicketDetail({
                   <InfoRow
                     icon={Clock}
                     label="Início"
-                    value={formatDate(
-                      ticket.attendanceStartedAt
-                    )}
+                    value={formatDate(ticket.attendanceStartedAt)}
                     isDark={isDark}
                   />
                 )}
@@ -1343,9 +1534,7 @@ export default function TechTicketDetail({
                       size="sm"
                       variant="secondary"
                       onClick={handleStatus}
-                      disabled={
-                        statusSelect === ticket.status
-                      }
+                      disabled={statusSelect === ticket.status}
                       className="shrink-0"
                     >
                       Aplicar
@@ -1358,9 +1547,7 @@ export default function TechTicketDetail({
         </div>
       </div>
 
-      {/* =========================================================
-          VISUALIZADOR DO ANEXO
-         ========================================================= */}
+      {/* VISUALIZADOR DO ANEXO */}
       {selectedAttachment && (
         <div
           className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 p-4 backdrop-blur-sm"
@@ -1368,20 +1555,18 @@ export default function TechTicketDetail({
         >
           <div
             className={`relative flex max-h-[92vh] max-w-6xl items-center justify-center overflow-hidden rounded-2xl border p-2 shadow-2xl ${isDark
-                ? 'border-slate-700 bg-slate-900'
-                : 'border-slate-200 bg-white'
+              ? 'border-slate-700 bg-slate-900'
+              : 'border-slate-200 bg-white'
               }`}
             onClick={(e) => e.stopPropagation()}
           >
             <button
               type="button"
-              onClick={() =>
-                setSelectedAttachment(null)
-              }
+              onClick={() => setSelectedAttachment(null)}
               aria-label="Fechar visualização"
               className={`absolute right-3 top-3 z-10 flex h-9 w-9 items-center justify-center rounded-full border shadow-lg transition ${isDark
-                  ? 'border-slate-600 bg-slate-800 text-slate-200 hover:bg-slate-700'
-                  : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-100'
+                ? 'border-slate-600 bg-slate-800 text-slate-200 hover:bg-slate-700'
+                : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-100'
                 }`}
             >
               <X className="h-5 w-5" />
@@ -1397,6 +1582,20 @@ export default function TechTicketDetail({
       )}
     </>
   );
+}
+
+
+function formatMessageTime(value: string | Date): string {
+  const date = value instanceof Date ? value : new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return '';
+  }
+
+  return date.toLocaleTimeString('pt-BR', {
+    hour: '2-digit',
+    minute: '2-digit',
+  });
 }
 
 /* =========================================================
@@ -1421,10 +1620,10 @@ function TabButton({
       type="button"
       onClick={onClick}
       className={`flex flex-1 items-center justify-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${active
-          ? 'bg-sti-navy-800 text-white'
-          : isDark
-            ? 'text-slate-400 hover:bg-slate-800 hover:text-slate-100'
-            : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
+        ? 'bg-sti-navy-800 text-white'
+        : isDark
+          ? 'text-slate-400 hover:bg-slate-800 hover:text-slate-100'
+          : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
         }`}
     >
       <Icon className="h-4 w-4" />

@@ -41,9 +41,45 @@ export default function Register({ onBackToLogin }: RegisterProps) {
       s.nome.toLowerCase().includes(sectorSearch.toLowerCase())
   );
 
-  const validarCPF = (cpfStr: string) => {
+
+  const validarCPF = (cpfStr: string): boolean => {
     const cleanCpf = cpfStr.replace(/\D/g, '');
-    return cleanCpf.length === 11;
+
+    // O CPF precisa ter 11 dígitos.
+    if (!/^\d{11}$/.test(cleanCpf)) {
+      return false;
+    }
+
+    // Rejeita CPFs com todos os dígitos iguais.
+    if (/^(\d)\1{10}$/.test(cleanCpf)) {
+      return false;
+    }
+
+    // Calcula o primeiro dígito verificador.
+    let soma = 0;
+
+    for (let i = 0; i < 9; i++) {
+      soma += Number(cleanCpf[i]) * (10 - i);
+    }
+
+    let resto = (soma * 10) % 11;
+    const primeiroDigito = resto === 10 ? 0 : resto;
+
+    if (primeiroDigito !== Number(cleanCpf[9])) {
+      return false;
+    }
+
+    // Calcula o segundo dígito verificador.
+    soma = 0;
+
+    for (let i = 0; i < 10; i++) {
+      soma += Number(cleanCpf[i]) * (11 - i);
+    }
+
+    resto = (soma * 10) % 11;
+    const segundoDigito = resto === 10 ? 0 : resto;
+
+    return segundoDigito === Number(cleanCpf[10]);
   };
 
   const handleBirthDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -149,33 +185,33 @@ export default function Register({ onBackToLogin }: RegisterProps) {
         departamentoId: departamentoIdUuid
       })
     })
-    .then(async (res: Response) => {
-      setLoading(false);
-      if (res.ok) {
-        setDone(true);
-        registrarAuditoria({
-          entidade: 'USUARIO',
-          idEntidade: cpf.replace(/\D/g, '') || formattedEmail,
-          tipoOperacao: 'CADASTRO_USUARIO',
-          autor: formattedEmail,
-          estadoAtual: {
-            nome: name,
-            email: formattedEmail,
-            secretaria: sectorSearch || 'Administrativo',
-            telefone: phone,
-          },
-          metadados: { origem: 'Tela de Autocadastro - PostgreSQL' },
-        }).catch((err: any) => console.error('[Auditoria] Falha:', err));
-      } else {
-        const errText = await res.text();
-        setError('Erro ao salvar no servidor: ' + errText);
-      }
-    })
-    .catch((err: any) => {
-      setLoading(false);
-      console.error('[Cadastro API] Erro de conexão:', err);
-      setError('Não foi possível comunicar com o servidor de banco de dados.');
-    });
+      .then(async (res: Response) => {
+        setLoading(false);
+        if (res.ok) {
+          setDone(true);
+          registrarAuditoria({
+            entidade: 'USUARIO',
+            idEntidade: cpf.replace(/\D/g, '') || formattedEmail,
+            tipoOperacao: 'CADASTRO_USUARIO',
+            autor: formattedEmail,
+            estadoAtual: {
+              nome: name,
+              email: formattedEmail,
+              secretaria: sectorSearch || 'Administrativo',
+              telefone: phone,
+            },
+            metadados: { origem: 'Tela de Autocadastro - PostgreSQL' },
+          }).catch((err: any) => console.error('[Auditoria] Falha:', err));
+        } else {
+          const errText = await res.text();
+          setError('Erro ao salvar no servidor: ' + errText);
+        }
+      })
+      .catch((err: any) => {
+        setLoading(false);
+        console.error('[Cadastro API] Erro de conexão:', err);
+        setError('Não foi possível comunicar com o servidor de banco de dados.');
+      });
   };
 
   if (done) {

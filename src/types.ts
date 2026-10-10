@@ -4,12 +4,21 @@ export type Priority = 'baixa' | 'media' | 'alta';
 
 export type UserRole = 'usuario' | 'tecnico' | 'gestor';
 
-export type GenderOption = 
+export type GenderOption =
   | 'masculino'
   | 'feminino'
   | 'nao_binario'
   | 'outro'
   | 'prefiro_nao_informar';
+
+
+export interface MessageAttachment {
+  id: string;
+  name: string;
+  type: string;
+  size: number;
+  url: string;
+}
 
 export interface TicketUpdate {
   id: string;
@@ -17,7 +26,9 @@ export interface TicketUpdate {
   authorName: string;
   message: string;
   createdAt: string;
+  attachments?: MessageAttachment[];
 }
+
 
 export interface InternalNote {
   id: string;

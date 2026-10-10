@@ -24,7 +24,7 @@ import TechMyAttendance from '@/components/tech/TechMyAttendance';
 import TechTicketDetail from '@/components/tech/TechTicketDetail';
 import GestorRelatorios from '@/components/gestor/GestorRelatorios';
 import { mockTickets, currentUser, currentTech, mockTechnicians } from '@/data';
-import { Ticket, UserRole, TicketStatus, User } from '@/types';
+import { Ticket, UserRole, TicketStatus, User, MessageAttachment } from '@/types';
 import Logo from '@/components/Logo';
 
 type UserView = { page: Page } | { page: 'ticket-detail'; ticketId: string };
@@ -460,7 +460,12 @@ export default function App() {
   };
 
 
-  const handleTechMessage = (id: string, message: string) => {
+
+  const handleTechMessage = (
+    id: string,
+    message: string,
+    attachments: MessageAttachment[] = []
+  ) => {
     const now = new Date().toISOString();
 
     setTickets((prev) =>
@@ -477,6 +482,7 @@ export default function App() {
                 authorName: activeUser.name,
                 message,
                 createdAt: now,
+                attachments,
               },
             ],
           }
@@ -484,18 +490,30 @@ export default function App() {
       )
     );
 
-    // Auditoria imutável: Resposta técnica no chat do chamado
     registrarAuditoria({
       entidade: 'CHAMADO',
       idEntidade: id,
       tipoOperacao: 'MENSAGEM_TECNICO',
       autor: activeUser?.email || 'tecnico@sti.chamados.com',
-      estadoAtual: { mensagem: message },
-      metadados: { origem: 'Chat Técnico' }
-    }).catch(err => console.error('[Auditoria] Falha ao registrar mensagem técnica:', err));
+      estadoAtual: {
+        mensagem: message,
+        anexos: attachments.map((a) => ({
+          nome: a.name,
+          tipo: a.type,
+          tamanho: a.size,
+        })),
+      },
+      metadados: { origem: 'Chat Técnico' },
+    }).catch((err) =>
+      console.error('[Auditoria] Falha ao registrar mensagem técnica:', err)
+    );
   };
 
-  const handleRequestInfo = (id: string, question: string) => {
+  const handleRequestInfo = (
+    id: string,
+    question: string,
+    attachments: MessageAttachment[] = []
+  ) => {
     const now = new Date().toISOString();
 
     setTickets((prev) =>
@@ -513,6 +531,7 @@ export default function App() {
                 authorName: activeUser.name,
                 message: question,
                 createdAt: now,
+                attachments,
               },
             ],
           }
@@ -520,16 +539,29 @@ export default function App() {
       )
     );
 
-    // Auditoria imutável: Técnico solicitou informações adicionais ao usuário
     registrarAuditoria({
       entidade: 'CHAMADO',
       idEntidade: id,
       tipoOperacao: 'SOLICITACAO_INFORMACOES',
       autor: activeUser?.email || 'tecnico@sti.chamados.com',
-      estadoAtual: { status: 'aguardando', pergunta: question },
-      metadados: { acao: 'Aguardando retorno do solicitante' }
-    }).catch(err => console.error('[Auditoria] Falha ao registrar solicitação de informações:', err));
+      estadoAtual: {
+        status: 'aguardando',
+        pergunta: question,
+        anexos: attachments.map((a) => ({
+          nome: a.name,
+          tipo: a.type,
+          tamanho: a.size,
+        })),
+      },
+      metadados: { acao: 'Aguardando retorno do solicitante' },
+    }).catch((err) =>
+      console.error(
+        '[Auditoria] Falha ao registrar solicitação de informações:',
+        err
+      )
+    );
   };
+
 
   const handleChangeStatus = (id: string, status: TicketStatus) => {
     const now = new Date().toISOString();
@@ -857,16 +889,18 @@ export default function App() {
             <TechTicketDetail
               ticket={currentTicket}
               onNavigate={navigate}
-              onSendMessage={(id, msg) =>
-                handleTechMessage(id, msg)
+              onSendMessage={(id, msg, attachments) =>
+                handleTechMessage(id, msg, attachments)
               }
-              onRequestInfo={(id, question) =>
-                handleRequestInfo(id, question)
+              onRequestInfo={(id, question, attachments) =>
+                handleRequestInfo(id, question, attachments)
               }
               onChangeStatus={(id, status) =>
                 handleChangeStatus(id, status)
               }
-              onResolve={(id, solution, assetTag, replacedParts) => handleResolve(id, solution, assetTag, replacedParts)}
+              onResolve={(id, solution, assetTag, replacedParts) =>
+                handleResolve(id, solution, assetTag, replacedParts)
+              }
               onAddInternalNote={(id, note) =>
                 handleAddNote(id, note)
               }
