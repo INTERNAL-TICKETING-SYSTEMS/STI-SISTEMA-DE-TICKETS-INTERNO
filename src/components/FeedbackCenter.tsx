@@ -11,7 +11,7 @@ import {
   User,
 } from 'lucide-react';
 
-import { useTechTheme } from '@/components/tech/TechSidebar';
+import { useTechTheme } from '@/components/tech/techTheme';
 
 type FeedbackType = 'falha' | 'sugestao' | 'demanda_gerencial';
 type FeedbackStatus = 'Novo' | 'Em análise' | 'Concluído' | 'Descartado';

@@ -10,10 +10,10 @@ import StatusBadge from '@/components/ui/StatusBadge';
 import Button from '@/components/ui/Button';
 import { Textarea, Select } from '@/components/ui/Field';
 import { formatDate, formatDateShort } from '@/data';
-import {
-  TechPage,
-  useTechTheme,
-} from '@/components/tech/TechSidebar';
+
+import { TechPage } from '@/components/tech/TechSidebar';
+import { useTechTheme } from '@/components/tech/techTheme';
+
 import {
   ArrowLeft,
   Send,
@@ -239,11 +239,10 @@ export default function TechTicketDetail({
         <button
           type="button"
           onClick={() => onNavigate('tech-chamados')}
-          className={`mb-6 inline-flex items-center gap-1.5 text-sm font-medium ${colors.textMuted} transition-colors ${
-            isDark
+          className={`mb-6 inline-flex items-center gap-1.5 text-sm font-medium ${colors.textMuted} transition-colors ${isDark
               ? 'hover:text-teal-300'
               : 'hover:text-teal-700'
-          }`}
+            }`}
         >
           <ArrowLeft className="h-4 w-4" />
           Voltar para chamados
@@ -364,11 +363,10 @@ export default function TechTicketDetail({
                   {ticket.updates.map((u) => (
                     <div
                       key={u.id}
-                      className={`flex gap-3 ${
-                        u.author === 'tecnico'
+                      className={`flex gap-3 ${u.author === 'tecnico'
                           ? 'flex-row-reverse'
                           : ''
-                      }`}
+                        }`}
                     >
                       <Avatar
                         author={u.author}
@@ -376,25 +374,22 @@ export default function TechTicketDetail({
                       />
 
                       <div
-                        className={`flex-1 ${
-                          u.author === 'tecnico'
+                        className={`flex-1 ${u.author === 'tecnico'
                             ? 'flex flex-col items-end'
                             : ''
-                        }`}
+                          }`}
                       >
                         <div
-                          className={`max-w-[85%] rounded-xl px-4 py-3 ${
-                            u.author === 'tecnico'
+                          className={`max-w-[85%] rounded-xl px-4 py-3 ${u.author === 'tecnico'
                               ? 'rounded-tr-sm bg-sti-navy-800 text-white'
                               : `rounded-tl-sm ${colors.inner}`
-                          }`}
+                            }`}
                         >
                           <p
-                            className={`text-sm leading-relaxed ${
-                              u.author === 'tecnico'
+                            className={`text-sm leading-relaxed ${u.author === 'tecnico'
                                 ? 'text-slate-100'
                                 : colors.textSecondary
-                            }`}
+                              }`}
                           >
                             {u.message}
                           </p>
@@ -422,11 +417,10 @@ export default function TechTicketDetail({
                     {showRequest ? (
                       <div className="rounded-xl border border-amber-200 bg-amber-50/70 p-4 dark:border-amber-500/30 dark:bg-amber-500/10">
                         <label
-                          className={`mb-2 block text-sm font-medium ${
-                            isDark
+                          className={`mb-2 block text-sm font-medium ${isDark
                               ? 'text-amber-100'
                               : 'text-amber-900'
-                          }`}
+                            }`}
                         >
                           Solicitar informações ao usuário
                         </label>
@@ -539,13 +533,12 @@ export default function TechTicketDetail({
                               {[1, 2, 3, 4, 5].map((s) => (
                                 <Star
                                   key={s}
-                                  className={`h-4 w-4 ${
-                                    s <= (ticket.rating ?? 0)
+                                  className={`h-4 w-4 ${s <= (ticket.rating ?? 0)
                                       ? 'fill-amber-400 text-amber-400'
                                       : isDark
                                         ? 'text-slate-600'
                                         : 'text-slate-300'
-                                  }`}
+                                    }`}
                                 />
                               ))}
                             </div>
@@ -553,11 +546,10 @@ export default function TechTicketDetail({
 
                           {ticket.ratingComment && (
                             <p
-                              className={`rounded-lg border p-2.5 text-xs italic ${
-                                isDark
+                              className={`rounded-lg border p-2.5 text-xs italic ${isDark
                                   ? 'border-amber-500/20 bg-slate-900/40 text-slate-300'
                                   : 'border-amber-100 bg-white/80 text-slate-700'
-                              }`}
+                                }`}
                             >
                               "{ticket.ratingComment}"
                             </p>
@@ -566,11 +558,10 @@ export default function TechTicketDetail({
                       )}
 
                       <div
-                        className={`mb-2 flex items-center gap-2 text-sm font-semibold ${
-                          isDark
+                        className={`mb-2 flex items-center gap-2 text-sm font-semibold ${isDark
                             ? 'text-emerald-300'
                             : 'text-emerald-800'
-                        }`}
+                          }`}
                       >
                         <CheckCircle2 className="h-4 w-4 text-emerald-600" />
                         Parecer Técnico Registrado
@@ -586,46 +577,46 @@ export default function TechTicketDetail({
                     {/* Patrimônio / peças */}
                     {(ticket.assetTag ||
                       ticket.replacedParts) && (
-                      <div className="grid gap-3 sm:grid-cols-2">
-                        {ticket.assetTag && (
-                          <div
-                            className={`rounded-xl border p-3.5 ${colors.cardSecondary}`}
-                          >
-                            <span
-                              className={`mb-1 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider ${colors.textMuted}`}
+                        <div className="grid gap-3 sm:grid-cols-2">
+                          {ticket.assetTag && (
+                            <div
+                              className={`rounded-xl border p-3.5 ${colors.cardSecondary}`}
                             >
-                              <Tag className="h-3.5 w-3.5 text-sti-teal-600" />
-                              Patrimônio / Tombamento
-                            </span>
+                              <span
+                                className={`mb-1 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider ${colors.textMuted}`}
+                              >
+                                <Tag className="h-3.5 w-3.5 text-sti-teal-600" />
+                                Patrimônio / Tombamento
+                              </span>
 
-                            <span
-                              className={`font-mono text-sm font-bold ${colors.textPrimary}`}
-                            >
-                              {ticket.assetTag}
-                            </span>
-                          </div>
-                        )}
+                              <span
+                                className={`font-mono text-sm font-bold ${colors.textPrimary}`}
+                              >
+                                {ticket.assetTag}
+                              </span>
+                            </div>
+                          )}
 
-                        {ticket.replacedParts && (
-                          <div
-                            className={`rounded-xl border p-3.5 ${colors.cardSecondary}`}
-                          >
-                            <span
-                              className={`mb-1 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider ${colors.textMuted}`}
+                          {ticket.replacedParts && (
+                            <div
+                              className={`rounded-xl border p-3.5 ${colors.cardSecondary}`}
                             >
-                              <Wrench className="h-3.5 w-3.5 text-amber-600" />
-                              Peças / Insumos Utilizados
-                            </span>
+                              <span
+                                className={`mb-1 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider ${colors.textMuted}`}
+                              >
+                                <Wrench className="h-3.5 w-3.5 text-amber-600" />
+                                Peças / Insumos Utilizados
+                              </span>
 
-                            <span
-                              className={`text-sm font-medium ${colors.textSecondary}`}
-                            >
-                              {ticket.replacedParts}
-                            </span>
-                          </div>
-                        )}
-                      </div>
-                    )}
+                              <span
+                                className={`text-sm font-medium ${colors.textSecondary}`}
+                              >
+                                {ticket.replacedParts}
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                      )}
                   </div>
                 ) : (
                   <div className="mb-5 space-y-4">
@@ -710,20 +701,18 @@ export default function TechTicketDetail({
                 {/* DATA-AUDIT */}
                 {ticket.status === 'resolvido' && (
                   <div
-                    className={`mt-6 rounded-xl border p-4 shadow-lg ${
-                      isDark
+                    className={`mt-6 rounded-xl border p-4 shadow-lg ${isDark
                         ? 'border-slate-700 bg-slate-900/80'
                         : 'border-slate-200 bg-slate-50'
-                    }`}
+                      }`}
                   >
                     <div className="flex flex-col items-start justify-between gap-4 md:flex-row md:items-center">
                       <div className="flex items-center gap-3">
                         <div
-                          className={`rounded-lg border p-2.5 ${
-                            isDark
+                          className={`rounded-lg border p-2.5 ${isDark
                               ? 'border-emerald-500/20 bg-emerald-500/10 text-emerald-400'
                               : 'border-emerald-200 bg-emerald-50 text-emerald-600'
-                          }`}
+                            }`}
                         >
                           <CheckCircle2 className="h-5 w-5" />
                         </div>
@@ -738,11 +727,10 @@ export default function TechTicketDetail({
                             </h4>
 
                             <span
-                              className={`rounded px-2 py-0.5 text-[10px] font-bold uppercase ${
-                                isDark
+                              className={`rounded px-2 py-0.5 text-[10px] font-bold uppercase ${isDark
                                   ? 'border border-blue-500/30 bg-blue-500/20 text-blue-400'
                                   : 'border border-blue-200 bg-blue-50 text-blue-700'
-                              }`}
+                                }`}
                             >
                               DATA-AUDIT Microservice
                             </span>
@@ -753,9 +741,9 @@ export default function TechTicketDetail({
                           >
                             {forensicEvent?.hashIntegridade
                               ? `Hash: ${forensicEvent.hashIntegridade.slice(
-                                  0,
-                                  32
-                                )}...`
+                                0,
+                                32
+                              )}...`
                               : 'Aguardando sincronização de hash com o subsistema forense...'}
                           </p>
                         </div>
@@ -765,19 +753,18 @@ export default function TechTicketDetail({
                         <div className="flex flex-wrap items-center gap-3">
                           {integrityStatus && (
                             <span
-                              className={`flex items-center gap-1.5 rounded-lg border px-2.5 py-1 text-xs font-semibold ${
-                                integrityStatus.statusIntegridade ===
-                                'VALIDO'
+                              className={`flex items-center gap-1.5 rounded-lg border px-2.5 py-1 text-xs font-semibold ${integrityStatus.statusIntegridade ===
+                                  'VALIDO'
                                   ? isDark
                                     ? 'border-emerald-500/30 bg-emerald-500/20 text-emerald-300'
                                     : 'border-emerald-200 bg-emerald-50 text-emerald-700'
                                   : isDark
                                     ? 'border-red-500/30 bg-red-500/20 text-red-300'
                                     : 'border-red-200 bg-red-50 text-red-700'
-                              }`}
+                                }`}
                             >
                               {integrityStatus.statusIntegridade ===
-                              'VALIDO'
+                                'VALIDO'
                                 ? '✅ Integridade Verificada'
                                 : '❌ Adulteração Detectada'}
                             </span>
@@ -786,11 +773,10 @@ export default function TechTicketDetail({
                           <Button
                             onClick={handleCheckForensic}
                             disabled={checkingIntegrity}
-                            className={`border px-3 py-1.5 text-xs ${
-                              isDark
+                            className={`border px-3 py-1.5 text-xs ${isDark
                                 ? 'border-slate-600 bg-slate-800 text-slate-200 hover:bg-slate-700'
                                 : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-100'
-                            }`}
+                              }`}
                           >
                             {checkingIntegrity
                               ? 'Recalculando Hash...'
@@ -832,11 +818,10 @@ export default function TechTicketDetail({
 
                 {ticket.status === 'fechado' && (
                   <div
-                    className={`rounded-lg px-4 py-3 text-center text-sm ${
-                      isDark
+                    className={`rounded-lg px-4 py-3 text-center text-sm ${isDark
                         ? 'bg-slate-800/70 text-slate-400'
                         : 'bg-slate-50 text-slate-500'
-                    }`}
+                      }`}
                   >
                     Este chamado está fechado.
                   </div>
@@ -873,11 +858,10 @@ export default function TechTicketDetail({
                   {ticket.internalNotes.map((n) => (
                     <div
                       key={n.id}
-                      className={`rounded-xl border px-4 py-3 ${
-                        isDark
+                      className={`rounded-xl border px-4 py-3 ${isDark
                           ? 'border-slate-700/60 bg-slate-800/50'
                           : 'border-slate-100 bg-slate-50/80'
-                      }`}
+                        }`}
                     >
                       <div className="mb-1 flex items-center gap-2">
                         <StickyNote
@@ -1069,11 +1053,10 @@ export default function TechTicketDetail({
                                   attachment
                                 )
                               }
-                              className={`group relative w-full overflow-hidden rounded-xl border text-left transition ${
-                                isDark
+                              className={`group relative w-full overflow-hidden rounded-xl border text-left ${isDark
                                   ? 'border-slate-700 bg-slate-900 hover:border-teal-500/60'
                                   : 'border-slate-200 bg-slate-50 hover:border-teal-500'
-                              }`}
+                                }`}
                             >
                               <img
                                 src={attachment}
@@ -1082,11 +1065,10 @@ export default function TechTicketDetail({
                               />
 
                               <div
-                                className={`flex items-center justify-between border-t px-3 py-2 text-xs ${
-                                  isDark
+                                className={`flex items-center justify-between border-t px-3 py-2 text-xs ${isDark
                                     ? 'border-slate-700 text-slate-300'
                                     : 'border-slate-200 text-slate-600'
-                                }`}
+                                  }`}
                               >
                                 <span className="flex items-center gap-1.5">
                                   <ImageIcon className="h-3.5 w-3.5 text-teal-500" />
@@ -1105,11 +1087,10 @@ export default function TechTicketDetail({
                         return (
                           <div
                             key={i}
-                            className={`flex items-center gap-2 rounded-lg border px-3 py-2 text-sm ${
-                              isDark
+                            className={`flex items-center gap-2 rounded-lg border px-3 py-2 text-sm ${isDark
                                 ? 'border-slate-700 bg-slate-800/60 text-slate-300'
                                 : 'border-slate-200 bg-slate-50 text-slate-600'
-                            }`}
+                              }`}
                           >
                             <Paperclip className="h-3.5 w-3.5 shrink-0 text-teal-500" />
 
@@ -1177,11 +1158,10 @@ export default function TechTicketDetail({
                                 techName
                               )
                             }
-                            className={`flex w-full items-center justify-center gap-2 rounded-xl px-3 py-2 text-xs font-semibold shadow-sm transition-colors ${
-                              isDark
+                            className={`flex w-full items-center justify-center gap-2 rounded-xl px-3 py-2 text-xs font-semibold shadow-sm transition-colors ${isDark
                                 ? 'bg-slate-800 text-white hover:bg-slate-700'
                                 : 'bg-slate-900 text-white hover:bg-slate-800'
-                            }`}
+                              }`}
                           >
                             <UserCheck className="h-3.5 w-3.5 text-emerald-400" />
                             Assumir Atendimento
@@ -1268,11 +1248,10 @@ export default function TechTicketDetail({
                                     );
                                   }
                                 }}
-                                className={`flex-1 rounded-lg py-1.5 text-xs font-semibold text-white disabled:opacity-40 ${
-                                  isDark
+                                className={`flex-1 rounded-lg py-1.5 text-xs font-semibold text-white disabled:opacity-40 ${isDark
                                     ? 'bg-slate-800 hover:bg-slate-700'
                                     : 'bg-slate-900 hover:bg-slate-800'
-                                }`}
+                                  }`}
                               >
                                 Confirmar
                               </button>
@@ -1388,11 +1367,10 @@ export default function TechTicketDetail({
           onClick={() => setSelectedAttachment(null)}
         >
           <div
-            className={`relative flex max-h-[92vh] max-w-6xl items-center justify-center overflow-hidden rounded-2xl border p-2 shadow-2xl ${
-              isDark
+            className={`relative flex max-h-[92vh] max-w-6xl items-center justify-center overflow-hidden rounded-2xl border p-2 shadow-2xl ${isDark
                 ? 'border-slate-700 bg-slate-900'
                 : 'border-slate-200 bg-white'
-            }`}
+              }`}
             onClick={(e) => e.stopPropagation()}
           >
             <button
@@ -1401,11 +1379,10 @@ export default function TechTicketDetail({
                 setSelectedAttachment(null)
               }
               aria-label="Fechar visualização"
-              className={`absolute right-3 top-3 z-10 flex h-9 w-9 items-center justify-center rounded-full border shadow-lg transition ${
-                isDark
+              className={`absolute right-3 top-3 z-10 flex h-9 w-9 items-center justify-center rounded-full border shadow-lg transition ${isDark
                   ? 'border-slate-600 bg-slate-800 text-slate-200 hover:bg-slate-700'
                   : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-100'
-              }`}
+                }`}
             >
               <X className="h-5 w-5" />
             </button>
@@ -1443,13 +1420,12 @@ function TabButton({
     <button
       type="button"
       onClick={onClick}
-      className={`flex flex-1 items-center justify-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
-        active
+      className={`flex flex-1 items-center justify-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${active
           ? 'bg-sti-navy-800 text-white'
           : isDark
             ? 'text-slate-400 hover:bg-slate-800 hover:text-slate-100'
             : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
-      }`}
+        }`}
     >
       <Icon className="h-4 w-4" />
       {label}
@@ -1471,18 +1447,16 @@ function InfoRow({
   return (
     <div>
       <dt
-        className={`mb-0.5 flex items-center gap-1.5 text-xs ${
-          isDark ? 'text-slate-500' : 'text-slate-400'
-        }`}
+        className={`mb-0.5 flex items-center gap-1.5 text-xs ${isDark ? 'text-slate-500' : 'text-slate-400'
+          }`}
       >
         <Icon className="h-3.5 w-3.5" />
         {label}
       </dt>
 
       <dd
-        className={`break-words ${
-          isDark ? 'text-slate-200' : 'text-slate-700'
-        }`}
+        className={`break-words ${isDark ? 'text-slate-200' : 'text-slate-700'
+          }`}
       >
         {value}
       </dd>

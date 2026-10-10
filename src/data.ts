@@ -94,7 +94,7 @@ export const mockTickets: Ticket[] = [
     approximateDate: '2026-09-22',
     impact: 'Alto — não consigo emitir notas fiscais',
     errorMessage: 'Timeout ao conectar com o servidor',
-    attachments: ['erro_tela.png'],
+    attachments: [],
     assignee: 'Marina Alves',
     attendanceStartedAt: '2026-09-22T11:00:00',
     solution: null,

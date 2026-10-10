@@ -430,28 +430,6 @@ export default function Sidebar({
           </div>
         </div>
 
-        <div
-          className={[
-            'mx-3 mt-2 flex items-center justify-between rounded-lg border px-3 py-2 text-[11px]',
-            isDark
-              ? 'border-white/5 bg-black/20 text-slate-400'
-              : 'border-slate-200 bg-slate-50 text-slate-500',
-          ].join(' ')}
-        >
-          <div className="flex items-center gap-2">
-            <PhoneCall className="h-3.5 w-3.5 text-cyan-500" />
-            <span>Ramal Suporte STI</span>
-          </div>
-          <span
-            className={[
-              'font-mono font-semibold',
-              isDark ? 'text-slate-300' : 'text-slate-700',
-            ].join(' ')}
-          >
-            1234 / 2030
-          </span>
-        </div>
-
         <div className="flex-1" />
 
         <div

@@ -11,7 +11,7 @@ import {
 } from 'lucide-react';
 
 import { Ticket, TicketStatus } from '@/types';
-import { useTechTheme } from '@/components/tech/TechSidebar';
+import { useTechTheme } from '@/components/tech/techTheme';
 
 interface Indicator {
   label: string;

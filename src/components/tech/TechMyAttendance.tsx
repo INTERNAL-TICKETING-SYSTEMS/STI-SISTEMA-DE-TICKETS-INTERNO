@@ -10,7 +10,7 @@ import {
 } from 'lucide-react';
 
 import { Ticket, TicketStatus } from '@/types';
-import { useTechTheme } from './TechSidebar';
+import { useTechTheme } from './techTheme';
 
 interface TechMyAttendanceProps {
   tickets: Ticket[];

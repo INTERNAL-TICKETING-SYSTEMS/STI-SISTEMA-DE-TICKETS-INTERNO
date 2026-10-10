@@ -1,6 +1,7 @@
 ﻿
 import { dbRepository } from '../services/dbRepository';
-import React, { useEffect, useState } from 'react';
+import { useTechTheme } from '@/components/tech/techTheme';
+import React, { useState } from 'react';
 import {
   Lock,
   Mail,
@@ -22,10 +23,6 @@ import Button from '@/components/ui/Button';
 import { Field, Input } from '@/components/ui/Field';
 import Logo from '@/components/Logo';
 import { UserRole } from '@/types';
-
-const THEME_STORAGE_KEY = 'sti-login-theme';
-
-type ThemeMode = 'light' | 'dark';
 
 const multiRoleAccountsConfig: Record<
   string,
@@ -97,31 +94,15 @@ interface LoginProps {
   onGoToRegister: () => void;
 }
 
-function getInitialTheme(): ThemeMode {
-  try {
-    const savedTheme = localStorage.getItem(THEME_STORAGE_KEY);
-
-    if (savedTheme === 'dark' || savedTheme === 'light') {
-      return savedTheme;
-    }
-  } catch {
-    // Continua com o tema do sistema caso o armazenamento não esteja disponível.
-  }
-
-  if (
-    typeof window !== 'undefined' &&
-    window.matchMedia?.('(prefers-color-scheme: dark)').matches
-  ) {
-    return 'dark';
-  }
-
-  return 'light';
-}
-
 export default function Login({
   onLogin,
   onGoToRegister,
 }: LoginProps) {
+  const {
+    isDark,
+    toggleTheme,
+  } = useTechTheme();
+
   const [isForgotOpen, setIsForgotOpen] = useState(false);
   const [forgotInput, setForgotInput] = useState('');
   const [forgotPhone, setForgotPhone] = useState('');
@@ -151,30 +132,6 @@ export default function Login({
   } | null>(null);
 
   const [sendingOtp, setSendingOtp] = useState(false);
-  const [theme, setTheme] = useState<ThemeMode>(getInitialTheme);
-  const isDark = theme === 'dark';
-
-  useEffect(() => {
-    const root = document.documentElement;
-    const body = document.body;
-
-    root.setAttribute('data-theme', theme);
-    root.classList.toggle('dark', isDark);
-    root.style.colorScheme = theme;
-
-    body.style.backgroundColor = isDark ? '#06111d' : '#f1f5f9';
-    body.style.color = isDark ? '#f1f5f9' : '#0f172a';
-
-    try {
-      localStorage.setItem(THEME_STORAGE_KEY, theme);
-    } catch {
-      // A tela continua funcionando mesmo sem persistência.
-    }
-  }, [theme, isDark]);
-
-  const toggleTheme = () => {
-    setTheme((current) => (current === 'dark' ? 'light' : 'dark'));
-  };
 
   const pageBackground = isDark ? 'bg-[#06111d]' : 'bg-slate-100';
   const loginPanelBackground = isDark ? 'bg-[#071421]' : 'bg-slate-50';
@@ -416,10 +373,11 @@ export default function Login({
                     key={r.id}
                     type="button"
                     onClick={() => handleSelectRoleAndEnter(r.id)}
-                    className={`group flex w-full items-start gap-4 rounded-2xl border p-5 text-left transition-all focus:outline-none focus:ring-2 focus:ring-cyan-400 ${isDark
+                    className={`group flex w-full items-start gap-4 rounded-2xl border p-5 text-left transition-all focus:outline-none focus:ring-2 focus:ring-cyan-400 ${
+                      isDark
                         ? 'border-white/10 bg-white/[0.04] hover:border-cyan-500/50 hover:bg-cyan-950/30'
                         : 'border-slate-200 bg-slate-50 hover:border-cyan-400 hover:bg-cyan-50'
-                      }`}
+                    }`}
                   >
                     <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-cyan-500/10 text-cyan-500">
                       <Icon className="h-6 w-6" />
@@ -447,10 +405,11 @@ export default function Login({
               <button
                 type="button"
                 onClick={() => setMultiRoleData(null)}
-                className={`min-h-11 rounded-xl px-4 text-sm font-semibold transition-colors ${isDark
+                className={`min-h-11 rounded-xl px-4 text-sm font-semibold transition-colors ${
+                  isDark
                     ? 'text-slate-400 hover:bg-white/5 hover:text-white'
                     : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
-                  }`}
+                }`}
               >
                 Cancelar e voltar ao login
               </button>
@@ -466,10 +425,11 @@ export default function Login({
           onClick={toggleTheme}
           aria-label={isDark ? 'Ativar modo claro' : 'Ativar modo escuro'}
           title={isDark ? 'Ativar modo claro' : 'Ativar modo escuro'}
-          className={`flex min-h-11 items-center gap-2 rounded-xl border px-3 text-sm font-semibold transition-all focus:outline-none focus:ring-2 focus:ring-cyan-400 ${isDark
+          className={`flex min-h-11 items-center gap-2 rounded-xl border px-3 text-sm font-semibold transition-all focus:outline-none focus:ring-2 focus:ring-cyan-400 ${
+            isDark
               ? 'border-slate-600 bg-slate-900/90 text-cyan-300 hover:border-cyan-500/60 hover:bg-slate-800'
               : 'border-slate-300 bg-white text-slate-700 shadow-sm hover:border-cyan-400 hover:text-cyan-700'
-            }`}
+          }`}
         >
           {isDark ? (
             <>
@@ -487,18 +447,21 @@ export default function Login({
 
       {/* Painel esquerdo */}
       <section
-        className={`relative hidden overflow-hidden md:flex md:w-[42%] md:flex-col lg:w-[44%] ${isDark
-            ? 'bg-[#081522]'
-            : 'bg-slate-200'
-          }`}
+        className={`relative hidden overflow-hidden md:flex md:w-[42%] md:flex-col lg:w-[44%] ${
+          isDark ? 'bg-[#081522]' : 'bg-slate-200'
+        }`}
       >
         <div
-          className={`pointer-events-none absolute -left-32 -top-32 h-96 w-96 rounded-full blur-3xl ${isDark ? 'bg-cyan-500/10' : 'bg-cyan-400/20'
-            }`}
+          className={`pointer-events-none absolute -left-32 -top-32 h-96 w-96 rounded-full blur-3xl ${
+            isDark ? 'bg-cyan-500/10' : 'bg-cyan-400/20'
+          }`}
         />
 
-        <div className={`relative z-10 flex min-h-screen w-full flex-col justify-between p-8 lg:p-12 ${isDark ? 'text-white' : 'text-slate-900'
-          }`}>
+        <div
+          className={`relative z-10 flex min-h-screen w-full flex-col justify-between p-8 lg:p-12 ${
+            isDark ? 'text-white' : 'text-slate-900'
+          }`}
+        >
           <div className="w-fit max-w-full animate-sti-logo">
             <Logo
               variant="login"
@@ -508,10 +471,13 @@ export default function Login({
           </div>
 
           <div className="my-10 max-w-xl space-y-7">
-            <div className={`inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-semibold ${isDark
-                ? 'border-cyan-500/20 bg-cyan-500/10 text-cyan-300'
-                : 'border-cyan-600/20 bg-cyan-500/10 text-cyan-800'
-              }`}>
+            <div
+              className={`inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-semibold ${
+                isDark
+                  ? 'border-cyan-500/20 bg-cyan-500/10 text-cyan-300'
+                  : 'border-cyan-600/20 bg-cyan-500/10 text-cyan-800'
+              }`}
+            >
               <span className="h-2.5 w-2.5 animate-pulse rounded-full bg-teal-400" />
               Suporte de TI em um só lugar
             </div>
@@ -522,8 +488,11 @@ export default function Login({
                 <br />
                 ajuda?
               </h2>
-              <p className={`max-w-lg text-base leading-relaxed lg:text-lg ${isDark ? 'text-slate-300' : 'text-slate-600'
-                }`}>
+              <p
+                className={`max-w-lg text-base leading-relaxed lg:text-lg ${
+                  isDark ? 'text-slate-300' : 'text-slate-600'
+                }`}
+              >
                 Abra seu chamado, acompanhe o atendimento e veja as atualizações sem complicação.
               </p>
             </div>
@@ -554,37 +523,50 @@ export default function Login({
                 return (
                   <div
                     key={item.title}
-                    className={`group flex items-center gap-4 rounded-2xl border p-5 transition-all duration-300 ${isDark
+                    className={`group flex items-center gap-4 rounded-2xl border p-5 transition-none ${
+                      isDark
                         ? 'border-white/10 bg-white/[0.04] hover:bg-white/[0.07]'
                         : 'border-slate-300 bg-white/60 hover:bg-white/90'
-                      }`}
+                    }`}
                   >
-                    <div className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-xl ${item.accent === 'cyan'
-                        ? 'bg-cyan-500/15 text-cyan-500'
-                        : item.accent === 'teal'
-                          ? 'bg-teal-500/15 text-teal-500'
-                          : 'bg-emerald-500/15 text-emerald-600'
-                      }`}>
+                    <div
+                      className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-xl ${
+                        item.accent === 'cyan'
+                          ? 'bg-cyan-500/15 text-cyan-500'
+                          : item.accent === 'teal'
+                            ? 'bg-teal-500/15 text-teal-500'
+                            : 'bg-emerald-500/15 text-emerald-600'
+                      }`}
+                    >
                       <Icon className="h-6 w-6" />
                     </div>
 
                     <div className="min-w-0 flex-1">
-                      <h3 className={`text-base font-semibold ${isDark ? 'text-white' : 'text-slate-900'
-                        }`}>
+                      <h3
+                        className={`text-base font-semibold ${
+                          isDark ? 'text-white' : 'text-slate-900'
+                        }`}
+                      >
                         {item.title}
                       </h3>
-                      <p className={`mt-1 text-sm leading-relaxed ${isDark ? 'text-slate-400' : 'text-slate-600'
-                        }`}>
+                      <p
+                        className={`mt-1 text-sm leading-relaxed ${
+                          isDark ? 'text-slate-400' : 'text-slate-600'
+                        }`}
+                      >
                         {item.desc}
                       </p>
                     </div>
 
-                    <ArrowRight className={`h-5 w-5 shrink-0 ${item.accent === 'emerald'
-                        ? 'text-emerald-500'
-                        : item.accent === 'teal'
-                          ? 'text-teal-500'
-                          : 'text-cyan-500'
-                      }`} />
+                    <ArrowRight
+                      className={`h-5 w-5 shrink-0 ${
+                        item.accent === 'emerald'
+                          ? 'text-emerald-500'
+                          : item.accent === 'teal'
+                            ? 'text-teal-500'
+                            : 'text-cyan-500'
+                      }`}
+                    />
                   </div>
                 );
               })}
@@ -603,8 +585,9 @@ export default function Login({
       >
         <div className="w-full max-w-xl">
           <div
-            className={`space-y-7 rounded-3xl border p-8 shadow-2xl sm:p-10 lg:p-12 ${cardBackground} ${cardBorder} ${isDark ? 'shadow-black/30' : 'shadow-slate-300/50'
-              }`}
+            className={`space-y-7 rounded-3xl border p-8 shadow-2xl sm:p-10 lg:p-12 ${cardBackground} ${cardBorder} ${
+              isDark ? 'shadow-black/30' : 'shadow-slate-300/50'
+            }`}
           >
             <div className="space-y-3">
               <h1 className={`text-3xl font-bold tracking-tight sm:text-4xl ${headingColor}`}>
@@ -676,10 +659,13 @@ export default function Login({
               <div className="pt-1">
                 <div className="relative my-5 flex items-center justify-center">
                   <div className={`w-full border-t ${modalBorder}`} />
-                  <span className={`absolute px-4 text-xs font-semibold uppercase tracking-wider ${isDark
-                      ? 'bg-[#0b1727] text-slate-500'
-                      : 'bg-white text-slate-400'
-                    }`}>
+                  <span
+                    className={`absolute px-4 text-xs font-semibold uppercase tracking-wider ${
+                      isDark
+                        ? 'bg-[#0b1727] text-slate-500'
+                        : 'bg-white text-slate-400'
+                    }`}
+                  >
                     ou
                   </span>
                 </div>
@@ -687,10 +673,11 @@ export default function Login({
                 <button
                   type="button"
                   onClick={onGoToRegister}
-                  className={`flex min-h-14 w-full items-center justify-center gap-3 rounded-xl border text-sm font-semibold transition-none focus:outline-none focus:ring-2 focus:ring-cyan-400 ${isDark
+                  className={`flex min-h-14 w-full items-center justify-center gap-3 rounded-xl border text-sm font-semibold transition-none focus:outline-none focus:ring-2 focus:ring-cyan-400 ${
+                    isDark
                       ? 'border-slate-600 bg-slate-800/70 text-slate-200 hover:border-cyan-500/60 hover:bg-slate-800'
                       : 'border-slate-200 bg-slate-50 text-slate-700 hover:border-cyan-300 hover:bg-slate-100'
-                    }`}
+                  }`}
                 >
                   <UserPlus className="h-5 w-5 text-cyan-500" />
                   <span>Primeiro Acesso / Cadastrar Servidor</span>
@@ -716,7 +703,9 @@ export default function Login({
       {/* Modal de recuperação de senha */}
       {isForgotOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-slate-950/80 p-4 backdrop-blur-sm">
-          <div className={`my-auto w-full max-w-xl rounded-3xl border p-7 shadow-2xl sm:p-9 ${modalBackground} ${modalText} ${modalBorder}`}>
+          <div
+            className={`my-auto w-full max-w-xl rounded-3xl border p-7 shadow-2xl sm:p-9 ${modalBackground} ${modalText} ${modalBorder}`}
+          >
             <div className={`flex items-start justify-between border-b pb-5 ${modalBorder}`}>
               <div className="flex items-center gap-3">
                 <div className="rounded-xl bg-cyan-500/20 p-3 text-cyan-500">
@@ -736,10 +725,11 @@ export default function Login({
                 type="button"
                 onClick={() => setIsForgotOpen(false)}
                 aria-label="Fechar recuperação de senha"
-                className={`flex h-11 w-11 items-center justify-center rounded-xl transition-colors ${isDark
+                className={`flex h-11 w-11 items-center justify-center rounded-xl transition-colors ${
+                  isDark
                     ? 'text-slate-400 hover:bg-white/10 hover:text-white'
                     : 'text-slate-500 hover:bg-slate-100 hover:text-slate-900'
-                  }`}
+                }`}
               >
                 <X className="h-5 w-5" />
               </button>
@@ -792,10 +782,11 @@ export default function Login({
                     <button
                       type="button"
                       onClick={() => setIsForgotOpen(false)}
-                      className={`min-h-12 rounded-xl px-5 text-sm font-semibold ${isDark
+                      className={`min-h-12 rounded-xl px-5 text-sm font-semibold ${
+                        isDark
                           ? 'text-slate-400 hover:bg-white/5 hover:text-white'
                           : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
-                        }`}
+                      }`}
                     >
                       Cancelar
                     </button>
@@ -878,10 +869,11 @@ export default function Login({
                     <button
                       type="button"
                       onClick={() => setForgotStep('IDENTIFY')}
-                      className={`min-h-12 rounded-xl px-4 text-sm font-semibold ${isDark
+                      className={`min-h-12 rounded-xl px-4 text-sm font-semibold ${
+                        isDark
                           ? 'text-slate-400 hover:bg-white/5 hover:text-white'
                           : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
-                        }`}
+                      }`}
                     >
                       ← Voltar
                     </button>

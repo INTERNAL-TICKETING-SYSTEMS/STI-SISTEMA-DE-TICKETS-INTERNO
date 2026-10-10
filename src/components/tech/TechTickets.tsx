@@ -2,7 +2,8 @@
 import { Ticket, TicketStatus } from '@/types';
 import StatusBadge from '@/components/ui/StatusBadge';
 import Button from '@/components/ui/Button';
-import { TechPage, useTechTheme } from '@/components/tech/TechSidebar';
+import { TechPage } from '@/components/tech/TechSidebar';
+import { useTechTheme } from '@/components/tech/techTheme';
 import {
   Search,
   Inbox,
@@ -26,13 +27,13 @@ const statusFilters: {
   id: TicketStatus | 'todos';
   label: string;
 }[] = [
-  { id: 'todos', label: 'Todos os status' },
-  { id: 'aberto', label: 'Abertos' },
-  { id: 'em_andamento', label: 'Em atendimento' },
-  { id: 'aguardando', label: 'Aguardando usuário' },
-  { id: 'resolvido', label: 'Resolvidos' },
-  { id: 'fechado', label: 'Fechados' },
-];
+    { id: 'todos', label: 'Todos os status' },
+    { id: 'aberto', label: 'Abertos' },
+    { id: 'em_andamento', label: 'Em atendimento' },
+    { id: 'aguardando', label: 'Aguardando usuário' },
+    { id: 'resolvido', label: 'Resolvidos' },
+    { id: 'fechado', label: 'Fechados' },
+  ];
 
 export default function TechTickets({
   tickets,

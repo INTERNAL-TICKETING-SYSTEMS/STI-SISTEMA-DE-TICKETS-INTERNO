@@ -173,6 +173,16 @@ function detectRoleFromEmail(email: string): { role: UserRole; user: User } {
   };
 }
 
+function getThemeBackground() {
+  const isDark =
+    document.documentElement.dataset.theme === 'dark' ||
+    document.documentElement.classList.contains('dark');
+
+  return isDark
+    ? 'bg-[#070e17] text-slate-100'
+    : 'bg-slate-50 text-slate-900';
+}
+
 export default function App() {
   const [authScreen, setAuthScreen] = useState<AuthScreen>('login');
   const [authed, setAuthed] = useState(false);
@@ -718,7 +728,7 @@ export default function App() {
         : null;
 
     return (
-      <div className="flex h-screen bg-slate-50">
+      <div className={`flex h-screen ${getThemeBackground()}`}>
         <Sidebar
           current={userView.page === 'ticket-detail' ? 'meus-chamados' : userView.page}
           onNavigate={navigate}
@@ -873,7 +883,7 @@ export default function App() {
   // ---- Gestor area ----
   if (role === 'gestor') {
     return (
-      <div className="flex h-screen bg-[#070e17]">
+      <div className={`flex min-h-screen ${getThemeBackground()}`}>
         <GestorSidebar
           current={gestorView}
           onNavigate={(page: GestorPage) => setGestorView(page)}
@@ -888,7 +898,10 @@ export default function App() {
           )}
 
           {gestorView === 'gestor-dashboard' && (
-            <GestorDashboard tickets={tickets} onNavigate={(p: any) => setGestorView(p)} />
+            <GestorDashboard
+              tickets={tickets}
+              onNavigate={(page: any) => setGestorView(page)}
+            />
           )}
 
           {gestorView === 'gestor-equipe' && (

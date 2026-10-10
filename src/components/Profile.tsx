@@ -1,5 +1,5 @@
 import { registrarAuditoria } from '../services/auditService';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 
 import { User } from '@/types';
 
@@ -19,33 +19,66 @@ import {
   IdCard,
 } from 'lucide-react';
 
-import { useTechTheme } from '@/components/tech/TechSidebar';
+const THEME_STORAGE_KEY = 'sti_theme_preference';
+const THEME_EVENT = 'sti-theme-change';
+
+function getCurrentTheme(): 'light' | 'dark' {
+  const savedTheme = localStorage.getItem(THEME_STORAGE_KEY);
+
+  if (savedTheme === 'light' || savedTheme === 'dark') {
+    return savedTheme;
+  }
+
+  return document.documentElement.dataset.theme === 'dark'
+    ? 'dark'
+    : 'light';
+}
 
 interface ProfileProps {
   user: User;
 }
 
-export default function Profile({
-  user,
-}: ProfileProps) {
-  const { isDark } =
-    useTechTheme();
+export default function Profile({ user }: ProfileProps) {
+  const [theme, setTheme] = useState<'light' | 'dark'>(() =>
+    getCurrentTheme()
+  );
 
-  const [saved, setSaved] =
-    useState(false);
+  const isDark = theme === 'dark';
+
+  useEffect(() => {
+    const updateTheme = () => {
+      setTheme(getCurrentTheme());
+    };
+
+    window.addEventListener(THEME_EVENT, updateTheme);
+    window.addEventListener('storage', updateTheme);
+
+    const observer = new MutationObserver(updateTheme);
+
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ['data-theme', 'class'],
+    });
+
+    updateTheme();
+
+    return () => {
+      window.removeEventListener(THEME_EVENT, updateTheme);
+      window.removeEventListener('storage', updateTheme);
+      observer.disconnect();
+    };
+  }, []);
+
+  const [saved, setSaved] = useState(false);
 
   const [form, setForm] = useState({
     name: user.name,
     email: user.email,
-    phone:
-      user.phone ||
-      '(63) 98400-0000',
+    phone: user.phone || '(63) 98400-0000',
     department:
       user.department ||
       'DTI - Diretoria de Tecnologia da Informação',
-    role:
-      user.role ||
-      'Servidor / Colaborador',
+    role: user.role || 'Servidor / Colaborador',
   });
 
   const handlePhoneChange = (
@@ -73,9 +106,7 @@ export default function Profile({
     }));
   };
 
-  const handleSave = (
-    e: React.FormEvent
-  ) => {
+  const handleSave = (e: React.FormEvent) => {
     e.preventDefault();
 
     setSaved(true);
@@ -83,18 +114,15 @@ export default function Profile({
     registrarAuditoria({
       entidade: 'USUARIO',
       idEntidade: user.email,
-      tipoOperacao:
-        'ATUALIZACAO_PERFIL',
+      tipoOperacao: 'ATUALIZACAO_PERFIL',
       autor: user.email,
       estadoAtual: {
         nome: form.name,
         telefone: form.phone,
-        departamento:
-          form.department,
+        departamento: form.department,
       },
       metadados: {
-        alteradoEm:
-          new Date().toISOString(),
+        alteradoEm: new Date().toISOString(),
       },
     }).catch((err) =>
       console.error(
@@ -125,10 +153,6 @@ export default function Profile({
   |--------------------------------------------------------------------------
   | CORES DO TEMA
   |--------------------------------------------------------------------------
-  |
-  | Tudo que depende de tema fica definido aqui.
-  | Não usamos transition-colors para troca de tema.
-  |
   */
 
   const pageText = isDark
@@ -143,21 +167,17 @@ export default function Profile({
     ? 'text-slate-400'
     : 'text-slate-600';
 
-  const mutedText = isDark
-    ? 'text-slate-500'
-    : 'text-slate-500';
-
   const cardClass = isDark
     ? 'border-white/10 bg-[#0b1624]'
     : 'border-slate-200 bg-white';
 
-  const cardBorder = isDark
-    ? 'border-white/10'
-    : 'border-slate-200';
-
   const sectionDivider = isDark
     ? 'border-white/10'
     : 'border-slate-200';
+
+  const pageBackground = isDark
+    ? 'bg-[#070e17]'
+    : 'bg-slate-50';
 
   /*
   |--------------------------------------------------------------------------
@@ -226,7 +246,7 @@ export default function Profile({
 
   /*
   |--------------------------------------------------------------------------
-  | ÍCONE DOS CAMPOS
+  | ÍCONES DOS CAMPOS
   |--------------------------------------------------------------------------
   */
 
@@ -241,15 +261,15 @@ export default function Profile({
   return (
     <div
       className={[
-        'max-w-5xl space-y-6 pb-8',
+        'min-h-screen w-full max-w-5xl space-y-6 pb-8',
         pageText,
-        isDark ? '[color-scheme:dark]' : '[color-scheme:light]',
+        pageBackground,
+        isDark
+          ? '[color-scheme:dark]'
+          : '[color-scheme:light]',
       ].join(' ')}
     >
-
-      {/* =========================================================
-          CABEÇALHO
-      ========================================================= */}
+      {/* CABEÇALHO */}
 
       <div>
         <div className="flex flex-wrap items-center gap-2">
@@ -273,7 +293,6 @@ export default function Profile({
             ].join(' ')}
           >
             <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
-
             Ativo
           </span>
         </div>
@@ -284,15 +303,12 @@ export default function Profile({
             secondaryText,
           ].join(' ')}
         >
-          Informações profissionais e dados
-          de contato utilizados no Sistema de
-          Tickets do DETRAN-TO.
+          Informações profissionais e dados de contato utilizados no
+          Sistema de Tickets do DETRAN-TO.
         </p>
       </div>
 
-      {/* =========================================================
-          IDENTIDADE DO TÉCNICO
-      ========================================================= */}
+      {/* IDENTIDADE DO TÉCNICO */}
 
       <section
         className={[
@@ -302,9 +318,6 @@ export default function Profile({
             : 'border-slate-200 bg-white shadow-slate-200/60',
         ].join(' ')}
       >
-
-        {/* Banner */}
-
         <div
           className={[
             'relative overflow-hidden px-6 py-7',
@@ -313,9 +326,6 @@ export default function Profile({
               : 'bg-gradient-to-br from-white via-slate-50 to-teal-50/50',
           ].join(' ')}
         >
-
-          {/* Detalhe visual STI */}
-
           <div
             className={[
               'pointer-events-none absolute right-0 top-0',
@@ -327,11 +337,7 @@ export default function Profile({
           />
 
           <div className="relative flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
-
             <div className="flex items-center gap-4">
-
-              {/* Avatar */}
-
               <div
                 className="
                   flex h-20 w-20 shrink-0
@@ -352,7 +358,6 @@ export default function Profile({
 
               <div className="min-w-0">
                 <div className="flex flex-wrap items-center gap-2">
-
                   <h2
                     className={[
                       'text-xl font-bold',
@@ -373,10 +378,8 @@ export default function Profile({
                     ].join(' ')}
                   >
                     <ShieldCheck className="h-3.5 w-3.5" />
-
                     Conta ativa
                   </span>
-
                 </div>
 
                 <p
@@ -402,15 +405,10 @@ export default function Profile({
                       accentIconColor,
                     ].join(' ')}
                   />
-
-                  <span>
-                    {form.department}
-                  </span>
+                  <span>{form.department}</span>
                 </div>
               </div>
             </div>
-
-            {/* Perfil STI */}
 
             <div
               className={[
@@ -440,13 +438,10 @@ export default function Profile({
                 {profileLabel}
               </p>
             </div>
-
           </div>
         </div>
 
-        {/* =====================================================
-            RESUMO
-        ===================================================== */}
+        {/* RESUMO */}
 
         <div
           className={[
@@ -457,9 +452,6 @@ export default function Profile({
               : 'bg-slate-50',
           ].join(' ')}
         >
-
-          {/* Função */}
-
           <div
             className={[
               'rounded-xl border p-4',
@@ -479,23 +471,18 @@ export default function Profile({
               ].join(' ')}
             >
               <Briefcase className="h-4 w-4" />
-
               Função
             </div>
 
             <p
               className={[
                 'mt-2 text-sm font-semibold',
-                isDark
-                  ? 'text-slate-100'
-                  : 'text-slate-800',
+                isDark ? 'text-slate-100' : 'text-slate-800',
               ].join(' ')}
             >
               {form.role}
             </p>
           </div>
-
-          {/* Setor */}
 
           <div
             className={[
@@ -516,23 +503,18 @@ export default function Profile({
               ].join(' ')}
             >
               <Building2 className="h-4 w-4" />
-
               Setor
             </div>
 
             <p
               className={[
                 'mt-2 text-sm font-semibold',
-                isDark
-                  ? 'text-slate-100'
-                  : 'text-slate-800',
+                isDark ? 'text-slate-100' : 'text-slate-800',
               ].join(' ')}
             >
               {form.department}
             </p>
           </div>
-
-          {/* Perfil */}
 
           <div
             className={[
@@ -553,28 +535,22 @@ export default function Profile({
               ].join(' ')}
             >
               <IdCard className="h-4 w-4" />
-
               Perfil
             </div>
 
             <p
               className={[
                 'mt-2 text-sm font-semibold capitalize',
-                isDark
-                  ? 'text-slate-100'
-                  : 'text-slate-800',
+                isDark ? 'text-slate-100' : 'text-slate-800',
               ].join(' ')}
             >
               {profileLabel}
             </p>
           </div>
-
         </div>
       </section>
 
-      {/* =========================================================
-          INFORMAÇÕES PROFISSIONAIS
-      ========================================================= */}
+      {/* INFORMAÇÕES PROFISSIONAIS */}
 
       <form
         onSubmit={handleSave}
@@ -587,9 +563,6 @@ export default function Profile({
             : 'shadow-slate-200/60',
         ].join(' ')}
       >
-
-        {/* Cabeçalho da seção */}
-
         <div
           className={[
             'border-b px-6 py-5',
@@ -597,9 +570,7 @@ export default function Profile({
           ].join(' ')}
         >
           <div className="flex items-center justify-between gap-4">
-
             <div className="flex items-start gap-3">
-
               <div
                 className={[
                   'mt-0.5 flex h-9 w-9 shrink-0',
@@ -631,7 +602,6 @@ export default function Profile({
                   Dados utilizados para identificação dentro do STI.
                 </p>
               </div>
-
             </div>
 
             <div
@@ -644,21 +614,15 @@ export default function Profile({
               ].join(' ')}
             >
               <Pencil className="h-3.5 w-3.5" />
-
               Campos editáveis
             </div>
-
           </div>
         </div>
 
         <div className="space-y-6 p-6">
-
-          {/* =====================================================
-              IDENTIFICAÇÃO
-          ===================================================== */}
+          {/* IDENTIFICAÇÃO */}
 
           <div>
-
             <div className="mb-4 flex items-center gap-2">
               <span className="h-1.5 w-1.5 rounded-full bg-[#06b6b4]" />
 
@@ -675,15 +639,11 @@ export default function Profile({
             </div>
 
             <div className="grid gap-5 sm:grid-cols-2">
-
-              {/* Nome */}
-
               <Field
                 label="Nome completo"
                 className={fieldLabelClass}
               >
                 <div className="relative">
-
                   <UserIcon
                     className={[
                       'pointer-events-none absolute left-3.5 top-1/2',
@@ -706,18 +666,14 @@ export default function Profile({
                     ].join(' ')}
                     required
                   />
-
                 </div>
               </Field>
-
-              {/* Cargo */}
 
               <Field
                 label="Cargo / Função"
                 className={fieldLabelClass}
               >
                 <div className="relative">
-
                   <Briefcase
                     className={[
                       'pointer-events-none absolute left-3.5 top-1/2',
@@ -742,18 +698,14 @@ export default function Profile({
                       lockedIconColor,
                     ].join(' ')}
                   />
-
                 </div>
               </Field>
-
-              {/* Setor */}
 
               <Field
                 label="Setor / Lotação"
                 className={fieldLabelClass}
               >
                 <div className="relative">
-
                   <Building2
                     className={[
                       'pointer-events-none absolute left-3.5 top-1/2',
@@ -778,18 +730,14 @@ export default function Profile({
                       lockedIconColor,
                     ].join(' ')}
                   />
-
                 </div>
               </Field>
-
-              {/* Perfil */}
 
               <Field
                 label="Perfil de acesso"
                 className={fieldLabelClass}
               >
                 <div className="relative">
-
                   <ShieldCheck
                     className={[
                       'pointer-events-none absolute left-3.5 top-1/2',
@@ -814,16 +762,12 @@ export default function Profile({
                       lockedIconColor,
                     ].join(' ')}
                   />
-
                 </div>
               </Field>
-
             </div>
           </div>
 
-          {/* =====================================================
-              COMUNICAÇÃO
-          ===================================================== */}
+          {/* COMUNICAÇÃO */}
 
           <div
             className={[
@@ -831,9 +775,7 @@ export default function Profile({
               sectionDivider,
             ].join(' ')}
           >
-
             <div className="mb-4 flex items-start gap-3">
-
               <div
                 className={[
                   'flex h-9 w-9 shrink-0',
@@ -867,19 +809,14 @@ export default function Profile({
                   Utilizados para comunicações e notificações relacionadas aos chamados.
                 </p>
               </div>
-
             </div>
 
             <div className="grid gap-5 sm:grid-cols-2">
-
-              {/* E-mail */}
-
               <Field
                 label="E-mail institucional"
                 className={fieldLabelClass}
               >
                 <div className="relative">
-
                   <Mail
                     className={[
                       'pointer-events-none absolute left-3.5 top-1/2',
@@ -905,18 +842,14 @@ export default function Profile({
                       lockedIconColor,
                     ].join(' ')}
                   />
-
                 </div>
               </Field>
-
-              {/* Telefone */}
 
               <Field
                 label="Telefone / WhatsApp"
                 className={fieldLabelClass}
               >
                 <div className="relative">
-
                   <Phone
                     className={[
                       'pointer-events-none absolute left-3.5 top-1/2',
@@ -934,18 +867,13 @@ export default function Profile({
                     ].join(' ')}
                     required
                   />
-
                 </div>
               </Field>
-
             </div>
           </div>
-
         </div>
 
-        {/* =========================================================
-            RODAPÉ
-        ========================================================= */}
+        {/* RODAPÉ */}
 
         <div
           className={[
@@ -957,9 +885,7 @@ export default function Profile({
               : 'bg-slate-50',
           ].join(' ')}
         >
-
           <div className="flex items-start gap-2">
-
             <ShieldCheck
               className={[
                 'mt-0.5 h-4 w-4 shrink-0',
@@ -973,18 +899,15 @@ export default function Profile({
                 secondaryText,
               ].join(' ')}
             >
-              Alterações realizadas neste perfil são
-              registradas na auditoria do sistema.
+              Alterações realizadas neste perfil são registradas na
+              auditoria do sistema.
             </p>
-
           </div>
 
           <div className="flex items-center gap-3">
-
             {saved && (
               <span className="flex items-center gap-1.5 text-xs font-semibold text-emerald-500">
                 <CheckCircle2 className="h-4 w-4" />
-
                 Alterações salvas!
               </span>
             )}
@@ -995,15 +918,11 @@ export default function Profile({
             >
               Salvar alterações
             </Button>
-
           </div>
         </div>
-
       </form>
 
-      {/* =========================================================
-          SEGURANÇA E CONTA
-      ========================================================= */}
+      {/* SEGURANÇA E CONTA */}
 
       <section
         className={[
@@ -1014,18 +933,13 @@ export default function Profile({
             : 'shadow-slate-200/60',
         ].join(' ')}
       >
-
-        {/* Cabeçalho */}
-
         <div
           className={[
             'border-b px-6 py-5',
             sectionDivider,
           ].join(' ')}
         >
-
           <div className="flex items-start gap-3">
-
             <div
               className={[
                 'flex h-9 w-9 shrink-0',
@@ -1057,19 +971,18 @@ export default function Profile({
                 Informações relacionadas ao acesso do usuário ao sistema.
               </p>
             </div>
-
           </div>
         </div>
 
         <div
           className={[
-            'grid gap-4 p-6 sm:grid-cols-2',
+            'grid gap-4 p-6',
             isDark
               ? 'bg-[#08121f]'
               : 'bg-slate-50',
+            'sm:grid-cols-2',
           ].join(' ')}
         >
-
           {/* Status */}
 
           <div
@@ -1081,7 +994,6 @@ export default function Profile({
                 : 'border-emerald-200 bg-emerald-50',
             ].join(' ')}
           >
-
             <div>
               <p
                 className={[
@@ -1095,7 +1007,6 @@ export default function Profile({
               </p>
 
               <div className="mt-1 flex items-center gap-2">
-
                 <span className="h-2 w-2 rounded-full bg-emerald-400 shadow-sm shadow-emerald-400/50" />
 
                 <span
@@ -1108,7 +1019,6 @@ export default function Profile({
                 >
                   Ativo
                 </span>
-
               </div>
             </div>
 
@@ -1123,7 +1033,6 @@ export default function Profile({
             >
               <ShieldCheck className="h-5 w-5" />
             </div>
-
           </div>
 
           {/* Identificação */}
@@ -1137,9 +1046,7 @@ export default function Profile({
                 : 'border-teal-200 bg-teal-50/60',
             ].join(' ')}
           >
-
             <div className="min-w-0">
-
               <p
                 className={[
                   'text-xs font-medium',
@@ -1161,7 +1068,6 @@ export default function Profile({
               >
                 {user.email}
               </p>
-
             </div>
 
             <div
@@ -1175,12 +1081,9 @@ export default function Profile({
             >
               <LockKeyhole className="h-4 w-4" />
             </div>
-
           </div>
-
         </div>
       </section>
-
     </div>
   );
 }

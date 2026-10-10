@@ -1,8 +1,6 @@
 ﻿
-import React, {
-  useEffect,
-  useSyncExternalStore,
-} from 'react';
+import React from 'react';
+import { useTechTheme } from './techTheme';
 
 import {
   LayoutDashboard,
@@ -31,11 +29,6 @@ export type TechPage =
   | 'tech-perfil'
   | 'auditoria';
 
-export type ThemeMode = 'light' | 'dark';
-
-export const THEME_STORAGE_KEY = 'sti_theme_preference';
-export const THEME_EVENT = 'sti-theme-change';
-
 interface TechSidebarProps {
   current: TechPage;
   onNavigate: (p: TechPage) => void;
@@ -44,152 +37,6 @@ interface TechSidebarProps {
   tickets?: Ticket[];
   activeUser?: UserType;
   onSwitchRole?: (newRole: UserRole) => void;
-}
-
-let currentTheme: ThemeMode = 'dark';
-
-const themeListeners = new Set<() => void>();
-let themeInitialized = false;
-
-function getInitialTheme(): ThemeMode {
-  if (typeof window === 'undefined') {
-    return 'dark';
-  }
-
-  try {
-    const saved = localStorage.getItem(THEME_STORAGE_KEY);
-
-    if (saved === 'light' || saved === 'dark') {
-      return saved;
-    }
-
-    return window.matchMedia('(prefers-color-scheme: dark)').matches
-      ? 'dark'
-      : 'light';
-  } catch {
-    return 'dark';
-  }
-}
-
-function applyGlobalTheme(theme: ThemeMode) {
-  if (typeof document === 'undefined') {
-    return;
-  }
-
-  const html = document.documentElement;
-  const background = theme === 'dark' ? '#070e17' : '#f8fafc';
-  const foreground = theme === 'dark' ? '#f1f5f9' : '#0f172a';
-
-  html.dataset.theme = theme;
-  html.classList.toggle('dark', theme === 'dark');
-  html.style.colorScheme = theme;
-  html.style.backgroundColor = background;
-  html.style.transition = 'none';
-
-  if (document.body) {
-    document.body.style.backgroundColor = background;
-    document.body.style.color = foreground;
-    document.body.style.transition = 'none';
-  }
-}
-
-function initializeTheme() {
-  if (themeInitialized) {
-    return;
-  }
-
-  themeInitialized = true;
-  currentTheme = getInitialTheme();
-  applyGlobalTheme(currentTheme);
-}
-
-function setGlobalTheme(theme: ThemeMode) {
-  currentTheme = theme;
-
-  // Aplica o tema imediatamente, sem transição global.
-  applyGlobalTheme(theme);
-
-  try {
-    localStorage.setItem(THEME_STORAGE_KEY, theme);
-  } catch {
-    // A aplicação continua funcionando se o armazenamento falhar.
-  }
-
-  themeListeners.forEach((listener) => listener());
-
-  if (typeof window !== 'undefined') {
-    window.dispatchEvent(
-      new CustomEvent<ThemeMode>(THEME_EVENT, {
-        detail: theme,
-      }),
-    );
-  }
-}
-
-function subscribeTheme(listener: () => void) {
-  initializeTheme();
-  themeListeners.add(listener);
-
-  return () => {
-    themeListeners.delete(listener);
-  };
-}
-
-function getThemeSnapshot(): ThemeMode {
-  initializeTheme();
-  return currentTheme;
-}
-
-function getThemeServerSnapshot(): ThemeMode {
-  return 'dark';
-}
-
-export function useTechTheme() {
-  const theme = useSyncExternalStore(
-    subscribeTheme,
-    getThemeSnapshot,
-    getThemeServerSnapshot,
-  );
-
-  useEffect(() => {
-    initializeTheme();
-
-    const handleStorageChange = (event: StorageEvent) => {
-      if (
-        event.key !== THEME_STORAGE_KEY ||
-        (event.newValue !== 'light' && event.newValue !== 'dark')
-      ) {
-        return;
-      }
-
-      const nextTheme = event.newValue as ThemeMode;
-
-      currentTheme = nextTheme;
-      applyGlobalTheme(nextTheme);
-      themeListeners.forEach((listener) => listener());
-    };
-
-    window.addEventListener('storage', handleStorageChange);
-
-    return () => {
-      window.removeEventListener('storage', handleStorageChange);
-    };
-  }, []);
-
-  const updateTheme = (nextTheme: ThemeMode) => {
-    setGlobalTheme(nextTheme);
-  };
-
-  const toggleTheme = () => {
-    setGlobalTheme(currentTheme === 'dark' ? 'light' : 'dark');
-  };
-
-  return {
-    theme,
-    isDark: theme === 'dark',
-    updateTheme,
-    toggleTheme,
-  };
 }
 
 export function TechPageContainer({
@@ -259,7 +106,7 @@ export default function TechSidebar({
   return (
     <aside
       className={[
-        'fixed left-0 top-0 z-30 flex h-screen w-64 flex-col border-r',
+        'fixed left-0 top-0 z-30 flex h-screen w-64 flex-col border-r !transition-none',
         isDark
           ? 'border-white/10 bg-[#0b1624] text-slate-200'
           : 'border-slate-200 bg-white text-slate-700',
@@ -373,7 +220,9 @@ export default function TechSidebar({
         <button
           type="button"
           onClick={() => onNavigate('tech-atendimentos')}
-          className={navButtonClass(current === 'tech-atendimentos')}
+          className={navButtonClass(
+            current === 'tech-atendimentos',
+          )}
         >
           <span className="flex items-center gap-3">
             <Clock className="h-4 w-4 shrink-0" />
@@ -504,12 +353,16 @@ export default function TechSidebar({
             : 'border-slate-200 bg-white',
         ].join(' ')}
       >
-        {/* BOTÃO DE TEMA — INTERRUPTOR, SEM TRANSIÇÃO */}
+        {/* BOTÃO DE TEMA */}
         <button
           type="button"
           onClick={toggleTheme}
-          aria-label={isDark ? 'Ativar modo claro' : 'Ativar modo escuro'}
-          title={isDark ? 'Ativar modo claro' : 'Ativar modo escuro'}
+          aria-label={
+            isDark ? 'Ativar modo claro' : 'Ativar modo escuro'
+          }
+          title={
+            isDark ? 'Ativar modo claro' : 'Ativar modo escuro'
+          }
           className={[
             'flex min-h-[44px] w-full items-center justify-between gap-3',
             'rounded-xl border px-3.5 py-2.5 text-xs font-medium',

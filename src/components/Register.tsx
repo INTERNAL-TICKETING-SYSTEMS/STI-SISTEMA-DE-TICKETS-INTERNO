@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 import { ArrowLeft, CheckCircle2, Search } from 'lucide-react';
 import Button from './ui/Button';
 import { Field } from './ui/Field';
 import { registrarAuditoria } from '../services/auditService';
+import { SETORES_DETRAN } from '../data/setores';
 
 interface RegisterProps {
   onBackToLogin: () => void;
@@ -15,13 +16,7 @@ const GENEROS_OPCOES = [
   { valor: 'PREFIRO_NAO_DIZER', rotulo: 'Prefiro não dizer' }
 ];
 
-const SETORES_DETRAN = [
-  { sigla: 'DETRAN', nome: 'Diretoria Executiva / Órgão Central' },
-  { sigla: 'DT', nome: 'Diretoria de Trânsito e Habilitação' },
-  { sigla: 'DFV', nome: 'Diretoria de Fiscalização e Trânsito' },
-  { sigla: 'DTI', nome: 'Diretoria de Tecnologia da Informação' },
-  { sigla: 'NUAT', nome: 'Núcleo de Atendimento' }
-];
+
 
 export default function Register({ onBackToLogin }: RegisterProps) {
   const [name, setName] = useState('');

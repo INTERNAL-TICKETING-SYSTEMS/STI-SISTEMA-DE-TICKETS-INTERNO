@@ -3,6 +3,8 @@ import { useEffect, useState } from 'react';
 
 export type TechTheme = 'dark' | 'light';
 
+export type ThemeMode = 'light' | 'dark';
+
 const THEME_STORAGE_KEY = 'sti_theme_preference';
 const THEME_EVENT = 'sti-theme-change';
 
