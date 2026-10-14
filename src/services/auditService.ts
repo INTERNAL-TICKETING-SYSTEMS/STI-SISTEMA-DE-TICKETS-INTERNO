@@ -19,7 +19,7 @@
   metadados?: Record<string, any>;
 }
 
-const AUDIT_API_URL = 'http://localhost:8081/api/v1/audit/events';
+const AUDIT_API_URL = 'http://localhost:8080/api/v1/audit/events';
 
 export async function registrarAuditoria(payload: AuditPayload): Promise<boolean> {
   try {
