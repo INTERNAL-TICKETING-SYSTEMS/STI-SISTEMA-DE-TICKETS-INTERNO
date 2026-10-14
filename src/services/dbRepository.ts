@@ -58,7 +58,7 @@ export const dbRepository = {
     // Dispara o envio real do e-mail através do backend Java no Docker
     try {
       console.log('[SMTP Docker] A disparar e-mail real via backend para:', emailPessoal);
-      await fetch('http://localhost:8081/api/v1/notifications/email', {
+      await fetch('http://localhost:8080/api/v1/notifications/email', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

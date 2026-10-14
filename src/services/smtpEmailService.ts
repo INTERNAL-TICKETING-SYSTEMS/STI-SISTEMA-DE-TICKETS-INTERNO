@@ -1,9 +1,9 @@
 ﻿export const smtpEmailService = {
   async enviarEmailOtp(destinatario: string, nomeUsuario: string, otpCode: string): Promise<boolean> {
     try {
-      console.log(`[SMTP] A enviar pedido para o backend em http://localhost:8081/api/v1/notifications/email...`);
+      console.log(`[SMTP] A enviar pedido para o backend em http://localhost:8080/api/v1/notifications/email...`);
       
-      const response = await fetch('http://localhost:8081/api/v1/notifications/email', {
+      const response = await fetch('http://localhost:8080/api/v1/notifications/email', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
