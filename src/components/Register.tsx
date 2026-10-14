@@ -170,7 +170,7 @@ export default function Register({ onBackToLogin }: RegisterProps) {
 
     const departamentoIdUuid = 'a0000000-0000-0000-0000-000000000001';
 
-    fetch('http://localhost:8081/api/v1/auth/register', {
+    fetch('http://localhost:8080/api/v1/auth/register', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
