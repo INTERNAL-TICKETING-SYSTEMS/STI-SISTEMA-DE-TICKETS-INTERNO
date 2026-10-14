@@ -190,8 +190,37 @@ export default function App() {
   const [role, setRole] = useState<UserRole>('usuario');
   const [userView, setUserView] = useState<UserView>({ page: 'inicio' });
   const [techView, setTechView] = useState<TechView>({ page: 'tech-inicio' });
-  const [techInitialStatus, setTechInitialStatus] = useState<TicketStatus | 'todos'>('todos');
   const [gestorView, setGestorView] = useState<GestorPage>('gestor-dashboard');
+  const handleLogin = (email: string, selectedRole?: UserRole) => {
+    const account = detectRoleFromEmail(email);
+    const nextRole = selectedRole ?? account.role;
+
+    const userWithRole: User = {
+      ...account.user,
+      userRole: nextRole,
+      roles: account.user.roles?.length
+        ? account.user.roles
+        : [nextRole],
+    };
+
+    setActiveUser(userWithRole);
+    setRole(nextRole);
+    setAuthed(true);
+
+    if (nextRole === 'usuario') {
+      setUserView({ page: 'inicio' });
+    } else if (nextRole === 'tecnico') {
+      setTechView({ page: 'tech-inicio' });
+    } else if (nextRole === 'gestor') {
+      setGestorView('gestor-dashboard');
+    }
+  };
+
+  const handleLogout = () => {
+    setAuthed(false);
+    setAuthScreen('login');
+  };
+  const [techInitialStatus, setTechInitialStatus] = useState<TicketStatus | 'todos'>('todos');
   const [reportModalOpen, setReportModalOpen] = useState(false);
   const [selectedReportType, setSelectedReportType] = useState<'SEMANAL' | 'MENSAL' | 'PATRIMONIO'>('SEMANAL');
 
@@ -210,64 +239,75 @@ export default function App() {
   const [tickets, setTickets] = useState<Ticket[]>(mockTickets);
   const [inspectedTicket, setInspectedTicket] = useState<Ticket | null>(null);
 
-  const handleLogin = (email: string, chosenRole?: UserRole) => {
-    const { role: detectedRole, user } = detectRoleFromEmail(email);
-    const finalRole = chosenRole || detectedRole;
+  // Atualiza o perfil ativo e salva os dados localmente.
+  const handleSaveProfile = (updatedUser: User) => {
+    const previousUser = activeUser;
 
-    console.log('[Auth STI] Autenticando:', {
-      inputEmail: email,
-      detectedRole,
-      finalRole,
-      userName: user.name
-    });
+    const normalizedUser: User = {
+      ...previousUser,
+      ...updatedUser,
+      email: previousUser.email,
+      userRole: previousUser.userRole,
+      roles: previousUser.roles,
+    };
 
-    setRole(finalRole);
-    setActiveUser({
-      ...user,
-      userRole: finalRole,
-    });
+    // Atualiza o usuário na interface.
+    setActiveUser(normalizedUser);
 
-    if (finalRole === 'tecnico') {
-      setTechView({ page: 'tech-inicio' });
-    } else if (finalRole === 'gestor') {
-      setGestorView('gestor-dashboard');
-    } else {
-      setUserView({ page: 'inicio' });
+    // Atualiza o cadastro local, se ele existir.
+    try {
+      const registeredUsers = JSON.parse(
+        localStorage.getItem('sti_registered_users') || '[]'
+      );
+
+      const index = registeredUsers.findIndex(
+        (user: User) =>
+          user.email?.toLowerCase() === normalizedUser.email.toLowerCase()
+      );
+
+      if (index >= 0) {
+        registeredUsers[index] = {
+          ...registeredUsers[index],
+          name: normalizedUser.name,
+          department: normalizedUser.department,
+          phone: normalizedUser.phone,
+        };
+
+        localStorage.setItem(
+          'sti_registered_users',
+          JSON.stringify(registeredUsers)
+        );
+      }
+
+      // Mantém os dados do perfil para recuperar após recarregar a página.
+      localStorage.setItem(
+        `sti_profile_${normalizedUser.email.toLowerCase()}`,
+        JSON.stringify(normalizedUser)
+      );
+    } catch (error) {
+      console.error('[Perfil STI] Erro ao salvar perfil:', error);
     }
 
-    setAuthed(true);
-
-    // Auditoria de autenticação imutável
     registrarAuditoria({
-      entidade: 'AUTENTICACAO',
-      idEntidade: user.email || email,
-      tipoOperacao: 'LOGIN',
-      autor: email,
-      estadoAtual: { role: finalRole, nome: user.name, departamento: user.department },
-      metadados: { origem: 'Login Form STI' }
-    }).catch(err => console.error('[Auditoria] Falha silenciosa no login:', err));
+      entidade: 'USUARIO',
+      idEntidade: normalizedUser.email,
+      tipoOperacao: 'ATUALIZACAO_PERFIL',
+      autor: previousUser.email || 'usuario@sti.chamados.com',
+      estadoAnterior: {
+        nome: previousUser.name,
+        telefone: previousUser.phone,
+        departamento: previousUser.department,
+      },
+      estadoAtual: {
+        nome: normalizedUser.name,
+        telefone: normalizedUser.phone,
+        departamento: normalizedUser.department,
+      },
+      metadados: { origem: 'Perfil do usuário' },
+    }).catch((error) =>
+      console.error('[Auditoria] Falha ao registrar atualização:', error)
+    );
   };
-
-  const handleLogout = () => {
-    if (activeUser?.email) {
-      registrarAuditoria({
-        entidade: 'AUTENTICACAO',
-        idEntidade: activeUser.email,
-        tipoOperacao: 'LOGOUT',
-        autor: activeUser.email,
-        estadoAnterior: { role, nome: activeUser.name },
-        metadados: { motivo: 'Logout manual pelo usuário' }
-      }).catch(err => console.error('[Auditoria] Falha silenciosa no logout:', err));
-    }
-    setAuthed(false);
-    setAuthScreen('login');
-    setRole('usuario');
-    setUserView({ page: 'inicio' });
-    setTechView({ page: 'tech-inicio' });
-    setGestorView('gestor-dashboard');
-    setActiveUser(currentUser);
-  };
-
   // ---- User mutations ----
   const handleSubmitTicket = (data: {
     title: string;
@@ -795,7 +835,7 @@ export default function App() {
           />
           )}
 
-          {userView.page === 'perfil' && <Profile user={activeUser} />}
+          {userView.page === 'perfil' && <Profile user={activeUser} onSave={handleSaveProfile} />}
 
           {userView.page === 'ticket-detail' && currentTicket && (
             <TicketDetail
@@ -882,7 +922,7 @@ export default function App() {
           )}
 
           {techView.page === 'tech-perfil' && (
-            <Profile user={activeUser} />
+            <Profile user={activeUser} onSave={handleSaveProfile} />
           )}
 
           {techView.page === 'tech-ticket-detail' && currentTicket && (
@@ -928,7 +968,7 @@ export default function App() {
 
         <GestorPageContainer>
           {gestorView === 'gestor-perfil' && (
-            <Profile user={activeUser} />
+            <Profile user={activeUser} onSave={handleSaveProfile} />
           )}
 
           {gestorView === 'gestor-dashboard' && (

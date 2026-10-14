@@ -36,11 +36,15 @@ function getCurrentTheme(): 'light' | 'dark' {
 
 interface ProfileProps {
   user: User;
+  onSave: (updatedUser: User) => void;
 }
 
-export default function Profile({ user }: ProfileProps) {
-  const [theme, setTheme] = useState<'light' | 'dark'>(() =>
-    getCurrentTheme()
+export default function Profile({
+  user,
+  onSave,
+}: ProfileProps) {
+  const [theme, setTheme] = useState<'light' | 'dark'>(
+    () => getCurrentTheme()
   );
 
   const isDark = theme === 'dark';
@@ -109,6 +113,16 @@ export default function Profile({ user }: ProfileProps) {
   const handleSave = (e: React.FormEvent) => {
     e.preventDefault();
 
+    const updatedUser: User = {
+      ...user,
+      name: form.name.trim(),
+      email: user.email,
+      phone: form.phone,
+      department: form.department,
+      role: form.role,
+    };
+
+    onSave(updatedUser);
     setSaved(true);
 
     registrarAuditoria({
@@ -119,7 +133,8 @@ export default function Profile({ user }: ProfileProps) {
       estadoAtual: {
         nome: form.name,
         telefone: form.phone,
-        departamento: form.department,
+        departamento:
+          form.department,
       },
       metadados: {
         alteradoEm: new Date().toISOString(),
@@ -207,14 +222,12 @@ export default function Profile({ user }: ProfileProps) {
         '!bg-[#111f2e]',
         '!text-slate-100',
         'placeholder:!text-slate-500',
-        '[color-scheme:dark]',
       ].join(' ')
       : [
         '!border-slate-300',
         '!bg-white',
         '!text-slate-900',
         'placeholder:!text-slate-400',
-        '[color-scheme:light]',
       ].join(' '),
   ].join(' ');
 
@@ -318,6 +331,9 @@ export default function Profile({ user }: ProfileProps) {
             : 'border-slate-200 bg-white shadow-slate-200/60',
         ].join(' ')}
       >
+
+        {/* Banner */}
+
         <div
           className={[
             'relative overflow-hidden px-6 py-7',
@@ -326,6 +342,9 @@ export default function Profile({ user }: ProfileProps) {
               : 'bg-gradient-to-br from-white via-slate-50 to-teal-50/50',
           ].join(' ')}
         >
+
+          {/* Detalhe visual STI */}
+
           <div
             className={[
               'pointer-events-none absolute right-0 top-0',
@@ -338,6 +357,9 @@ export default function Profile({ user }: ProfileProps) {
 
           <div className="relative flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-center gap-4">
+
+              {/* Avatar */}
+
               <div
                 className="
                   flex h-20 w-20 shrink-0
@@ -405,7 +427,10 @@ export default function Profile({ user }: ProfileProps) {
                       accentIconColor,
                     ].join(' ')}
                   />
-                  <span>{form.department}</span>
+
+                  <span>
+                    {form.department}
+                  </span>
                 </div>
               </div>
             </div>
@@ -452,10 +477,12 @@ export default function Profile({ user }: ProfileProps) {
               : 'bg-slate-50',
           ].join(' ')}
         >
+
+          {/* Função */}
+
           <div
             className={[
               'rounded-xl border p-4',
-              'transition-colors duration-200',
               isDark
                 ? 'border-[#2dd4bf]/20 bg-[#0f766e]/10 hover:border-[#2dd4bf]/40'
                 : 'border-teal-200 bg-teal-50/60 hover:border-teal-300',
@@ -487,7 +514,6 @@ export default function Profile({ user }: ProfileProps) {
           <div
             className={[
               'rounded-xl border p-4',
-              'transition-colors duration-200',
               isDark
                 ? 'border-[#2dd4bf]/20 bg-[#0f766e]/10 hover:border-[#2dd4bf]/40'
                 : 'border-teal-200 bg-teal-50/60 hover:border-teal-300',
@@ -519,7 +545,6 @@ export default function Profile({ user }: ProfileProps) {
           <div
             className={[
               'rounded-xl border p-4',
-              'transition-colors duration-200',
               isDark
                 ? 'border-[#2dd4bf]/20 bg-[#0f766e]/10 hover:border-[#2dd4bf]/40'
                 : 'border-teal-200 bg-teal-50/60 hover:border-teal-300',
@@ -563,6 +588,9 @@ export default function Profile({ user }: ProfileProps) {
             : 'shadow-slate-200/60',
         ].join(' ')}
       >
+
+        {/* Cabeçalho da seção */}
+
         <div
           className={[
             'border-b px-6 py-5',
@@ -639,6 +667,9 @@ export default function Profile({ user }: ProfileProps) {
             </div>
 
             <div className="grid gap-5 sm:grid-cols-2">
+
+              {/* Nome */}
+
               <Field
                 label="Nome completo"
                 className={fieldLabelClass}
@@ -812,6 +843,9 @@ export default function Profile({ user }: ProfileProps) {
             </div>
 
             <div className="grid gap-5 sm:grid-cols-2">
+
+              {/* E-mail */}
+
               <Field
                 label="E-mail institucional"
                 className={fieldLabelClass}
@@ -933,6 +967,9 @@ export default function Profile({ user }: ProfileProps) {
             : 'shadow-slate-200/60',
         ].join(' ')}
       >
+
+        {/* Cabeçalho */}
+
         <div
           className={[
             'border-b px-6 py-5',
