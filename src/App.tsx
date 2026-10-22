@@ -5,7 +5,7 @@ import GestorAuditTable from '@/components/gestor/GestorAuditTable';
 import { registrarAuditoria } from './services/auditService';
 import GestorSidebar, { GestorPage, GestorPageContainer } from '@/components/gestor/GestorSidebar';
 import GestorDashboard from '@/components/gestor/GestorDashboard';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import GestorEquipe from '@/components/gestor/GestorEquipe';
 import Sidebar, { Page, PageContainer } from '@/components/Sidebar';
 import Login from '@/components/Login';
@@ -185,12 +185,104 @@ function getThemeBackground() {
 
 export default function App() {
   const [authScreen, setAuthScreen] = useState<AuthScreen>('login');
-  const [authed, setAuthed] = useState(false);
-  const [activeUser, setActiveUser] = useState<User>(currentUser);
-  const [role, setRole] = useState<UserRole>('usuario');
-  const [userView, setUserView] = useState<UserView>({ page: 'inicio' });
-  const [techView, setTechView] = useState<TechView>({ page: 'tech-inicio' });
-  const [gestorView, setGestorView] = useState<GestorPage>('gestor-dashboard');
+
+  const [authed, setAuthed] = useState(() => {
+    return sessionStorage.getItem('sti_authed') === 'true';
+  });
+
+  const [activeUser, setActiveUser] = useState<User>(() => {
+    const savedUser = sessionStorage.getItem('sti_activeUser');
+
+    if (savedUser) {
+      try {
+        return JSON.parse(savedUser) as User;
+      } catch {
+        sessionStorage.removeItem('sti_activeUser');
+      }
+    }
+
+    return currentUser;
+  });
+
+  const [role, setRole] = useState<UserRole>(() => {
+    const savedRole = sessionStorage.getItem('sti_role');
+
+    if (
+      savedRole === 'usuario' ||
+      savedRole === 'tecnico' ||
+      savedRole === 'gestor'
+    ) {
+      return savedRole;
+    }
+
+    return 'usuario';
+  });
+
+  const [userView, setUserView] = useState<UserView>(() => {
+    const savedView = sessionStorage.getItem('sti_userView');
+
+    if (savedView) {
+      try {
+        return JSON.parse(savedView) as UserView;
+      } catch {
+        sessionStorage.removeItem('sti_userView');
+      }
+    }
+
+    return { page: 'inicio' };
+  });
+
+  const [techView, setTechView] = useState<TechView>(() => {
+    const savedView = sessionStorage.getItem('sti_techView');
+
+    if (savedView) {
+      try {
+        return JSON.parse(savedView) as TechView;
+      } catch {
+        sessionStorage.removeItem('sti_techView');
+      }
+    }
+
+    return { page: 'tech-inicio' };
+  });
+
+  const [techInitialStatus, setTechInitialStatus] =
+    useState<TicketStatus | 'todos'>('todos');
+
+  const [gestorView, setGestorView] = useState<GestorPage>(() => {
+    const savedView = sessionStorage.getItem('sti_gestorView');
+
+    const validPages: GestorPage[] = [
+      'gestor-dashboard',
+      'gestor-equipe',
+      'gestor-auditoria',
+      'gestor-relatorios',
+      'gestor-feedbacks',
+      'gestor-perfil',
+    ];
+
+    if (savedView && validPages.includes(savedView as GestorPage)) {
+      return savedView as GestorPage;
+    }
+
+    return 'gestor-dashboard';
+  });
+
+  const [reportModalOpen, setReportModalOpen] = useState(false);
+  const [selectedReportType, setSelectedReportType] = useState<'SEMANAL' | 'MENSAL' | 'PATRIMONIO'>('SEMANAL');
+
+  useEffect(() => {
+    if (authed) {
+      sessionStorage.setItem('sti_authed', 'true');
+      sessionStorage.setItem('sti_activeUser', JSON.stringify(activeUser));
+      sessionStorage.setItem('sti_role', role);
+      sessionStorage.setItem('sti_userView', JSON.stringify(userView));
+      sessionStorage.setItem('sti_techView', JSON.stringify(techView));
+      sessionStorage.setItem('sti_gestorView', gestorView);
+    }
+  }, [authed, activeUser, role, userView, techView, gestorView]);
+
+
   const handleLogin = (email: string, selectedRole?: UserRole) => {
     const account = detectRoleFromEmail(email);
     const nextRole = selectedRole ?? account.role;
@@ -216,13 +308,6 @@ export default function App() {
     }
   };
 
-  const handleLogout = () => {
-    setAuthed(false);
-    setAuthScreen('login');
-  };
-  const [techInitialStatus, setTechInitialStatus] = useState<TicketStatus | 'todos'>('todos');
-  const [reportModalOpen, setReportModalOpen] = useState(false);
-  const [selectedReportType, setSelectedReportType] = useState<'SEMANAL' | 'MENSAL' | 'PATRIMONIO'>('SEMANAL');
 
   const handleTechFilterSelect = (status: TicketStatus) => {
     setTechInitialStatus(status);
@@ -308,6 +393,36 @@ export default function App() {
       console.error('[Auditoria] Falha ao registrar atualização:', error)
     );
   };
+  const handleLogout = () => {
+    sessionStorage.removeItem('sti_authed');
+    sessionStorage.removeItem('sti_activeUser');
+    sessionStorage.removeItem('sti_role');
+    sessionStorage.removeItem('sti_userView');
+    sessionStorage.removeItem('sti_techView');
+    sessionStorage.removeItem('sti_gestorView');
+
+    if (activeUser?.email) {
+      registrarAuditoria({
+        entidade: 'AUTENTICACAO',
+        idEntidade: activeUser.email,
+        tipoOperacao: 'LOGOUT',
+        autor: activeUser.email,
+        estadoAnterior: { role, nome: activeUser.name },
+        metadados: { motivo: 'Logout manual pelo usuário' }
+      }).catch(err =>
+        console.error('[Auditoria] Falha silenciosa no logout:', err)
+      );
+    }
+
+    setAuthed(false);
+    setAuthScreen('login');
+    setRole('usuario');
+    setUserView({ page: 'inicio' });
+    setTechView({ page: 'tech-inicio' });
+    setGestorView('gestor-dashboard');
+    setActiveUser(currentUser);
+  };
+
   // ---- User mutations ----
   const handleSubmitTicket = (data: {
     title: string;

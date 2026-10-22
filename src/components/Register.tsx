@@ -1,4 +1,4 @@
-﻿import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { ArrowLeft, CheckCircle2, Search } from 'lucide-react';
 import Button from './ui/Button';
 import { Field } from './ui/Field';
@@ -9,14 +9,18 @@ interface RegisterProps {
   onBackToLogin: () => void;
 }
 
+interface Departamento {
+  id: number;
+  nome: string;
+  sigla: string;
+}
+
 const GENEROS_OPCOES = [
   { valor: 'MASCULINO', rotulo: 'Masculino' },
   { valor: 'FEMININO', rotulo: 'Feminino' },
   { valor: 'OUTRO', rotulo: 'Outro' },
   { valor: 'PREFIRO_NAO_DIZER', rotulo: 'Prefiro não dizer' }
 ];
-
-
 
 export default function Register({ onBackToLogin }: RegisterProps) {
   const [name, setName] = useState('');
@@ -27,6 +31,10 @@ export default function Register({ onBackToLogin }: RegisterProps) {
   const [sector, setSector] = useState('');
   const [sectorSearch, setSectorSearch] = useState('');
   const [showSectorOptions, setShowSectorOptions] = useState(false);
+
+  const [departamentoId, setDepartamentoId] = useState<number | null>(null);
+  const [departamentos, setDepartamentos] = useState<Departamento[]>([]);
+  const [erroDepartamentos, setErroDepartamentos] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
@@ -35,7 +43,39 @@ export default function Register({ onBackToLogin }: RegisterProps) {
   const [done, setDone] = useState(false);
   const [error, setError] = useState('');
 
-  const filteredSectors = SETORES_DETRAN.filter(
+  useEffect(() => {
+    let ativo = true;
+
+    fetch('http://localhost:8080/api/v1/departamentos')
+      .then((res) => {
+        if (!res.ok) {
+          throw new Error('Falha ao carregar os departamentos.');
+        }
+
+        return res.json();
+      })
+      .then((data: Departamento[]) => {
+        if (ativo) {
+          setDepartamentos(data);
+          setErroDepartamentos('');
+        }
+      })
+      .catch((err) => {
+        console.error('[Departamentos API] Erro:', err);
+
+        if (ativo) {
+          setErroDepartamentos(
+            'Não foi possível carregar os setores. Verifique se o servidor está ativo.'
+          );
+        }
+      });
+
+    return () => {
+      ativo = false;
+    };
+  }, []);
+
+  const filteredSectors = departamentos.filter(
     (s) =>
       s.sigla.toLowerCase().includes(sectorSearch.toLowerCase()) ||
       s.nome.toLowerCase().includes(sectorSearch.toLowerCase())
@@ -99,8 +139,10 @@ export default function Register({ onBackToLogin }: RegisterProps) {
     }
   };
 
-  const handleSectorSelect = (sigla: string, nome: string) => {
-    const value = `${sigla} - ${nome}`;
+  const handleSectorSelect = (departamento: Departamento) => {
+    const value = `${departamento.sigla} - ${departamento.nome}`;
+
+    setDepartamentoId(departamento.id);
     setSector(value);
     setSectorSearch(value);
     setShowSectorOptions(false);
@@ -147,7 +189,7 @@ export default function Register({ onBackToLogin }: RegisterProps) {
       return;
     }
 
-    if (!sector) {
+    if (departamentoId === null) {
       setError('Selecione seu setor de lotação no DETRAN.');
       return;
     }
@@ -157,8 +199,8 @@ export default function Register({ onBackToLogin }: RegisterProps) {
       return;
     }
 
-    if (password.length < 6) {
-      setError('A senha deve conter no mínimo 6 caracteres.');
+    if (password.length < 8) {
+      setError('A senha deve conter no mínimo 8 caracteres.');
       return;
     }
 
@@ -168,7 +210,6 @@ export default function Register({ onBackToLogin }: RegisterProps) {
       ? email
       : `${email}@sti.chamados.com`;
 
-    const departamentoIdUuid = 'a0000000-0000-0000-0000-000000000001';
 
     fetch('http://localhost:8080/api/v1/auth/register', {
       method: 'POST',
@@ -182,7 +223,7 @@ export default function Register({ onBackToLogin }: RegisterProps) {
         genero: gender,
         senha: password,
         telefoneWhatsapp: phone,
-        departamentoId: departamentoIdUuid
+        departamentoId: departamentoId
       })
     })
       .then(async (res: Response) => {
@@ -297,6 +338,7 @@ export default function Register({ onBackToLogin }: RegisterProps) {
                   onChange={(e) => {
                     setSectorSearch(e.target.value);
                     setSector('');
+                    setDepartamentoId(null);
                     setShowSectorOptions(true);
                   }}
                   onFocus={() => setShowSectorOptions(true)}
@@ -304,14 +346,20 @@ export default function Register({ onBackToLogin }: RegisterProps) {
                   required
                   className={`pl-10 ${inputClass}`}
                 />
+                {erroDepartamentos && (
+                  <p className="mt-2 text-sm text-rose-600" role="alert">
+                    {erroDepartamentos}
+                  </p>
+                )}
+
                 {showSectorOptions && (
                   <div className="absolute z-50 mt-2 max-h-60 w-full overflow-y-auto rounded-xl border border-slate-200 bg-white p-1 shadow-xl">
                     {filteredSectors.map((s) => (
                       <button
-                        key={s.sigla}
+                        key={s.id}
                         type="button"
                         onMouseDown={(e) => e.preventDefault()}
-                        onClick={() => handleSectorSelect(s.sigla, s.nome)}
+                        onClick={() => handleSectorSelect(s)}
                         className="w-full rounded-lg px-3 py-3 text-left text-sm hover:bg-teal-50"
                       >
                         <span className="font-semibold text-slate-800">{s.sigla}</span> — <span className="text-slate-600">{s.nome}</span>
@@ -333,10 +381,10 @@ export default function Register({ onBackToLogin }: RegisterProps) {
 
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <Field label="Senha de Acesso">
-                <input type="password" placeholder="Mínimo 6 caracteres" value={password} onChange={(e) => setPassword(e.target.value)} required minLength={6} className={inputClass} />
+                <input type="password" placeholder="Mínimo 8 caracteres" value={password} onChange={(e) => setPassword(e.target.value)} required minLength={8} className={inputClass} />
               </Field>
               <Field label="Confirmar Senha">
-                <input type="password" placeholder="Repita sua senha" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} required minLength={6} className={inputClass} />
+                <input type="password" placeholder="Repita sua senha" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} required minLength={8} className={inputClass} />
               </Field>
             </div>
 
