@@ -1,4 +1,4 @@
-﻿import React, { useMemo, useState } from 'react';
+﻿import React, { useMemo, useState, useEffect } from 'react';
 import {
   AlertCircle,
   ArrowRight,
@@ -102,7 +102,27 @@ export default function FeedbackCenter({
 }: FeedbackCenterProps) {
   const { isDark } = useTechTheme();
 
-  const [records, setRecords] = useState<FeedbackRecord[]>(initialRecords);
+  // Sincroniza os registos com o localStorage para persistir os relatórios enviados pelos utilizadores
+  const [records, setRecords] = useState<FeedbackRecord[]>(() => {
+    try {
+      const saved = localStorage.getItem('sti_feedback_records');
+      if (saved) {
+        return JSON.parse(saved);
+      }
+    } catch (e) {
+      console.error('Erro ao carregar feedbacks', e);
+    }
+    return initialRecords;
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('sti_feedback_records', JSON.stringify(records));
+    } catch (e) {
+      console.error('Erro ao salvar feedbacks', e);
+    }
+  }, [records]);
+
   const [selectedType, setSelectedType] = useState<'todos' | FeedbackType>(
     'todos',
   );
