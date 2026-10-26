@@ -66,11 +66,12 @@ export default function TechTickets({
     return transferUpdate ? transferUpdate.message : null;
   };
 
+  // Lógica de filtragem blindada e normalizada
   const filtered = tickets.filter((t) => {
-    if (
-      statusFilter !== 'todos' &&
-      t.status !== statusFilter
-    ) {
+    const tStatus = (t.status || '').toLowerCase();
+    const currentStatus = statusFilter.toLowerCase();
+
+    if (currentStatus !== 'todos' && tStatus !== currentStatus) {
       return false;
     }
 
@@ -81,31 +82,28 @@ export default function TechTickets({
       return false;
     }
 
-    if (
-      techFilter === 'meus' &&
-      t.assignee !== techName
-    ) {
-      return false;
-    }
-
-    if (
+    if (techFilter === 'meus') {
+      const assigned = (t.assignee || '').trim().toLowerCase();
+      const currentTech = techName.trim().toLowerCase();
+      if (assigned !== currentTech) {
+        return false;
+      }
+    } else if (
       techFilter !== 'todos' &&
       techFilter !== 'sem_tecnico' &&
-      techFilter !== 'meus' &&
       t.assignee !== techFilter
     ) {
       return false;
     }
 
-    if (search) {
+    if (search.trim()) {
       const q = search.toLowerCase();
 
       return (
-        t.title.toLowerCase().includes(q) ||
-        t.protocol.toLowerCase().includes(q) ||
-        (t.assignee &&
-          t.assignee.toLowerCase().includes(q)) ||
-        t.requesterName.toLowerCase().includes(q)
+        (t.title || '').toLowerCase().includes(q) ||
+        (t.protocol || '').toLowerCase().includes(q) ||
+        (t.assignee || '').toLowerCase().includes(q) ||
+        (t.requesterName || '').toLowerCase().includes(q)
       );
     }
 
@@ -114,7 +112,9 @@ export default function TechTickets({
 
   const counts = tickets.reduce(
     (acc, t) => {
-      acc[t.status] = (acc[t.status] ?? 0) + 1;
+      if (t.status) {
+        acc[t.status] = (acc[t.status] ?? 0) + 1;
+      }
       return acc;
     },
     {} as Record<string, number>

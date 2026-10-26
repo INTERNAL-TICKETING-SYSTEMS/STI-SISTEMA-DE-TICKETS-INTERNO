@@ -1,7 +1,7 @@
 import { Ticket } from '@/types';
 import StatusBadge from '@/components/ui/StatusBadge';
 import { formatRelative } from '@/data';
-import { PlusCircle, ClipboardList, ArrowRight, MessagesSquare } from 'lucide-react';
+import { PlusCircle, ClipboardList, ArrowRight, MessagesSquare, Lightbulb, AlertCircle } from 'lucide-react';
 import Button from '@/components/ui/Button';
 import { Page } from '@/components/Sidebar';
 import { useTechTheme } from '@/components/tech/techTheme';
@@ -100,6 +100,79 @@ export default function Dashboard({
           <ArrowRight
             className={`h-5 w-5 transition-all group-hover:translate-x-1 group-hover:text-sti-navy-400 ${colors.arrow}`}
           />
+        </button>
+      </div>
+
+      {/* Sugestões e Ações Rápidas de Feedback */}
+      <div className="mb-12 grid gap-5 sm:grid-cols-2">
+        <button
+          onClick={() => {
+            // Ação para reportar falha / abrir canal de feedback
+            const title = prompt('Descreva resumidamente a falha encontrada:');
+            if (title) {
+              const description = prompt('Detalhe o que ocorreu:') || '';
+              const existing = JSON.parse(localStorage.getItem('sti_feedback_records') || '[]');
+              const newRecord = {
+                id: 'FB-' + Math.floor(100 + Math.random() * 900),
+                type: 'falha',
+                date: new Date().toLocaleString(),
+                title,
+                description,
+                requester: userName || 'Servidor',
+                department: 'Geral',
+                profile: 'Servidor',
+                priority: 'alta',
+                status: 'Novo'
+              };
+              localStorage.setItem('sti_feedback_records', JSON.stringify([newRecord, ...existing]));
+              alert('Falha reportada com sucesso aos desenvolvedores!');
+            }
+          }}
+          className={`group flex items-center gap-4 rounded-2xl border p-5 text-left transition-all ${colors.card} hover:border-red-400`}
+        >
+          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-red-500/10 text-red-500">
+            <AlertCircle className="h-6 w-6" />
+          </div>
+          <div className="flex-1">
+            <h3 className={`text-sm font-semibold ${colors.heading}`}>Reportar Falha</h3>
+            <p className={`text-xs ${colors.muted}`}>Envie um reporte direto aos desenvolvedores.</p>
+          </div>
+          <ArrowRight className={`h-4 w-4 ${colors.arrow}`} />
+        </button>
+
+        <button
+          onClick={() => {
+            // Ação para enviar sugestão de melhoria
+            const title = prompt('Qual a sua sugestão de melhoria?');
+            if (title) {
+              const description = prompt('Explique como essa melhoria ajudaria:') || '';
+              const existing = JSON.parse(localStorage.getItem('sti_feedback_records') || '[]');
+              const newRecord = {
+                id: 'FB-' + Math.floor(100 + Math.random() * 900),
+                type: 'sugestao',
+                date: new Date().toLocaleString(),
+                title,
+                description,
+                requester: userName || 'Servidor',
+                department: 'Geral',
+                profile: 'Servidor',
+                priority: 'media',
+                status: 'Novo'
+              };
+              localStorage.setItem('sti_feedback_records', JSON.stringify([newRecord, ...existing]));
+              alert('Sugestão enviada com sucesso!');
+            }
+          }}
+          className={`group flex items-center gap-4 rounded-2xl border p-5 text-left transition-all ${colors.card} hover:border-amber-400`}
+        >
+          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-amber-500/10 text-amber-500">
+            <Lightbulb className="h-6 w-6" />
+          </div>
+          <div className="flex-1">
+            <h3 className={`text-sm font-semibold ${colors.heading}`}>Enviar Sugestão</h3>
+            <p className={`text-xs ${colors.muted}`}>Compartilhe ideias de aprimoramento do sistema.</p>
+          </div>
+          <ArrowRight className={`h-4 w-4 ${colors.arrow}`} />
         </button>
       </div>
 
