@@ -1,6 +1,7 @@
 ﻿import React, { useState, useRef } from 'react';
 import { User } from '@/types';
 import Button from '@/components/ui/Button';
+import './open-ticket-theme.css';
 import { Field, Input, Textarea, Select } from '@/components/ui/Field';
 import {
   Check,
@@ -40,7 +41,9 @@ export interface OpenTicketSubmitData {
 interface OpenTicketProps {
   user?: User;
   onNavigate: (p: Page) => void;
-  onSubmit: (data: OpenTicketSubmitData) => void;
+  onSubmit: (
+    data: OpenTicketSubmitData
+  ) => Promise<{ protocolo: string }>;
 }
 
 const categories = [
@@ -104,6 +107,8 @@ export default function OpenTicket({
   const [protocol, setProtocol] = useState('');
   const [copied, setCopied] = useState(false);
   const [timestamp, setTimestamp] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState('');
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -176,37 +181,43 @@ export default function OpenTicket({
     }, 2000);
   };
 
-  const handleSubmit = () => {
-    const generatedProtocol =
-      'STI-' +
-      new Date().getFullYear() +
-      '-' +
-      Math.floor(
-        10000 + Math.random() * 90000
+  const handleSubmit = async () => {
+    if (submitting) {
+      return;
+    }
+
+    setSubmitting(true);
+    setSubmitError('');
+
+    try {
+      const ticketData: OpenTicketSubmitData = {
+        title,
+        category:
+          categories.find((c) => c.id === category)?.label ??
+          'Outro problema',
+        description,
+        urgency,
+        startDate,
+        blocking,
+        attachments,
+      };
+
+      const resultado = await onSubmit(ticketData);
+
+      setProtocol(resultado.protocolo);
+      setTimestamp(new Date().toLocaleString('pt-BR'));
+      setSubmitted(true);
+    } catch (error) {
+      console.error('[STI] Erro ao abrir chamado:', error);
+
+      setSubmitError(
+        error instanceof Error
+          ? error.message
+          : 'Não foi possível registrar o chamado. Tente novamente.'
       );
-
-    setProtocol(generatedProtocol);
-
-    setTimestamp(
-      new Date().toLocaleString('pt-BR')
-    );
-
-    const ticketData: any = {
-      title,
-      category:
-        categories.find(
-          (c) => c.id === category
-        )?.label ?? 'Outro problema',
-      description,
-      urgency,
-      startDate,
-      blocking,
-      attachments,
-    };
-
-    onSubmit(ticketData);
-
-    setSubmitted(true);
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   // ============================================================
@@ -215,8 +226,8 @@ export default function OpenTicket({
 
   if (submitted) {
     return (
-      <div className="max-w-2xl mx-auto py-10 px-4 animate-fade-in">
-        <div className="rounded-3xl border border-slate-200 bg-white p-8 sm:p-10 shadow-lg text-center relative overflow-hidden">
+      <div className="open-ticket max-w-2xl mx-auto py-10 px-4 animate-fade-in">
+        <div className="rounded-3xl border border-slate-200 bg-white p-8 sm:p-10 shadow-lg text-center relative overflow-hidden dark:border-slate-700 dark:bg-slate-900">
           <div className="absolute top-0 left-0 right-0 h-2 bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-600"></div>
 
           <div className="relative mx-auto mb-6 flex h-24 w-24 items-center justify-center">
@@ -237,11 +248,11 @@ export default function OpenTicket({
             Registro Oficial Homologado
           </div>
 
-          <h2 className="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight">
+          <h2 className="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight dark:text-slate-100">
             Chamado Aberto com Sucesso!
           </h2>
 
-          <p className="mt-2 text-sm text-slate-500 max-w-lg mx-auto">
+          <p className="mt-2 text-sm text-slate-500 max-w-lg mx-auto dark:text-slate-300">
             Sua solicitação foi registrada no STI e encaminhada para a triagem da equipe técnica da Diretoria de Tecnologia da Informação.
           </p>
 
@@ -281,13 +292,13 @@ export default function OpenTicket({
             </div>
           </div>
 
-          <div className="mt-6 rounded-2xl border border-slate-200 bg-slate-50/60 p-5 text-left text-xs space-y-3">
+          <div className="mt-6 rounded-2xl border border-slate-200 bg-slate-50/60 p-5 text-left text-xs space-y-3 dark:border-slate-700 dark:bg-slate-800/80">
             <div className="flex items-center justify-between border-b border-slate-200 pb-2">
               <span className="text-slate-500 font-medium">
                 Assunto:
               </span>
 
-              <span className="font-semibold text-slate-800 text-right max-w-xs truncate">
+              <span className="font-semibold text-slate-800 text-right max-w-xs truncate dark:text-slate-100">
                 {title}
               </span>
             </div>
@@ -312,13 +323,12 @@ export default function OpenTicket({
               </span>
 
               <span
-                className={`font-semibold capitalize px-2 py-0.5 rounded text-[11px] ${
-                  urgency === 'alta'
-                    ? 'bg-rose-100 text-rose-700'
-                    : urgency === 'media'
-                      ? 'bg-amber-100 text-amber-700'
-                      : 'bg-blue-100 text-blue-700'
-                }`}
+                className={`font-semibold capitalize px-2 py-0.5 rounded text-[11px] ${urgency === 'alta'
+                  ? 'bg-rose-100 text-rose-700'
+                  : urgency === 'media'
+                    ? 'bg-amber-100 text-amber-700'
+                    : 'bg-blue-100 text-blue-700'
+                  }`}
               >
                 {urgency === 'alta'
                   ? 'Alta / Crítica'
@@ -352,10 +362,10 @@ export default function OpenTicket({
             </div>
           </div>
 
-          <div className="mt-6 flex items-start gap-3 rounded-xl bg-blue-50/70 border border-blue-200 p-4 text-left">
+          <div className="mt-6 flex items-start gap-3 rounded-xl bg-blue-50/70 border border-blue-200 p-4 text-left dark:bg-blue-950/40 dark:border-blue-900">
             <FileCheck2 className="h-5 w-5 text-blue-600 shrink-0 mt-0.5" />
 
-            <p className="text-xs text-blue-900 leading-relaxed">
+            <p className="text-xs text-blue-900 leading-relaxed dark:text-blue-200">
               O chamado já está disponível na lista de atendimentos. Você pode acompanhar a interação técnica, adicionar mensagens ou enviar mais fotos a qualquer momento através do chat de acompanhamento.
             </p>
           </div>
@@ -392,7 +402,7 @@ export default function OpenTicket({
   // ============================================================
 
   return (
-    <div className="max-w-3xl mx-auto">
+    <div className="open-ticket max-w-3xl mx-auto">
       <div className="mb-8">
         <h1 className="text-2xl font-bold text-slate-900">
           Abertura de Chamado
@@ -433,11 +443,10 @@ export default function OpenTicket({
           <div
             className="absolute left-0 top-1/2 -z-10 h-0.5 -translate-y-1/2 bg-slate-800 transition-all duration-300"
             style={{
-              width: `${
-                (step /
-                  (steps.length - 1)) *
+              width: `${(step /
+                (steps.length - 1)) *
                 100
-              }%`,
+                }%`,
             }}
           ></div>
 
@@ -447,13 +456,12 @@ export default function OpenTicket({
               className="flex flex-col items-center gap-2 bg-slate-50 px-2"
             >
               <div
-                className={`flex h-8 w-8 items-center justify-center rounded-full border-2 text-xs font-bold transition-colors ${
-                  step > i
-                    ? 'border-slate-900 bg-slate-900 text-white'
-                    : step === i
-                      ? 'border-slate-900 bg-white text-slate-900'
-                      : 'border-slate-200 bg-white text-slate-400'
-                }`}
+                className={`flex h-8 w-8 items-center justify-center rounded-full border-2 text-xs font-bold transition-colors ${step > i
+                  ? 'border-slate-900 bg-slate-900 text-white'
+                  : step === i
+                    ? 'border-slate-900 bg-white text-slate-900'
+                    : 'border-slate-200 bg-white text-slate-400'
+                  }`}
               >
                 {step > i ? (
                   <Check className="h-4 w-4" />
@@ -463,11 +471,10 @@ export default function OpenTicket({
               </div>
 
               <span
-                className={`text-xs font-medium ${
-                  step >= i
-                    ? 'text-slate-800'
-                    : 'text-slate-400'
-                }`}
+                className={`text-xs font-medium ${step >= i
+                  ? 'text-slate-800'
+                  : 'text-slate-400'
+                  }`}
               >
                 {s}
               </span>
@@ -495,26 +502,27 @@ export default function OpenTicket({
                       onClick={() =>
                         setCategory(c.id)
                       }
-                      className={`flex items-start gap-3 rounded-xl border p-4 text-left transition-all ${
-                        isSelected
-                          ? 'border-slate-900 bg-slate-50 ring-1 ring-slate-900'
-                          : 'border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50'
-                      }`}
+                      className={`flex items-start gap-3 rounded-xl border p-4 text-left transition-all duration-200 ${isSelected
+                        ? 'border-teal-500 bg-teal-50 ring-2 ring-teal-500/40 shadow-sm dark:border-teal-400 dark:bg-teal-950/70 dark:ring-teal-400/50'
+                        : 'border-slate-200 bg-white hover:border-teal-300 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:hover:border-teal-500 dark:hover:bg-slate-800'
+                        }`}
                     >
                       <Icon
-                        className={`mt-0.5 h-5 w-5 shrink-0 ${
-                          isSelected
-                            ? 'text-slate-900'
-                            : 'text-slate-400'
-                        }`}
+                        className={`mt-0.5 h-5 w-5 shrink-0 transition-colors ${isSelected
+                          ? 'text-teal-700 dark:text-teal-300'
+                          : 'text-slate-400'
+                          }`}
                       />
 
+                      {isSelected && (
+                        <Check className="ml-auto h-5 w-5 shrink-0 rounded-full bg-teal-500 p-0.5 text-white" />
+                      )}
+
                       <span
-                        className={`text-sm font-medium ${
-                          isSelected
-                            ? 'text-slate-900'
-                            : 'text-slate-700'
-                        }`}
+                        className={`text-sm font-medium ${isSelected
+                          ? 'text-teal-900 dark:text-teal-100'
+                          : 'text-slate-700 dark:text-slate-200'
+                          }`}
                       >
                         {c.label}
                       </span>
@@ -607,9 +615,8 @@ export default function OpenTicket({
                         >
                           <img
                             src={imgSrc}
-                            alt={`Anexo ${
-                              idx + 1
-                            }`}
+                            alt={`Anexo ${idx + 1
+                              }`}
                             className="h-full w-full object-cover"
                           />
 
@@ -662,19 +669,15 @@ export default function OpenTicket({
                   </option>
 
                   <option value="sim_total">
-                    Sim, paralisação total
-                    das tarefas
+                    Sim
                   </option>
 
                   <option value="sim_parcial">
-                    Parcialmente (consigo
-                    fazer outras
-                    atividades)
+                    Parcialmente
                   </option>
 
                   <option value="nao">
-                    Não, apenas ajuste ou
-                    solicitação pontual
+                    Não
                   </option>
                 </Select>
               </Field>
@@ -692,18 +695,16 @@ export default function OpenTicket({
                   onClick={() =>
                     setUrgency('baixa')
                   }
-                  className={`flex w-full items-center gap-4 rounded-xl border p-4 text-left transition-all ${
-                    urgency === 'baixa'
-                      ? 'border-blue-500 bg-blue-50 ring-1 ring-blue-500'
-                      : 'border-slate-200 hover:border-slate-300 bg-white'
-                  }`}
+                  className={`flex w-full items-center gap-4 rounded-xl border p-4 text-left transition-all ${urgency === 'baixa'
+                    ? 'border-blue-500 bg-blue-50 ring-1 ring-blue-500'
+                    : 'border-slate-200 hover:border-slate-300 bg-white'
+                    }`}
                 >
                   <div
-                    className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full ${
-                      urgency === 'baixa'
-                        ? 'bg-blue-100 text-blue-600'
-                        : 'bg-slate-100 text-slate-500'
-                    }`}
+                    className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full ${urgency === 'baixa'
+                      ? 'bg-blue-100 text-blue-600'
+                      : 'bg-slate-100 text-slate-500'
+                      }`}
                   >
                     <span className="font-bold">
                       1
@@ -712,21 +713,19 @@ export default function OpenTicket({
 
                   <div>
                     <p
-                      className={`font-semibold ${
-                        urgency === 'baixa'
-                          ? 'text-blue-900'
-                          : 'text-slate-800'
-                      }`}
+                      className={`font-semibold ${urgency === 'baixa'
+                        ? 'text-blue-900'
+                        : 'text-slate-800'
+                        }`}
                     >
                       Baixa / Normal
                     </p>
 
                     <p
-                      className={`text-sm ${
-                        urgency === 'baixa'
-                          ? 'text-blue-700'
-                          : 'text-slate-500'
-                      }`}
+                      className={`text-sm ${urgency === 'baixa'
+                        ? 'text-blue-700'
+                        : 'text-slate-500'
+                        }`}
                     >
                       Afeta apenas 1
                       usuário, sem
@@ -741,18 +740,16 @@ export default function OpenTicket({
                   onClick={() =>
                     setUrgency('media')
                   }
-                  className={`flex w-full items-center gap-4 rounded-xl border p-4 text-left transition-all ${
-                    urgency === 'media'
-                      ? 'border-amber-500 bg-amber-50 ring-1 ring-amber-500'
-                      : 'border-slate-200 hover:border-slate-300 bg-white'
-                  }`}
+                  className={`flex w-full items-center gap-4 rounded-xl border p-4 text-left transition-all ${urgency === 'media'
+                    ? 'border-amber-500 bg-amber-50 ring-1 ring-amber-500'
+                    : 'border-slate-200 hover:border-slate-300 bg-white'
+                    }`}
                 >
                   <div
-                    className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full ${
-                      urgency === 'media'
-                        ? 'bg-amber-100 text-amber-600'
-                        : 'bg-slate-100 text-slate-500'
-                    }`}
+                    className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full ${urgency === 'media'
+                      ? 'bg-amber-100 text-amber-600'
+                      : 'bg-slate-100 text-slate-500'
+                      }`}
                   >
                     <span className="font-bold">
                       2
@@ -761,21 +758,19 @@ export default function OpenTicket({
 
                   <div>
                     <p
-                      className={`font-semibold ${
-                        urgency === 'media'
-                          ? 'text-amber-900'
-                          : 'text-slate-800'
-                      }`}
+                      className={`font-semibold ${urgency === 'media'
+                        ? 'text-amber-900'
+                        : 'text-slate-800'
+                        }`}
                     >
                       Média / Urgente
                     </p>
 
                     <p
-                      className={`text-sm ${
-                        urgency === 'media'
-                          ? 'text-amber-700'
-                          : 'text-slate-500'
-                      }`}
+                      className={`text-sm ${urgency === 'media'
+                        ? 'text-amber-700'
+                        : 'text-slate-500'
+                        }`}
                     >
                       Afeta um setor
                       inteiro ou
@@ -790,39 +785,35 @@ export default function OpenTicket({
                   onClick={() =>
                     setUrgency('alta')
                   }
-                  className={`flex w-full items-center gap-4 rounded-xl border p-4 text-left transition-all ${
-                    urgency === 'alta'
-                      ? 'border-rose-500 bg-rose-50 ring-1 ring-rose-500'
-                      : 'border-slate-200 hover:border-slate-300 bg-white'
-                  }`}
+                  className={`flex w-full items-center gap-4 rounded-xl border p-4 text-left transition-all ${urgency === 'alta'
+                    ? 'border-rose-500 bg-rose-50 ring-1 ring-rose-500'
+                    : 'border-slate-200 hover:border-slate-300 bg-white'
+                    }`}
                 >
                   <div
-                    className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full ${
-                      urgency === 'alta'
-                        ? 'bg-rose-100 text-rose-600'
-                        : 'bg-slate-100 text-slate-500'
-                    }`}
+                    className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full ${urgency === 'alta'
+                      ? 'bg-rose-100 text-rose-600'
+                      : 'bg-slate-100 text-slate-500'
+                      }`}
                   >
                     <ShieldAlert className="h-5 w-5" />
                   </div>
 
                   <div>
                     <p
-                      className={`font-semibold ${
-                        urgency === 'alta'
-                          ? 'text-rose-900'
-                          : 'text-slate-800'
-                      }`}
+                      className={`font-semibold ${urgency === 'alta'
+                        ? 'text-rose-900'
+                        : 'text-slate-800'
+                        }`}
                     >
                       Alta / Crítica
                     </p>
 
                     <p
-                      className={`text-sm ${
-                        urgency === 'alta'
-                          ? 'text-rose-700'
-                          : 'text-slate-500'
-                      }`}
+                      className={`text-sm ${urgency === 'alta'
+                        ? 'text-rose-700'
+                        : 'text-slate-500'
+                        }`}
                     >
                       Paralisação geral de
                       serviço essencial do
@@ -855,13 +846,20 @@ export default function OpenTicket({
           )}
         </Button>
 
+        {submitError && (
+          <div
+            role="alert"
+            className="mb-4 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700"
+          >
+            {submitError}
+          </div>
+        )}
+
         {step < steps.length - 1 ? (
           <Button
             variant="primary"
             disabled={!canNext()}
-            onClick={() =>
-              setStep(step + 1)
-            }
+            onClick={() => setStep(step + 1)}
           >
             <span className="flex items-center gap-1">
               Próximo Passo
@@ -871,12 +869,14 @@ export default function OpenTicket({
         ) : (
           <Button
             variant="primary"
-            disabled={!canNext()}
+            disabled={!canNext() || submitting}
             onClick={handleSubmit}
           >
             <span className="flex items-center gap-1.5">
               <Send className="h-4 w-4" />
-              Abrir Chamado Oficial
+              {submitting
+                ? 'Registrando chamado...'
+                : 'Abrir Chamado Oficial'}
             </span>
           </Button>
         )}
