@@ -1,4 +1,4 @@
-﻿
+
 import { dbRepository } from '../services/dbRepository';
 import { useTechTheme } from '@/components/tech/techTheme';
 import React, { useState } from 'react';
@@ -41,25 +41,25 @@ const multiRoleAccountsConfig: Record<
     roles: [
       {
         id: 'tecnico',
-        title: 'Console TÃ©cnico STI',
+        title: 'Console Técnico STI',
         desc: 'Atendimento de chamados e suporte',
         icon: Activity,
       },
       {
         id: 'gestor',
         title: 'Painel Gestor STI',
-        desc: 'MÃ©tricas, relatÃ³rios e auditoria',
+        desc: 'Métricas, relatórios e auditoria',
         icon: BarChart3,
       },
     ],
   },
   'luigue.brandao@sti.chamados.com': {
-    name: 'Luigue Soares BrandÃ£o',
+    name: 'Luigue Soares Brandão',
     roles: [
       {
         id: 'gestor',
         title: 'Painel da Diretoria Administrativa',
-        desc: 'GestÃ£o executiva, SLA e governanÃ§a',
+        desc: 'Gestão executiva, SLA e governança',
         icon: BarChart3,
       },
       {
@@ -75,8 +75,8 @@ const multiRoleAccountsConfig: Record<
     roles: [
       {
         id: 'gestor',
-        title: 'Painel da GerÃªncia Administrativa',
-        desc: 'GestÃ£o operacional e relatÃ³rios',
+        title: 'Painel da Gerência Administrativa',
+        desc: 'Gestão operacional e relatórios',
         icon: BarChart3,
       },
       {
@@ -164,13 +164,13 @@ export default function Login({
     const emailPessoal = forgotPhone.trim();
 
     if (!input) {
-      setForgotErrorMessage('Informe seu e-mail cadastrado ou matrÃ­cula.');
+      setForgotErrorMessage('Informe seu e-mail cadastrado ou matrícula.');
       return;
     }
 
     if (!emailPessoal || !emailPessoal.includes('@')) {
       setForgotErrorMessage(
-        'Informe um e-mail pessoal vÃ¡lido para o envio do OTP.',
+        'Informe um e-mail pessoal válido para o envio do OTP.',
       );
       return;
     }
@@ -181,7 +181,7 @@ export default function Login({
       const user = await dbRepository.buscarUsuarioPorLogin(input);
 
       if (!user) {
-        setForgotErrorMessage('UsuÃ¡rio nÃ£o encontrado no sistema.');
+        setForgotErrorMessage('Usuário não encontrado no sistema.');
         return;
       }
 
@@ -197,12 +197,12 @@ export default function Login({
       );
 
       setForgotSuccessMessage(
-        'CÃ³digo de seguranÃ§a enviado com sucesso para o seu e-mail pessoal!',
+        'Código de segurança enviado com sucesso para o seu e-mail pessoal!',
       );
       setForgotStep('VERIFY');
     } catch (err: any) {
       setForgotErrorMessage(
-        err?.message || 'Erro de conexÃ£o ao solicitar recuperaÃ§Ã£o.',
+        err?.message || 'Erro de conexão ao solicitar recuperação.',
       );
     } finally {
       setSendingOtp(false);
@@ -214,17 +214,17 @@ export default function Login({
     setForgotErrorMessage('');
 
     if (userOtpInput.trim() !== generatedOtp) {
-      setForgotErrorMessage('CÃ³digo de seguranÃ§a incorreto ou expirado.');
+      setForgotErrorMessage('Código de segurança incorreto ou expirado.');
       return;
     }
 
     if (newPassword.length < 4) {
-      setForgotErrorMessage('A nova senha deve ter no mÃ­nimo 4 caracteres.');
+      setForgotErrorMessage('A nova senha deve ter no mínimo 4 caracteres.');
       return;
     }
 
     if (newPassword !== confirmPassword) {
-      setForgotErrorMessage('As senhas nÃ£o coincidem.');
+      setForgotErrorMessage('As senhas não coincidem.');
       return;
     }
 
@@ -257,7 +257,7 @@ export default function Login({
     );
 
     setForgotSuccessMessage(
-      'Senha redefinida com sucesso! VocÃª jÃ¡ pode entrar com a nova credencial.',
+      'Senha redefinida com sucesso! Você já pode entrar com a nova credencial.',
     );
 
     window.setTimeout(() => {
@@ -298,7 +298,7 @@ export default function Login({
       (!customPass || customPass !== senha)
     ) {
       alert(
-        'Senha incorreta para perfil tÃ©cnico de suporte STI. Use a credencial operacional autorizada.',
+        'Senha incorreta para perfil técnico de suporte STI. Use a credencial operacional autorizada.',
       );
       return;
     }
@@ -339,7 +339,7 @@ export default function Login({
     <div
       className={`relative min-h-screen ${pageBackground} md:flex`}
     >
-      {/* Modal de seleÃ§Ã£o de perfil */}
+      {/* Modal de seleção de perfil */}
       {multiRoleData && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 p-4 backdrop-blur-sm">
           <div
@@ -355,11 +355,11 @@ export default function Login({
                   Selecione o Ambiente de Acesso
                 </h3>
                 <p className={`mt-1 text-sm ${modalMuted}`}>
-                  OlÃ¡,{' '}
+                  Olá,{' '}
                   <span className="font-semibold text-cyan-500">
                     {multiRoleData.name}
                   </span>
-                  . Escolha o perfil operacional para esta sessÃ£o.
+                  . Escolha o perfil operacional para esta sessão.
                 </p>
               </div>
             </div>
@@ -389,7 +389,7 @@ export default function Login({
                           {r.title}
                         </h4>
                         <span className="hidden text-sm font-semibold text-cyan-500 sm:block">
-                          Acessar â†’
+                          Acessar →
                         </span>
                       </div>
                       <p className={`mt-1.5 text-sm leading-relaxed ${modalMuted}`}>
@@ -418,7 +418,7 @@ export default function Login({
         </div>
       )}
 
-      {/* BotÃ£o de tema */}
+      {/* Botão de tema */}
       <div className="absolute right-5 top-5 z-40 sm:right-7 sm:top-7">
         <button
           type="button"
@@ -479,7 +479,7 @@ export default function Login({
               }`}
             >
               <span className="h-2.5 w-2.5 animate-pulse rounded-full bg-teal-400" />
-              Suporte de TI em um sÃ³ lugar
+              Suporte de TI em um só lugar
             </div>
 
             <div className="space-y-4">
@@ -493,7 +493,7 @@ export default function Login({
                   isDark ? 'text-slate-300' : 'text-slate-600'
                 }`}
               >
-                Abra seu chamado, acompanhe o atendimento e veja as atualizaÃ§Ãµes sem complicaÃ§Ã£o.
+                Abra seu chamado, acompanhe o atendimento e veja as atualizações sem complicação.
               </p>
             </div>
 
@@ -501,12 +501,12 @@ export default function Login({
           </div>
 
           <p className={`text-sm ${isDark ? 'text-slate-500' : 'text-slate-600'}`}>
-            STI Â© {new Date().getFullYear()}
+            STI © {new Date().getFullYear()}
           </p>
         </div>
       </section>
 
-      {/* Lado direito â€” login */}
+      {/* Lado direito — login */}
       <section
         className={`flex min-h-screen flex-1 items-center justify-center px-5 py-16 sm:px-8 lg:px-12 xl:px-16 ${loginPanelBackground}`}
       >
@@ -550,7 +550,7 @@ export default function Login({
                     type="password"
                     required
                     autoComplete="current-password"
-                    placeholder="â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢"
+                    placeholder="••••••••••••"
                     value={senha}
                     onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
                       setSenha(e.target.value)
@@ -617,7 +617,7 @@ export default function Login({
         </div>
       </section>
 
-      {/* Modal de recuperaÃ§Ã£o de senha */}
+      {/* Modal de recuperação de senha */}
       {isForgotOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-slate-950/80 p-4 backdrop-blur-sm">
           <div
@@ -633,7 +633,7 @@ export default function Login({
                     Recuperar Senha
                   </h3>
                   <p className={`mt-1 text-sm ${modalMuted}`}>
-                    ValidaÃ§Ã£o segura via E-mail (SMTP)
+                    Validação segura via E-mail (SMTP)
                   </p>
                 </div>
               </div>
@@ -641,7 +641,7 @@ export default function Login({
               <button
                 type="button"
                 onClick={() => setIsForgotOpen(false)}
-                aria-label="Fechar recuperaÃ§Ã£o de senha"
+                aria-label="Fechar recuperação de senha"
                 className={`flex h-11 w-11 items-center justify-center rounded-xl transition-colors ${
                   isDark
                     ? 'text-slate-400 hover:bg-white/10 hover:text-white'
@@ -660,12 +660,12 @@ export default function Login({
               ) : forgotStep === 'IDENTIFY' ? (
                 <div className="space-y-5">
                   <p className={`text-sm leading-relaxed ${bodyColor}`}>
-                    Informe seu e-mail institucional e o seu e-mail pessoal para receber o cÃ³digo de seguranÃ§a.
+                    Informe seu e-mail institucional e o seu e-mail pessoal para receber o código de segurança.
                   </p>
 
                   <div>
                     <label className={`mb-2 block text-sm font-semibold ${labelColor}`}>
-                      E-mail ou MatrÃ­cula
+                      E-mail ou Matrícula
                     </label>
                     <input
                       type="text"
@@ -715,7 +715,7 @@ export default function Login({
                     >
                       {sendingOtp
                         ? 'Enviando e-mail via SMTP...'
-                        : 'Enviar CÃ³digo via E-mail (SMTP) â†’'}
+                        : 'Enviar Código via E-mail (SMTP) →'}
                     </button>
                   </div>
                 </div>
@@ -723,7 +723,7 @@ export default function Login({
                 <form onSubmit={handleConfirmNewPassword} className="space-y-5">
                   <div className="rounded-2xl border border-emerald-500/20 bg-emerald-500/10 p-4 text-sm text-emerald-600">
                     <span className="block font-semibold">
-                      CÃ³digo de seguranÃ§a enviado!
+                      Código de segurança enviado!
                     </span>
                     <span className={`mt-1 block text-sm ${modalMuted}`}>
                       Verifique a caixa de entrada ou spam do e-mail pessoal informado.
@@ -732,7 +732,7 @@ export default function Login({
 
                   <div>
                     <label className={`mb-2 block text-sm font-semibold ${labelColor}`}>
-                      CÃ³digo de 6 DÃ­gitos
+                      Código de 6 Dígitos
                     </label>
                     <input
                       type="text"
@@ -792,7 +792,7 @@ export default function Login({
                           : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
                       }`}
                     >
-                      â† Voltar
+                      ← Voltar
                     </button>
                     <button
                       type="submit"
