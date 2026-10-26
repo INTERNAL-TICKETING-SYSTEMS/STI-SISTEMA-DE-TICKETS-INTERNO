@@ -1,7 +1,13 @@
-﻿import { dbRepository } from '@/services/dbRepository';
+import { dbRepository } from '@/services/dbRepository';
 import { AuditCompliancePanel } from './components/tech/AuditCompliancePanel';
 
 import GestorAuditTable from '@/components/gestor/GestorAuditTable';
+
+import {
+  atualizarChamado,
+  criarChamado,
+  listarChamados,
+} from '@/services/chamadoService';
 import { registrarAuditoria } from './services/auditService';
 import GestorSidebar, { GestorPage, GestorPageContainer } from '@/components/gestor/GestorSidebar';
 import GestorDashboard from '@/components/gestor/GestorDashboard';
@@ -324,6 +330,85 @@ export default function App() {
   const [tickets, setTickets] = useState<Ticket[]>(mockTickets);
   const [inspectedTicket, setInspectedTicket] = useState<Ticket | null>(null);
 
+  useEffect(() => {
+    let ativo = true;
+
+    async function carregarChamados() {
+      try {
+        const chamados = await listarChamados();
+
+        if (!ativo) return;
+
+        const ticketsDoBackend: Ticket[] = chamados.map((chamado) => {
+          const statusRecebido = chamado.status?.toLowerCase();
+
+          const status: TicketStatus =
+            statusRecebido === 'em_andamento' ||
+              statusRecebido === 'em andamento'
+              ? 'em_andamento'
+              : statusRecebido === 'resolvido'
+                ? 'resolvido'
+                : statusRecebido === 'fechado'
+                  ? 'fechado'
+                  : statusRecebido === 'aguardando'
+                    ? 'aguardando'
+                    : 'aberto';
+
+          const prioridadeRecebida = chamado.prioridade?.toLowerCase();
+
+          const priority: Ticket['priority'] =
+            prioridadeRecebida === 'alta'
+              ? 'alta'
+              : prioridadeRecebida === 'baixa'
+                ? 'baixa'
+                : 'media';
+
+          const criadoEm = chamado.criadoEm || new Date().toISOString();
+
+          return {
+            id: String(chamado.id),
+            protocol: chamado.protocolo,
+            title: chamado.titulo,
+            description: chamado.descricao,
+            category: chamado.categoria,
+            status,
+            priority,
+            createdAt: criadoEm,
+            updatedAt: chamado.atualizadoEm || criadoEm,
+            updates: [],
+            requesterName: chamado.solicitanteNome || 'Não informado',
+            requesterDepartment:
+              chamado.solicitanteDepartamento || 'Não informado',
+            requesterLocation: 'A definir',
+            requesterContact: chamado.solicitanteEmail || '',
+            equipmentOrSystem: chamado.categoria || 'A identificar',
+            approximateDate: criadoEm.slice(0, 10),
+            impact: 'Não informado',
+            errorMessage: 'Nenhuma',
+            attachments: [],
+            assignee: chamado.responsavel || null,
+            attendanceStartedAt: null,
+            solution: chamado.solucao || null,
+            internalNotes: [],
+          };
+        });
+
+        setTickets(ticketsDoBackend);
+      } catch (error) {
+        console.error(
+          '[STI] Não foi possível carregar os chamados do backend:',
+          error
+        );
+      }
+    }
+
+    void carregarChamados();
+
+    return () => {
+      ativo = false;
+    };
+  }, []);
+
   // Atualiza o perfil ativo e salva os dados localmente.
   const handleSaveProfile = (updatedUser: User) => {
     const previousUser = activeUser;
@@ -423,30 +508,49 @@ export default function App() {
     setActiveUser(currentUser);
   };
 
-  // ---- User mutations ----
-  const handleSubmitTicket = (data: {
+  const handleSubmitTicket = async (data: {
     title: string;
     category: string;
     description: string;
     urgency: string;
     startDate: string;
     blocking: string;
-  }) => {
+    attachments: string[];
+  }): Promise<{ protocolo: string }> => {
+    const generatedProtocol =
+      'STI-' +
+      new Date().getFullYear() +
+      '-' +
+      Math.floor(10000 + Math.random() * 90000);
+
+    const chamadoSalvo = await criarChamado({
+      protocolo: generatedProtocol,
+      titulo: data.title.trim(),
+      descricao: data.description.trim(),
+      categoria: data.category,
+      prioridade: data.urgency,
+      solicitanteNome: activeUser.name,
+      solicitanteEmail: activeUser.email,
+      solicitanteDepartamento: activeUser.department,
+    });
+
     const now = new Date().toISOString();
 
     const newTicket: Ticket = {
-      id: String(Date.now()),
-      protocol: `STI-2026-${String(Math.floor(150 + Math.random() * 50)).padStart(4, '0')}`,
-      title: data.title,
-      description: data.description,
-      category: data.category,
+      id: String(chamadoSalvo.id),
+      protocol: chamadoSalvo.protocolo,
+      title: chamadoSalvo.titulo,
+      description: chamadoSalvo.descricao,
+      category: chamadoSalvo.categoria,
       status: 'aberto',
-      priority: data.urgency as Ticket['priority'],
-      createdAt: now,
-      updatedAt: now,
+      priority: chamadoSalvo.prioridade as Ticket['priority'],
+      createdAt: chamadoSalvo.criadoEm || now,
+      updatedAt: chamadoSalvo.atualizadoEm || now,
       updates: [],
-      requesterName: activeUser.name,
-      requesterDepartment: activeUser.department,
+      requesterName: chamadoSalvo.solicitanteNome,
+      requesterDepartment:
+        chamadoSalvo.solicitanteDepartamento ||
+        activeUser.department,
       requesterLocation: 'A definir',
       requesterContact: activeUser.phone,
       equipmentOrSystem: 'A identificar',
@@ -456,7 +560,7 @@ export default function App() {
           ? 'Alto — não consigo trabalhar'
           : 'Médio — dá para contornar',
       errorMessage: 'Nenhuma',
-      attachments: (data as any).attachments || [],
+      attachments: data.attachments || [],
       assignee: null,
       attendanceStartedAt: null,
       solution: null,
@@ -465,24 +569,36 @@ export default function App() {
 
     setTickets((prev) => [newTicket, ...prev]);
 
-    // Auditoria imutável na criação do chamado
     registrarAuditoria({
       entidade: 'CHAMADO',
-      idEntidade: newTicket.id,
       tipoOperacao: 'CRIACAO',
-      autor: activeUser?.email || (newTicket as any).userEmail || (newTicket as any).creatorName || 'solicitante@sti.chamados.com',
+      idEntidade: String(chamadoSalvo.id),
+      autor:
+        activeUser.email ||
+        'solicitante@sti.chamados.com',
       estadoAtual: {
-        assunto: newTicket.title,
-        categoria: newTicket.category,
-        prioridade: newTicket.priority,
-        status: newTicket.status,
-        setor: (newTicket as any).location || activeUser?.department || "Geral"
+        assunto: chamadoSalvo.titulo,
+        categoria: chamadoSalvo.categoria,
+        prioridade: chamadoSalvo.prioridade,
+        status: chamadoSalvo.status,
+        setor:
+          chamadoSalvo.solicitanteDepartamento || 'Geral',
       },
-      metadados: { origem: 'Abertura de Chamado STI' }
-    }).catch(err => console.error('[Auditoria] Falha ao registrar criação do chamado:', err));
-    // Deixa o OpenTicket exibir o comprovante e a animacao de sucesso
-  };
+      metadados: {
+        origem: 'Abertura de Chamado STI',
+        protocolo: chamadoSalvo.protocolo,
+      },
+    }).catch((error) => {
+      console.error(
+        '[Auditoria] Falha ao registrar criação do chamado:',
+        error
+      );
+    });
 
+    return {
+      protocolo: chamadoSalvo.protocolo,
+    };
+  };
   const handleUserReply = (id: string, message: string) => {
     const now = new Date().toISOString();
 
@@ -553,23 +669,114 @@ export default function App() {
     setTechView({ page: 'tech-ticket-detail', ticketId: id });
   };
 
-  const handleAssignTicket = (id: string, assigneeName: string) => {
+  const handleAssignTicket = async (id: string, assigneeName: string) => {
     const now = new Date().toISOString();
+    const targetTicket = tickets.find((t) => t.id === id);
 
-    setTickets((prev) =>
-      prev.map((t) => {
-        if (t.id !== id) return t;
+    if (!targetTicket) {
+      console.error('[STI] Chamado não encontrado na interface:', id);
+      return;
+    }
 
-        const isReassign = Boolean(t.assignee && t.assignee !== assigneeName);
-        const logMsg = isReassign
-          ? 'Chamado transferido de ' + t.assignee + ' para ' + assigneeName + '.'
-          : 'Atendimento assumido por ' + assigneeName + ' (Manutenção / TI).';
+    const isReassign = Boolean(
+      targetTicket.assignee && targetTicket.assignee !== assigneeName
+    );
 
-        return {
+    const novoStatus =
+      targetTicket.status === 'aberto'
+        ? 'em_andamento'
+        : targetTicket.status;
+
+    try {
+      await atualizarChamado(Number(id), {
+        responsavel: assigneeName,
+        status: novoStatus,
+      });
+
+      setTickets((prev) =>
+        prev.map((t) => {
+          if (t.id !== id) return t;
+
+          const logMsg = isReassign
+            ? `Chamado transferido de ${t.assignee} para ${assigneeName}.`
+            : `Atendimento assumido por ${assigneeName} (Manutenção / TI).`;
+
+          return {
+            ...t,
+            assignee: assigneeName,
+            status: novoStatus as TicketStatus,
+            attendanceStartedAt: t.attendanceStartedAt || now,
+            updatedAt: now,
+            updates: [
+              ...t.updates,
+              {
+                id: String(Date.now()),
+                author: 'tecnico' as const,
+                authorName: activeUser.name,
+                message: logMsg,
+                createdAt: now,
+              },
+            ],
+          };
+        })
+      );
+
+      registrarAuditoria({
+        entidade: 'CHAMADO',
+        idEntidade: id,
+        tipoOperacao: isReassign ? 'TRANSFERENCIA' : 'ATRIBUICAO',
+        autor: activeUser?.email || 'sistema@sti.chamados.com',
+        estadoAnterior: { responsavel: targetTicket.assignee || null },
+        estadoAtual: {
+          responsavel: assigneeName,
+          status: novoStatus,
+        },
+        metadados: {
+          acao: isReassign
+            ? 'Transferência entre técnicos'
+            : 'Atribuição de chamado',
+          transferidoPor: activeUser?.name || 'Sistema',
+        },
+      }).catch((err) =>
+        console.error(
+          '[Auditoria] Falha ao registrar atribuição/transferência:',
+          err
+        )
+      );
+    } catch (err) {
+      console.error('[STI] Falha ao salvar atribuição no backend:', err);
+      window.alert(
+        'Não foi possível salvar a atribuição do chamado. Verifique a conexão com o servidor e tente novamente.'
+      );
+    }
+  };
+
+const handlePrintReport = (tipoRelatorio: string) => {
+  registrarAuditoria({
+    entidade: 'RELATORIO',
+    idEntidade: tipoRelatorio.toUpperCase().replace(/s+/g, '_'),
+    tipoOperacao: 'EMISSAO_RELATORIO',
+    autor: activeUser?.email || 'gestor@sti.chamados.com',
+    estadoAtual: { relatorio: tipoRelatorio, impressoEm: new Date().toISOString() },
+    metadados: { formato: 'PDF_PRINT', solicitante: activeUser?.name || 'Gestor' }
+  }).catch(err => console.error('[Auditoria] Falha ao registrar emissão de relatório:', err));
+  window.print();
+};
+
+
+
+const handleTechMessage = (
+  id: string,
+  message: string,
+  attachments: MessageAttachment[] = []
+) => {
+  const now = new Date().toISOString();
+
+  setTickets((prev) =>
+    prev.map((t) =>
+      t.id === id
+        ? {
           ...t,
-          assignee: assigneeName,
-          status: t.status === 'aberto' ? 'em_andamento' : t.status,
-          attendanceStartedAt: t.attendanceStartedAt || now,
           updatedAt: now,
           updates: [
             ...t.updates,
@@ -577,552 +784,495 @@ export default function App() {
               id: String(Date.now()),
               author: 'tecnico' as const,
               authorName: activeUser.name,
-              message: logMsg,
+              message,
               createdAt: now,
+              attachments,
             },
           ],
-        };
-      })
-    );
+        }
+        : t
+    )
+  );
 
-    // Auditoria imutável: Atribuição ou Transferência de chamado
-    const targetTicket = tickets.find((t) => t.id === id);
-    const isReassign = Boolean(targetTicket?.assignee && targetTicket.assignee !== assigneeName);
-    registrarAuditoria({
-      entidade: 'CHAMADO',
-      idEntidade: id,
-      tipoOperacao: isReassign ? 'TRANSFERENCIA' : 'ATRIBUICAO',
-      autor: activeUser?.email || 'sistema@sti.chamados.com',
-      estadoAnterior: { responsavel: targetTicket?.assignee || null },
-      estadoAtual: { responsavel: assigneeName },
-      metadados: {
-        acao: isReassign ? 'Transferência entre técnicos' : 'Atribuição de chamado',
-        transferidoPor: activeUser?.name || 'Sistema'
-      }
-    }).catch((err) => console.error('[Auditoria] Falha ao registrar atribuição/transferência:', err));
-  };
+  registrarAuditoria({
+    entidade: 'CHAMADO',
+    idEntidade: id,
+    tipoOperacao: 'MENSAGEM_TECNICO',
+    autor: activeUser?.email || 'tecnico@sti.chamados.com',
+    estadoAtual: {
+      mensagem: message,
+      anexos: attachments.map((a) => ({
+        nome: a.name,
+        tipo: a.type,
+        tamanho: a.size,
+      })),
+    },
+    metadados: { origem: 'Chat Técnico' },
+  }).catch((err) =>
+    console.error('[Auditoria] Falha ao registrar mensagem técnica:', err)
+  );
+};
 
-  const handlePrintReport = (tipoRelatorio: string) => {
-    registrarAuditoria({
-      entidade: 'RELATORIO',
-      idEntidade: tipoRelatorio.toUpperCase().replace(/s+/g, '_'),
-      tipoOperacao: 'EMISSAO_RELATORIO',
-      autor: activeUser?.email || 'gestor@sti.chamados.com',
-      estadoAtual: { relatorio: tipoRelatorio, impressoEm: new Date().toISOString() },
-      metadados: { formato: 'PDF_PRINT', solicitante: activeUser?.name || 'Gestor' }
-    }).catch(err => console.error('[Auditoria] Falha ao registrar emissão de relatório:', err));
-    window.print();
-  };
+const handleRequestInfo = (
+  id: string,
+  question: string,
+  attachments: MessageAttachment[] = []
+) => {
+  const now = new Date().toISOString();
 
-
-
-  const handleTechMessage = (
-    id: string,
-    message: string,
-    attachments: MessageAttachment[] = []
-  ) => {
-    const now = new Date().toISOString();
-
-    setTickets((prev) =>
-      prev.map((t) =>
-        t.id === id
-          ? {
-            ...t,
-            updatedAt: now,
-            updates: [
-              ...t.updates,
-              {
-                id: String(Date.now()),
-                author: 'tecnico' as const,
-                authorName: activeUser.name,
-                message,
-                createdAt: now,
-                attachments,
-              },
-            ],
-          }
-          : t
-      )
-    );
-
-    registrarAuditoria({
-      entidade: 'CHAMADO',
-      idEntidade: id,
-      tipoOperacao: 'MENSAGEM_TECNICO',
-      autor: activeUser?.email || 'tecnico@sti.chamados.com',
-      estadoAtual: {
-        mensagem: message,
-        anexos: attachments.map((a) => ({
-          nome: a.name,
-          tipo: a.type,
-          tamanho: a.size,
-        })),
-      },
-      metadados: { origem: 'Chat Técnico' },
-    }).catch((err) =>
-      console.error('[Auditoria] Falha ao registrar mensagem técnica:', err)
-    );
-  };
-
-  const handleRequestInfo = (
-    id: string,
-    question: string,
-    attachments: MessageAttachment[] = []
-  ) => {
-    const now = new Date().toISOString();
-
-    setTickets((prev) =>
-      prev.map((t) =>
-        t.id === id
-          ? {
-            ...t,
-            status: 'aguardando' as TicketStatus,
-            updatedAt: now,
-            updates: [
-              ...t.updates,
-              {
-                id: String(Date.now()),
-                author: 'tecnico' as const,
-                authorName: activeUser.name,
-                message: question,
-                createdAt: now,
-                attachments,
-              },
-            ],
-          }
-          : t
-      )
-    );
-
-    registrarAuditoria({
-      entidade: 'CHAMADO',
-      idEntidade: id,
-      tipoOperacao: 'SOLICITACAO_INFORMACOES',
-      autor: activeUser?.email || 'tecnico@sti.chamados.com',
-      estadoAtual: {
-        status: 'aguardando',
-        pergunta: question,
-        anexos: attachments.map((a) => ({
-          nome: a.name,
-          tipo: a.type,
-          tamanho: a.size,
-        })),
-      },
-      metadados: { acao: 'Aguardando retorno do solicitante' },
-    }).catch((err) =>
-      console.error(
-        '[Auditoria] Falha ao registrar solicitação de informações:',
-        err
-      )
-    );
-  };
-
-
-  const handleChangeStatus = (id: string, status: TicketStatus) => {
-    const now = new Date().toISOString();
-
-    setTickets((prev) =>
-      prev.map((t) => {
-        if (t.id !== id) return t;
-
-        const resolvedAt =
-          status === 'resolvido'
-            ? t.resolvedAt || now
-            : status === 'fechado'
-              ? t.resolvedAt || null
-              : null;
-
-        return {
+  setTickets((prev) =>
+    prev.map((t) =>
+      t.id === id
+        ? {
           ...t,
-          status,
-          resolvedAt,
-          updatedAt: now,
-        };
-      })
-    );
-
-    registrarAuditoria({
-      entidade: 'CHAMADO',
-      idEntidade: id,
-      tipoOperacao: 'ATUALIZACAO_STATUS',
-      autor: activeUser?.email || 'tecnico@sti.chamados.com',
-      estadoAtual: { status },
-      metadados: {
-        acao: 'Mudança manual de status pelo técnico',
-      },
-    }).catch((err) =>
-      console.error(
-        '[Auditoria] Falha ao registrar alteração de status:',
-        err
-      )
-    );
-  };
-
-  const handleResolve = (
-    id: string,
-    solution: string,
-    assetTag?: string,
-    replacedParts?: string
-  ) => {
-    // Despacho oficial para persistência e microsserviço DATA-AUDIT
-    dbRepository.atualizarStatusChamado(
-      id,
-      'RESOLVIDO',
-      (activeUser as any)?.name ||
-      (activeUser as any)?.email ||
-      'Técnico STI',
-      (activeUser as any)?.id || undefined,
-      solution
-    );
-
-    const now = new Date().toISOString();
-
-    setTickets((prev) =>
-      prev.map((t) =>
-        t.id === id
-          ? {
-            ...t,
-            status: 'resolvido' as TicketStatus,
-            solution,
-            assetTag: assetTag || t.assetTag,
-            replacedParts: replacedParts || t.replacedParts,
-
-            // Mantém a primeira data de resolução
-            resolvedAt: t.resolvedAt || now,
-
-            updatedAt: now,
-            updates: [
-              ...t.updates,
-              {
-                id: String(Date.now()),
-                author: 'tecnico' as const,
-                authorName: activeUser.name,
-                message: `Chamado resolvido. Solução: ${solution}`,
-                createdAt: now,
-              },
-            ],
-          }
-          : t
-      )
-    );
-
-    // Auditoria imutável: Resolução técnica do chamado
-    registrarAuditoria({
-      entidade: 'CHAMADO',
-      idEntidade: id,
-      tipoOperacao: 'RESOLUCAO',
-      autor: activeUser?.email || 'tecnico@sti.chamados.com',
-      estadoAtual: {
-        status: 'resolvido',
-        solucao: solution,
-        patrimonio: assetTag || null,
-        pecasTrocadas: replacedParts || null,
-      },
-      metadados: {
-        acao: 'Resolução técnica concluída',
-      },
-    }).catch((err) =>
-      console.error('[Auditoria] Falha ao registar resolução:', err)
-    );
-  };
-
-
-  const handleRateTicket = (id: string, rating: number, comment?: string) => {
-    const now = new Date().toISOString();
-    setTickets((prev) =>
-      prev.map((t) => {
-        if (t.id !== id) return t;
-        return {
-          ...t,
-          status: 'fechado' as const,
-          rating,
-          ratingComment: comment,
+          status: 'aguardando' as TicketStatus,
           updatedAt: now,
           updates: [
             ...t.updates,
             {
               id: String(Date.now()),
-              author: 'usuario' as const,
+              author: 'tecnico' as const,
               authorName: activeUser.name,
-              message: `Chamado avaliado com ${rating} de 5 estrelas pelo usuário.${comment ? ' Feedback: "' + comment + '"' : ''}`,
+              message: question,
+              createdAt: now,
+              attachments,
+            },
+          ],
+        }
+        : t
+    )
+  );
+
+  registrarAuditoria({
+    entidade: 'CHAMADO',
+    idEntidade: id,
+    tipoOperacao: 'SOLICITACAO_INFORMACOES',
+    autor: activeUser?.email || 'tecnico@sti.chamados.com',
+    estadoAtual: {
+      status: 'aguardando',
+      pergunta: question,
+      anexos: attachments.map((a) => ({
+        nome: a.name,
+        tipo: a.type,
+        tamanho: a.size,
+      })),
+    },
+    metadados: { acao: 'Aguardando retorno do solicitante' },
+  }).catch((err) =>
+    console.error(
+      '[Auditoria] Falha ao registrar solicitação de informações:',
+      err
+    )
+  );
+};
+
+
+const handleChangeStatus = (id: string, status: TicketStatus) => {
+  const now = new Date().toISOString();
+
+  setTickets((prev) =>
+    prev.map((t) => {
+      if (t.id !== id) return t;
+
+      const resolvedAt =
+        status === 'resolvido'
+          ? t.resolvedAt || now
+          : status === 'fechado'
+            ? t.resolvedAt || null
+            : null;
+
+      return {
+        ...t,
+        status,
+        resolvedAt,
+        updatedAt: now,
+      };
+    })
+  );
+
+  registrarAuditoria({
+    entidade: 'CHAMADO',
+    idEntidade: id,
+    tipoOperacao: 'ATUALIZACAO_STATUS',
+    autor: activeUser?.email || 'tecnico@sti.chamados.com',
+    estadoAtual: { status },
+    metadados: {
+      acao: 'Mudança manual de status pelo técnico',
+    },
+  }).catch((err) =>
+    console.error(
+      '[Auditoria] Falha ao registrar alteração de status:',
+      err
+    )
+  );
+};
+
+const handleResolve = (
+  id: string,
+  solution: string,
+  assetTag?: string,
+  replacedParts?: string
+) => {
+  // Despacho oficial para persistência e microsserviço DATA-AUDIT
+  dbRepository.atualizarStatusChamado(
+    id,
+    'RESOLVIDO',
+    (activeUser as any)?.name ||
+    (activeUser as any)?.email ||
+    'Técnico STI',
+    (activeUser as any)?.id || undefined,
+    solution
+  );
+
+  const now = new Date().toISOString();
+
+  setTickets((prev) =>
+    prev.map((t) =>
+      t.id === id
+        ? {
+          ...t,
+          status: 'resolvido' as TicketStatus,
+          solution,
+          assetTag: assetTag || t.assetTag,
+          replacedParts: replacedParts || t.replacedParts,
+
+          // Mantém a primeira data de resolução
+          resolvedAt: t.resolvedAt || now,
+
+          updatedAt: now,
+          updates: [
+            ...t.updates,
+            {
+              id: String(Date.now()),
+              author: 'tecnico' as const,
+              authorName: activeUser.name,
+              message: `Chamado resolvido. Solução: ${solution}`,
               createdAt: now,
             },
           ],
-        };
-      })
-    );
+        }
+        : t
+    )
+  );
 
-    // Auditoria imutável: Avaliação e Fechamento formal pelo solicitante
-    registrarAuditoria({
-      entidade: 'CHAMADO',
-      idEntidade: id,
-      tipoOperacao: 'AVALIACAO',
-      autor: activeUser?.email || 'solicitante@sti.chamados.com',
-      estadoAtual: {
-        status: 'fechado',
-        nota: rating,
-        comentario: comment || null
-      },
-      metadados: { acao: 'Encerramento formal com avaliação de satisfação' }
-    }).catch(err => console.error('[Auditoria] Falha ao registrar avaliação:', err));
-  };
-  const handleAddNote = (id: string, note: string) => {
-    const now = new Date().toISOString();
+  // Auditoria imutável: Resolução técnica do chamado
+  registrarAuditoria({
+    entidade: 'CHAMADO',
+    idEntidade: id,
+    tipoOperacao: 'RESOLUCAO',
+    autor: activeUser?.email || 'tecnico@sti.chamados.com',
+    estadoAtual: {
+      status: 'resolvido',
+      solucao: solution,
+      patrimonio: assetTag || null,
+      pecasTrocadas: replacedParts || null,
+    },
+    metadados: {
+      acao: 'Resolução técnica concluída',
+    },
+  }).catch((err) =>
+    console.error('[Auditoria] Falha ao registar resolução:', err)
+  );
+};
 
-    setTickets((prev) =>
-      prev.map((t) =>
-        t.id === id
-          ? {
-            ...t,
-            internalNotes: [
-              ...t.internalNotes,
-              {
-                id: String(Date.now()),
-                authorName: activeUser.name,
-                message: note,
-                createdAt: now,
-              },
-            ],
-          }
-          : t
-      )
-    );
-  };
 
-  // ---- Auth screens ----
-  if (!authed) {
-    if (authScreen === 'register') {
-      return <Register onBackToLogin={() => setAuthScreen('login')} />;
-    }
+const handleRateTicket = (id: string, rating: number, comment?: string) => {
+  const now = new Date().toISOString();
+  setTickets((prev) =>
+    prev.map((t) => {
+      if (t.id !== id) return t;
+      return {
+        ...t,
+        status: 'fechado' as const,
+        rating,
+        ratingComment: comment,
+        updatedAt: now,
+        updates: [
+          ...t.updates,
+          {
+            id: String(Date.now()),
+            author: 'usuario' as const,
+            authorName: activeUser.name,
+            message: `Chamado avaliado com ${rating} de 5 estrelas pelo usuário.${comment ? ' Feedback: "' + comment + '"' : ''}`,
+            createdAt: now,
+          },
+        ],
+      };
+    })
+  );
 
-    return (
-      <Login
-        onLogin={handleLogin}
-        onGoToRegister={() => setAuthScreen('register')}
-      />
-    );
+  // Auditoria imutável: Avaliação e Fechamento formal pelo solicitante
+  registrarAuditoria({
+    entidade: 'CHAMADO',
+    idEntidade: id,
+    tipoOperacao: 'AVALIACAO',
+    autor: activeUser?.email || 'solicitante@sti.chamados.com',
+    estadoAtual: {
+      status: 'fechado',
+      nota: rating,
+      comentario: comment || null
+    },
+    metadados: { acao: 'Encerramento formal com avaliação de satisfação' }
+  }).catch(err => console.error('[Auditoria] Falha ao registrar avaliação:', err));
+};
+const handleAddNote = (id: string, note: string) => {
+  const now = new Date().toISOString();
+
+  setTickets((prev) =>
+    prev.map((t) =>
+      t.id === id
+        ? {
+          ...t,
+          internalNotes: [
+            ...t.internalNotes,
+            {
+              id: String(Date.now()),
+              authorName: activeUser.name,
+              message: note,
+              createdAt: now,
+            },
+          ],
+        }
+        : t
+    )
+  );
+};
+
+// ---- Auth screens ----
+if (!authed) {
+  if (authScreen === 'register') {
+    return <Register onBackToLogin={() => setAuthScreen('login')} />;
   }
 
-  // ---- User area ----
-  if (role === 'usuario') {
-    const navigate = (p: Page) => setUserView({ page: p });
-    const openTicket = (id: string) =>
-      setUserView({ page: 'ticket-detail', ticketId: id });
+  return (
+    <Login
+      onLogin={handleLogin}
+      onGoToRegister={() => setAuthScreen('register')}
+    />
+  );
+}
 
-    const currentTicket =
-      userView.page === 'ticket-detail'
-        ? tickets.find((t) => t.id === userView.ticketId)
-        : null;
+// ---- User area ----
+if (role === 'usuario') {
+  const navigate = (p: Page) => setUserView({ page: p });
+  const openTicket = (id: string) =>
+    setUserView({ page: 'ticket-detail', ticketId: id });
 
-    return (
-      <div className={`flex h-screen ${getThemeBackground()}`}>
-        <Sidebar
-          current={userView.page === 'ticket-detail' ? 'meus-chamados' : userView.page}
-          onNavigate={navigate}
-          onLogout={handleLogout}
-          userName={activeUser.name}
-          userRole={activeUser.department || 'Colaborador'}
-          tickets={tickets}
-          activeUser={activeUser}
-          onSwitchRole={handleSwitchRole}
-        />
+  const currentTicket =
+    userView.page === 'ticket-detail'
+      ? tickets.find((t) => t.id === userView.ticketId)
+      : null;
 
-        <PageContainer>
-          {userView.page === 'inicio' && (
-            <Dashboard
-              tickets={tickets}
-              onNavigate={navigate}
-              onOpenTicket={openTicket}
-              userName={activeUser?.name || ''}
-            />
-          )}
+  return (
+    <div className={`flex h-screen ${getThemeBackground()}`}>
+      <Sidebar
+        current={userView.page === 'ticket-detail' ? 'meus-chamados' : userView.page}
+        onNavigate={navigate}
+        onLogout={handleLogout}
+        userName={activeUser.name}
+        userRole={activeUser.department || 'Colaborador'}
+        tickets={tickets}
+        activeUser={activeUser}
+        onSwitchRole={handleSwitchRole}
+      />
 
-          {userView.page === 'abrir-chamado' && (<OpenTicket
-            onSubmit={handleSubmitTicket}
-            onNavigate={navigate}
-          />
-          )}
-
-          {userView.page === 'meus-chamados' && (<MyTickets
+      <PageContainer>
+        {userView.page === 'inicio' && (
+          <Dashboard
             tickets={tickets}
             onNavigate={navigate}
             onOpenTicket={openTicket}
+            userName={activeUser?.name || ''}
           />
-          )}
+        )}
 
-          {userView.page === 'perfil' && <Profile user={activeUser} onSave={handleSaveProfile} />}
-
-          {userView.page === 'ticket-detail' && currentTicket && (
-            <TicketDetail
-              ticket={currentTicket}
-              onReply={(msg) => handleUserReply(currentTicket.id, msg)}
-              onNavigate={navigate}
-              onRateTicket={handleRateTicket}
-            />
-          )} </PageContainer>
-
-      </div>
-    );
-  }
-
-  // ---- Tech area ----
-  if (role === 'tecnico') {
-    const navigate = (p: TechPage) => setTechView({ page: p });
-    const openTicket = (id: string) =>
-      setTechView({ page: 'tech-ticket-detail', ticketId: id });
-
-    const currentTicket =
-      techView.page === 'tech-ticket-detail'
-        ? tickets.find((t) => t.id === techView.ticketId)
-        : null;
-
-    return (
-      <div className="flex h-screen">
-        <TechSidebar
-          current={
-            techView.page === 'tech-ticket-detail'
-              ? 'tech-chamados'
-              : techView.page
-          }
+        {userView.page === 'abrir-chamado' && (<OpenTicket
+          onSubmit={handleSubmitTicket}
           onNavigate={navigate}
-          onLogout={handleLogout}
-          userName={activeUser.name}
-          activeUser={activeUser}
-          onSwitchRole={handleSwitchRole}
-          tickets={tickets}
         />
+        )}
 
-        <TechPageContainer>
-          {techView.page === 'tech-inicio' && (
-            techView.page === ('auditoria' as any) ? (
-              <AuditCompliancePanel />
-            ) : (
-              <TechDashboard
-                tickets={tickets}
-                onNavigate={navigate}
-                onOpenTicket={openTicket}
-                onAssume={handleAssume}
-                techName={activeUser.name}
-                onFilterSelect={handleTechFilterSelect}
-              />
-            )
-          )}
+        {userView.page === 'meus-chamados' && (<MyTickets
+          tickets={tickets}
+          onNavigate={navigate}
+          onOpenTicket={openTicket}
+        />
+        )}
 
-          {techView.page === 'tech-chamados' && (
-            <TechTickets
+        {userView.page === 'perfil' && <Profile user={activeUser} onSave={handleSaveProfile} />}
+
+        {userView.page === 'ticket-detail' && currentTicket && (
+          <TicketDetail
+            ticket={currentTicket}
+            onReply={(msg) => handleUserReply(currentTicket.id, msg)}
+            onNavigate={navigate}
+            onRateTicket={handleRateTicket}
+          />
+        )} </PageContainer>
+
+    </div>
+  );
+}
+
+// ---- Tech area ----
+if (role === 'tecnico') {
+  const navigate = (p: TechPage) => setTechView({ page: p });
+  const openTicket = (id: string) =>
+    setTechView({ page: 'tech-ticket-detail', ticketId: id });
+
+  const currentTicket =
+    techView.page === 'tech-ticket-detail'
+      ? tickets.find((t) => t.id === techView.ticketId)
+      : null;
+
+  return (
+    <div className="flex h-screen">
+      <TechSidebar
+        current={
+          techView.page === 'tech-ticket-detail'
+            ? 'tech-chamados'
+            : techView.page
+        }
+        onNavigate={navigate}
+        onLogout={handleLogout}
+        userName={activeUser.name}
+        activeUser={activeUser}
+        onSwitchRole={handleSwitchRole}
+        tickets={tickets}
+      />
+
+      <TechPageContainer>
+        {techView.page === 'tech-inicio' && (
+          techView.page === ('auditoria' as any) ? (
+            <AuditCompliancePanel />
+          ) : (
+            <TechDashboard
               tickets={tickets}
               onNavigate={navigate}
               onOpenTicket={openTicket}
               onAssume={handleAssume}
-              initialStatus={techInitialStatus}
-            />
-          )}
-
-          {techView.page === 'tech-atendimentos' && (
-            <TechMyAttendance
-              tickets={tickets}
-              onNavigate={navigate}
-              onOpenTicket={openTicket}
               techName={activeUser.name}
+              onFilterSelect={handleTechFilterSelect}
             />
-          )}
+          )
+        )}
+
+        {techView.page === 'tech-chamados' && (
+          <TechTickets
+            tickets={tickets}
+            onNavigate={navigate}
+            onOpenTicket={openTicket}
+            onAssume={handleAssume}
+            initialStatus={techInitialStatus}
+          />
+        )}
+
+        {techView.page === 'tech-atendimentos' && (
+          <TechMyAttendance
+            tickets={tickets}
+            onNavigate={navigate}
+            onOpenTicket={openTicket}
+            techName={activeUser.name}
+          />
+        )}
 
 
-          {techView.page === ('tech-feedbacks' as any) && (
-            <FeedbackCenter
-              currentRole="tecnico"
-              activeUserName={activeUser.name}
-              activeUserDepartment={activeUser.department}
-            />
-          )}
+        {techView.page === ('tech-feedbacks' as any) && (
+          <FeedbackCenter
+            currentRole="tecnico"
+            activeUserName={activeUser.name}
+            activeUserDepartment={activeUser.department}
+          />
+        )}
 
-          {techView.page === 'tech-perfil' && (
-            <Profile user={activeUser} onSave={handleSaveProfile} />
-          )}
+        {techView.page === 'tech-perfil' && (
+          <Profile user={activeUser} onSave={handleSaveProfile} />
+        )}
 
-          {techView.page === 'tech-ticket-detail' && currentTicket && (
-            <TechTicketDetail
-              ticket={currentTicket}
-              onNavigate={navigate}
-              onSendMessage={(id, msg, attachments) =>
-                handleTechMessage(id, msg, attachments)
-              }
-              onRequestInfo={(id, question, attachments) =>
-                handleRequestInfo(id, question, attachments)
-              }
-              onChangeStatus={(id, status) =>
-                handleChangeStatus(id, status)
-              }
-              onResolve={(id, solution, assetTag, replacedParts) =>
-                handleResolve(id, solution, assetTag, replacedParts)
-              }
-              onAddInternalNote={(id, note) =>
-                handleAddNote(id, note)
-              }
-              techName={activeUser.name}
-              technicians={mockTechnicians}
-              onAssign={handleAssignTicket}
-            />
-          )}
-        </TechPageContainer>
-      </div>
-    );
-  }
+        {techView.page === 'tech-ticket-detail' && currentTicket && (
+          <TechTicketDetail
+            ticket={currentTicket}
+            onNavigate={navigate}
+            onSendMessage={(id, msg, attachments) =>
+              handleTechMessage(id, msg, attachments)
+            }
+            onRequestInfo={(id, question, attachments) =>
+              handleRequestInfo(id, question, attachments)
+            }
+            onChangeStatus={(id, status) =>
+              handleChangeStatus(id, status)
+            }
+            onResolve={(id, solution, assetTag, replacedParts) =>
+              handleResolve(id, solution, assetTag, replacedParts)
+            }
+            onAddInternalNote={(id, note) =>
+              handleAddNote(id, note)
+            }
+            techName={activeUser.name}
+            technicians={mockTechnicians}
+            onAssign={handleAssignTicket}
+          />
+        )}
+      </TechPageContainer>
+    </div>
+  );
+}
 
-  // ---- Gestor area ----
-  if (role === 'gestor') {
-    return (
-      <div className={`flex min-h-screen ${getThemeBackground()}`}>
-        <GestorSidebar
-          current={gestorView}
-          onNavigate={(page: GestorPage) => setGestorView(page)}
-          onLogout={handleLogout}
-          activeUser={activeUser}
-          onSwitchRole={handleSwitchRole}
-        />
+// ---- Gestor area ----
+if (role === 'gestor') {
+  return (
+    <div className={`flex min-h-screen ${getThemeBackground()}`}>
+      <GestorSidebar
+        current={gestorView}
+        onNavigate={(page: GestorPage) => setGestorView(page)}
+        onLogout={handleLogout}
+        activeUser={activeUser}
+        onSwitchRole={handleSwitchRole}
+      />
 
-        <GestorPageContainer>
-          {gestorView === 'gestor-perfil' && (
-            <Profile user={activeUser} onSave={handleSaveProfile} />
-          )}
+      <GestorPageContainer>
+        {gestorView === 'gestor-perfil' && (
+          <Profile user={activeUser} onSave={handleSaveProfile} />
+        )}
 
-          {gestorView === 'gestor-dashboard' && (
-            <GestorDashboard
-              tickets={tickets}
-              onNavigate={(page: any) => setGestorView(page)}
-            />
-          )}
+        {gestorView === 'gestor-dashboard' && (
+          <GestorDashboard
+            tickets={tickets}
+            onNavigate={(page: any) => setGestorView(page)}
+          />
+        )}
 
-          {gestorView === 'gestor-equipe' && (
-            <GestorEquipe tickets={tickets} />
-          )}
+        {gestorView === 'gestor-equipe' && (
+          <GestorEquipe tickets={tickets} />
+        )}
 
-          {gestorView === 'gestor-auditoria' && (
-            <GestorAuditTable />
-          )}
+        {gestorView === 'gestor-auditoria' && (
+          <GestorAuditTable />
+        )}
 
-          {gestorView === 'gestor-feedbacks' && (
-            <GestorFeedbacks
-              currentRole={activeUser.role}
-              activeUserName={activeUser.name}
-              activeUserDepartment={activeUser.department}
-            />
-          )}
+        {gestorView === 'gestor-feedbacks' && (
+          <GestorFeedbacks
+            currentRole={activeUser.role}
+            activeUserName={activeUser.name}
+            activeUserDepartment={activeUser.department}
+          />
+        )}
 
-          {gestorView === 'gestor-relatorios' && (
-            <GestorRelatorios
-              tickets={tickets}
-              gestorName={activeUser.name}
-              reportModalOpen={reportModalOpen}
-              selectedReportType={selectedReportType}
-              onReportModalOpenChange={setReportModalOpen}
-              onSelectedReportTypeChange={setSelectedReportType}
-            />
-          )}
-        </GestorPageContainer>
-      </div>
-    );
-  }
+        {gestorView === 'gestor-relatorios' && (
+          <GestorRelatorios
+            tickets={tickets}
+            gestorName={activeUser.name}
+            reportModalOpen={reportModalOpen}
+            selectedReportType={selectedReportType}
+            onReportModalOpenChange={setReportModalOpen}
+            onSelectedReportTypeChange={setSelectedReportType}
+          />
+        )}
+      </GestorPageContainer>
+    </div>
+  );
+}
+
 
   return null;
 }

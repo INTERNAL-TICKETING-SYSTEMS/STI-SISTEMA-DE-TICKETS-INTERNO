@@ -1,4 +1,4 @@
-﻿
+
 import { dbRepository } from '../services/dbRepository';
 import { useTechTheme } from '@/components/tech/techTheme';
 import React, { useState } from 'react';
@@ -497,80 +497,7 @@ export default function Login({
               </p>
             </div>
 
-            <div className="space-y-4 pt-2">
-              {[
-                {
-                  title: '1. Peça ajuda',
-                  desc: 'Conte o que aconteceu e envie sua solicitação.',
-                  icon: MessagesSquare,
-                  accent: 'cyan',
-                },
-                {
-                  title: '2. Acompanhe',
-                  desc: 'Veja o andamento do seu chamado.',
-                  icon: Activity,
-                  accent: 'teal',
-                },
-                {
-                  title: '3. Confira a solução',
-                  desc: 'Consulte a conclusão do atendimento.',
-                  icon: CheckCircle2,
-                  accent: 'emerald',
-                },
-              ].map((item) => {
-                const Icon = item.icon;
 
-                return (
-                  <div
-                    key={item.title}
-                    className={`group flex items-center gap-4 rounded-2xl border p-5 transition-none ${
-                      isDark
-                        ? 'border-white/10 bg-white/[0.04] hover:bg-white/[0.07]'
-                        : 'border-slate-300 bg-white/60 hover:bg-white/90'
-                    }`}
-                  >
-                    <div
-                      className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-xl ${
-                        item.accent === 'cyan'
-                          ? 'bg-cyan-500/15 text-cyan-500'
-                          : item.accent === 'teal'
-                            ? 'bg-teal-500/15 text-teal-500'
-                            : 'bg-emerald-500/15 text-emerald-600'
-                      }`}
-                    >
-                      <Icon className="h-6 w-6" />
-                    </div>
-
-                    <div className="min-w-0 flex-1">
-                      <h3
-                        className={`text-base font-semibold ${
-                          isDark ? 'text-white' : 'text-slate-900'
-                        }`}
-                      >
-                        {item.title}
-                      </h3>
-                      <p
-                        className={`mt-1 text-sm leading-relaxed ${
-                          isDark ? 'text-slate-400' : 'text-slate-600'
-                        }`}
-                      >
-                        {item.desc}
-                      </p>
-                    </div>
-
-                    <ArrowRight
-                      className={`h-5 w-5 shrink-0 ${
-                        item.accent === 'emerald'
-                          ? 'text-emerald-500'
-                          : item.accent === 'teal'
-                            ? 'text-teal-500'
-                            : 'text-cyan-500'
-                      }`}
-                    />
-                  </div>
-                );
-              })}
-            </div>
           </div>
 
           <p className={`text-sm ${isDark ? 'text-slate-500' : 'text-slate-600'}`}>
@@ -685,17 +612,7 @@ export default function Login({
               </div>
             </form>
 
-            <div className={`space-y-2 border-t pt-5 ${cardBorder}`}>
-              <p className={`font-mono text-xs ${mutedColor}`}>
-                wanderson.maior@sti.chamados.com (Gestor + Técnico)
-              </p>
-              <p className={`font-mono text-xs ${mutedColor}`}>
-                luigue.brandao@sti.chamados.com (Gestor + Solicitante)
-              </p>
-              <p className={`font-mono text-xs ${mutedColor}`}>
-                elias.junior@sti.chamados.com (Gestor + Solicitante)
-              </p>
-            </div>
+
           </div>
         </div>
       </section>

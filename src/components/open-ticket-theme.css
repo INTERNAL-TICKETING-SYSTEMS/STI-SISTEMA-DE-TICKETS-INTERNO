@@ -1,0 +1,290 @@
+﻿/* Estilos específicos da tela de abertura de chamados. */
+
+.open-ticket input:not([type="file"]),
+.open-ticket textarea,
+.open-ticket select {
+  color: var(--ticket-input-text, inherit);
+  background-color: var(--ticket-input-bg, transparent);
+  border-color: var(--ticket-input-border, #cbd5e1);
+}
+
+.open-ticket input:not([type="file"]):focus,
+.open-ticket textarea:focus,
+.open-ticket select:focus {
+  outline: none;
+}
+
+.open-ticket input[type="date"] {
+  color-scheme: var(--ticket-color-scheme, light);
+}
+
+html[data-theme="dark"] .open-ticket {
+  --ticket-input-text: #f1f5f9;
+  --ticket-input-bg: #0f172a;
+  --ticket-input-border: #475569;
+  --ticket-color-scheme: dark;
+  color: #e2e8f0;
+}
+
+html[data-theme="dark"] .open-ticket .bg-white {
+  background-color: #111c2b;
+}
+
+html[data-theme="dark"] .open-ticket .bg-slate-50,
+html[data-theme="dark"] .open-ticket .bg-slate-50\/50,
+html[data-theme="dark"] .open-ticket .bg-slate-50\/60 {
+  background-color: #172334;
+}
+
+html[data-theme="dark"] .open-ticket .border-slate-200 {
+  border-color: #334155;
+}
+
+html[data-theme="dark"] .open-ticket .border-slate-100 {
+  border-color: #334155;
+}
+
+html[data-theme="dark"] .open-ticket .text-slate-900,
+html[data-theme="dark"] .open-ticket .text-slate-800 {
+  color: #f1f5f9;
+}
+
+html[data-theme="dark"] .open-ticket .text-slate-700 {
+  color: #e2e8f0;
+}
+
+html[data-theme="dark"] .open-ticket .text-slate-500 {
+  color: #a8b6c8;
+}
+
+html[data-theme="dark"] .open-ticket .text-slate-400 {
+  color: #94a3b8;
+}
+
+html[data-theme="dark"] .open-ticket .hover\:bg-slate-50:hover {
+  background-color: #223247;
+}
+
+html[data-theme="dark"] .open-ticket .hover\:border-slate-300:hover {
+  border-color: #64748b;
+}
+
+html[data-theme="dark"] .open-ticket .border-blue-100 {
+  border-color: #1e4970;
+}
+
+html[data-theme="dark"] .open-ticket .bg-blue-50\/50 {
+  background-color: #132b43;
+}
+
+html[data-theme="dark"] .open-ticket .text-blue-900 {
+  color: #bfdbfe;
+}
+
+html[data-theme="dark"] .open-ticket .text-blue-800 {
+  color: #dbeafe;
+}
+
+html[data-theme="dark"] .open-ticket .bg-blue-50\/70 {
+  background-color: #132b43;
+}
+
+html[data-theme="dark"] .open-ticket .border-blue-200 {
+  border-color: #28547d;
+}
+
+html[data-theme="dark"] .open-ticket .text-blue-700 {
+  color: #bfdbfe;
+}
+
+html[data-theme="dark"] .open-ticket .bg-blue-50 {
+  background-color: #172f49;
+}
+
+html[data-theme="dark"] .open-ticket .bg-amber-50 {
+  background-color: #3a2b12;
+}
+
+html[data-theme="dark"] .open-ticket .bg-rose-50 {
+  background-color: #401e2b;
+}
+
+html[data-theme="dark"] .open-ticket .text-blue-900,
+html[data-theme="dark"] .open-ticket .text-amber-900,
+html[data-theme="dark"] .open-ticket .text-rose-900 {
+  color: #f1f5f9;
+}
+
+html[data-theme="dark"] .open-ticket .bg-blue-100 {
+  background-color: #1e40af;
+}
+
+html[data-theme="dark"] .open-ticket .bg-amber-100 {
+  background-color: #78350f;
+}
+
+html[data-theme="dark"] .open-ticket .bg-rose-100 {
+  background-color: #881337;
+}
+
+html[data-theme="dark"] .open-ticket option {
+  color: #f1f5f9;
+  background-color: #0f172a;
+}
+
+html[data-theme="dark"] .open-ticket .bg-emerald-50 {
+  background-color: #123329;
+}
+
+html[data-theme="dark"] .open-ticket .border-emerald-200 {
+  border-color: #276749;
+}
+
+html[data-theme="dark"] .open-ticket .text-emerald-700 {
+  color: #a7f3d0;
+}
+
+html[data-theme="dark"] .open-ticket .text-emerald-600 {
+  color: #6ee7b7;
+}
+
+/* Corrige a confirmação do chamado nos dois temas. */
+
+/* Modo claro: garante que o cartão e os textos permaneçam claros e legíveis. */
+html[data-theme="light"] .open-ticket .rounded-3xl.bg-white {
+  background-color: #ffffff;
+  border-color: #e2e8f0;
+}
+
+html[data-theme="light"] .open-ticket .rounded-2xl.bg-slate-50\/60 {
+  background-color: #f8fafc;
+  border-color: #e2e8f0;
+}
+
+html[data-theme="light"] .open-ticket .text-slate-800 {
+  color: #1e293b;
+}
+
+html[data-theme="light"] .open-ticket .text-slate-500 {
+  color: #64748b;
+}
+
+/* Modo escuro: resumo do chamado e informações legíveis. */
+html[data-theme="dark"] .open-ticket .rounded-2xl.bg-slate-50\/60 {
+  background-color: #1e293b;
+  border-color: #334155;
+}
+
+html[data-theme="dark"] .open-ticket .rounded-2xl.bg-slate-50\/60 .text-slate-800 {
+  color: #f1f5f9;
+}
+
+html[data-theme="dark"] .open-ticket .rounded-2xl.bg-slate-50\/60 .text-slate-500 {
+  color: #cbd5e1;
+}
+
+html[data-theme="dark"] .open-ticket .rounded-2xl.bg-slate-50\/60 .border-slate-200 {
+  border-color: #475569;
+}
+
+/* =========================================
+   CORREÇÕES FINAIS — CONFIRMAÇÃO DO CHAMADO
+   ========================================= */
+
+/* MODO CLARO */
+html[data-theme="light"] .open-ticket h2.text-slate-900 {
+  color: #0f172a !important;
+}
+
+html[data-theme="light"] .open-ticket .text-blue-900 {
+  color: #1e3a8a !important;
+}
+
+html[data-theme="light"] .open-ticket .text-blue-800 {
+  color: #1e40af !important;
+}
+
+html[data-theme="light"] .open-ticket .bg-blue-50\/70 {
+  background-color: #eff6ff !important;
+  border-color: #bfdbfe !important;
+}
+
+html[data-theme="light"] .open-ticket .bg-slate-50\/60 {
+  background-color: #f8fafc !important;
+}
+
+html[data-theme="light"] .open-ticket .text-slate-800 {
+  color: #1e293b !important;
+}
+
+html[data-theme="light"] .open-ticket .text-slate-500 {
+  color: #64748b !important;
+}
+
+/* Garante a legibilidade do botão secundário no modo claro. */
+html[data-theme="light"] .open-ticket button {
+  -webkit-text-fill-color: initial;
+}
+
+/* MODO ESCURO */
+html[data-theme="dark"] .open-ticket h2.text-slate-900 {
+  color: #f8fafc !important;
+}
+
+html[data-theme="dark"] .open-ticket .bg-blue-50\/70 {
+  background-color: #172554 !important;
+  border-color: #1e40af !important;
+}
+
+html[data-theme="dark"] .open-ticket .text-blue-900 {
+  color: #dbeafe !important;
+}
+
+html[data-theme="dark"] .open-ticket .text-slate-800 {
+  color: #f1f5f9 !important;
+}
+
+html[data-theme="dark"] .open-ticket .text-slate-500 {
+  color: #cbd5e1 !important;
+}
+
+/* Corrige o botão Voltar ao Início no modo escuro. */
+html[data-theme="dark"] .open-ticket button.border-slate-200.bg-white {
+  background-color: #1e293b !important;
+  border-color: #475569 !important;
+  color: #f1f5f9 !important;
+}
+
+html[data-theme="dark"] .open-ticket button.border-slate-200.bg-white:hover {
+  background-color: #334155 !important;
+  border-color: #64748b !important;
+  color: #ffffff !important;
+}
+
+/* Botão "Voltar ao Início" — modo claro */
+html[data-theme="light"] .open-ticket button.border-slate-200.bg-white {
+  background-color: #ffffff !important;
+  border-color: #cbd5e1 !important;
+  color: #1e293b !important;
+}
+
+/* Hover do botão no modo claro */
+html[data-theme="light"] .open-ticket button.border-slate-200.bg-white:hover {
+  background-color: #f1f5f9 !important;
+  border-color: #94a3b8 !important;
+  color: #0f172a !important;
+}
+
+/* Botão "Voltar ao Início" — modo escuro */
+html[data-theme="dark"] .open-ticket button.border-slate-200.bg-white {
+  background-color: #1e293b !important;
+  border-color: #475569 !important;
+  color: #f1f5f9 !important;
+}
+
+/* Hover do botão no modo escuro */
+html[data-theme="dark"] .open-ticket button.border-slate-200.bg-white:hover {
+  background-color: #334155 !important;
+  border-color: #64748b !important;
+  color: #ffffff !important;
+}
