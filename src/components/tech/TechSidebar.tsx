@@ -306,11 +306,9 @@ export default function TechSidebar({
                   <span
                     className={[
                       'h-2 w-2 shrink-0 rounded-full',
-                      available
+                      isMe
                         ? 'bg-emerald-400 shadow-sm shadow-emerald-400/50'
-                        : isDark
-                          ? 'bg-slate-600'
-                          : 'bg-slate-300',
+                        : 'bg-red-500 shadow-sm shadow-red-500/50',
                     ].join(' ')}
                   />
 

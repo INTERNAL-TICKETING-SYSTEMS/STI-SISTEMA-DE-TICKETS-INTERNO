@@ -8,7 +8,7 @@ import { useTechTheme } from '@/components/tech/techTheme';
 
 interface DashboardProps {
   tickets: Ticket[];
-  onNavigate: (p: Page | string) => void;
+  onNavigate: (p: Page) => void;
   onOpenTicket: (id: string) => void;
   userName: string;
 }
