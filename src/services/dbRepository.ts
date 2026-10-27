@@ -11,12 +11,13 @@
   atualizado_em: string;
 }
 
-const API_BASE_URL = 'https://data-audit-f72h.onrender.com';
+// Já inclui o /api/v1 para alinhar com os RequestMapping do Spring Boot
+const API_BASE_URL = 'https://data-audit-f72h.onrender.com/api/v1';
 
 export const dbRepository = {
   async buscarUsuarios(): Promise<UsuarioDB[]> {
     try {
-      const response = await fetch(`${API_BASE_URL}/usuarios`);
+      const response = await fetch(`${API_BASE_URL}/auth/usuarios`);
       if (!response.ok) return [];
       return await response.json();
     } catch (e) {
@@ -27,7 +28,8 @@ export const dbRepository = {
 
   async buscarUsuarioPorLogin(identificador: string): Promise<UsuarioDB | null> {
     try {
-      const response = await fetch(`${API_BASE_URL}/usuarios/login`, {
+      // Corrigido para apontar para /auth/login conforme o AuthController
+      const response = await fetch(`${API_BASE_URL}/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ identificador })
@@ -43,6 +45,7 @@ export const dbRepository = {
   async salvarRecuperacaoOtp(usuarioId: string, otpCode: string, emailPessoal: string) {
     try {
       console.log('[SMTP Docker] A disparar e-mail real via backend para:', emailPessoal);
+      // Aponta corretamente para /notifications/email
       const response = await fetch(`${API_BASE_URL}/notifications/email`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -65,8 +68,9 @@ export const dbRepository = {
 
   async atualizarStatusChamado(chamadoId: string, novoStatus: string, tecnicoNome?: string, tecnicoId?: string, solucao?: string) {
     try {
+      // Corrigido de PUT para PATCH, visto que o DataViolationController usa @PatchMapping
       const response = await fetch(`${API_BASE_URL}/audit/violations/${chamadoId}/resolver`, {
-        method: 'PUT',
+        method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           novoStatus,
