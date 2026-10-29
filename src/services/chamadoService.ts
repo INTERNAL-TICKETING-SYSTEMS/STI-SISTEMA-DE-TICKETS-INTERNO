@@ -1,5 +1,5 @@
 ﻿const API_URL = (
-  import.meta.env.VITE_API_URL || "http://localhost:8081"
+  import.meta.env.VITE_API_URL || "https://data-audit-f72h.onrender.com"
 ).replace(/\/$/, "");
 
 export interface CriarChamadoDTO {

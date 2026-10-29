@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+﻿import React, { useEffect, useState } from 'react';
 import { ArrowLeft, CheckCircle2, Search } from 'lucide-react';
 import Button from './ui/Button';
 import { Field } from './ui/Field';
@@ -14,6 +14,8 @@ interface Departamento {
   nome: string;
   sigla: string;
 }
+
+const API_BASE = (import.meta.env.VITE_API_URL || 'https://data-audit-f72h.onrender.com').replace(/\/$/, "");
 
 const GENEROS_OPCOES = [
   { valor: 'MASCULINO', rotulo: 'Masculino' },
@@ -46,7 +48,7 @@ export default function Register({ onBackToLogin }: RegisterProps) {
   useEffect(() => {
     let ativo = true;
 
-    fetch('http://localhost:8080/api/v1/departamentos')
+    fetch(`${API_BASE}/api/v1/departamentos`)
       .then((res) => {
         if (!res.ok) {
           throw new Error('Falha ao carregar os departamentos.');
@@ -211,7 +213,7 @@ export default function Register({ onBackToLogin }: RegisterProps) {
       : `${email}@sti.chamados.com`;
 
 
-    fetch('http://localhost:8080/api/v1/auth/register', {
+    fetch(`${API_BASE}/api/v1/auth/register`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({

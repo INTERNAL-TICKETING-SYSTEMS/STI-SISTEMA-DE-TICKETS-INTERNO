@@ -22,6 +22,8 @@ interface AuditEvent {
   hashAnterior?: string | null;
 }
 
+const API_BASE = (import.meta.env.VITE_API_URL || 'https://data-audit-f72h.onrender.com').replace(/\/$/, "");
+
 export default function GestorAuditTable() {
   const { isDark } = useGestorTheme();
 
@@ -38,7 +40,7 @@ export default function GestorAuditTable() {
 
     try {
       const res = await fetch(
-        'http://localhost:8081/api/v1/audit/events?size=100'
+        `${API_BASE}/api/v1/audit/events?size=100`
       );
 
       if (res.ok) {
@@ -67,7 +69,7 @@ export default function GestorAuditTable() {
 
     try {
       const res = await fetch(
-        `http://localhost:8081/api/v1/audit/events/${id}/verificar-integridade`
+        `${API_BASE}/api/v1/audit/events/${id}/verificar-integridade`
       );
 
       if (res.ok) {
