@@ -1,9 +1,12 @@
 ﻿export const smtpEmailService = {
   async enviarEmailOtp(destinatario: string, nomeUsuario: string, otpCode: string): Promise<boolean> {
     try {
-      console.log(`[SMTP] A enviar pedido para o backend em http://localhost:8080/api/v1/notifications/email...`);
+      const baseUrl = import.meta.env.VITE_API_URL || 'https://data-audit-f72h.onrender.com';
+      const endpoint = `${baseUrl}/api/v1/notifications/email`;
+
+      console.log(`[SMTP] A enviar pedido para o backend em ${endpoint}...`);
       
-      const response = await fetch('http://localhost:8080/api/v1/notifications/email', {
+      const response = await fetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
