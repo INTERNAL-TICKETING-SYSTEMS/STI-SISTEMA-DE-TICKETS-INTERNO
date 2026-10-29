@@ -4,6 +4,7 @@ import {
   LayoutDashboard,
   TicketCheck,
   PlusCircle,
+  BookOpen,
   User as UserIcon,
   LogOut,
   ShieldCheck,
@@ -18,6 +19,7 @@ import {
 
 import { registrarAuditoria } from '../services/auditService';
 import Logo from '@/components/Logo';
+import HelpCenterModal from './HelpCenterModal';
 import { Ticket, User as UserType, UserRole } from '@/types';
 import { useTechTheme } from '@/components/tech/techTheme';
 
@@ -63,6 +65,7 @@ export default function Sidebar({
   const { isDark, toggleTheme } = useTechTheme();
 
   const [isFeedbackOpen, setIsFeedbackOpen] = useState(false);
+  const [isHelpOpen, setIsHelpOpen] = useState(false);
   const [feedbackType, setFeedbackType] = useState<'falha' | 'ideia'>('falha');
   const [feedbackText, setFeedbackText] = useState('');
   const [feedbackSent, setFeedbackSent] = useState(false);
@@ -278,6 +281,62 @@ export default function Sidebar({
             <PlusCircle className="h-4 w-4" />
             <span>ABRIR NOVO CHAMADO</span>
           </button>
+        </div>
+
+        {/* Central de Ajuda */}
+        <div
+          className={[
+            'mx-3 mt-3 rounded-xl border p-3',
+            isDark
+              ? 'border-teal-500/25 bg-teal-500/10'
+              : 'border-teal-200 bg-teal-50',
+          ].join(' ')}
+        >
+          <div className="flex items-start gap-3">
+            <div
+              className={[
+                'flex h-9 w-9 shrink-0 items-center justify-center rounded-lg',
+                isDark
+                  ? 'bg-teal-500/15 text-teal-300'
+                  : 'bg-white text-teal-700',
+              ].join(' ')}
+            >
+              <BookOpen className="h-4 w-4" />
+            </div>
+
+            <div className="min-w-0 flex-1">
+              <p
+                className={[
+                  'text-xs font-bold',
+                  isDark ? 'text-slate-100' : 'text-slate-900',
+                ].join(' ')}
+              >
+                Central de Ajuda
+              </p>
+
+              <p
+                className={[
+                  'mt-1 text-[11px] leading-relaxed',
+                  isDark ? 'text-slate-300' : 'text-slate-600',
+                ].join(' ')}
+              >
+                Encontre soluções para problemas comuns.
+              </p>
+
+              <button
+                type="button"
+                onClick={() => setIsHelpOpen(true)}
+                className={[
+                  'mt-2 text-[11px] font-bold transition-colors',
+                  isDark
+                    ? 'text-teal-300 hover:text-teal-200'
+                    : 'text-teal-700 hover:text-teal-900',
+                ].join(' ')}
+              >
+                Consultar soluções →
+              </button>
+            </div>
+          </div>
         </div>
 
         <nav className="mt-3 flex flex-col gap-1 px-3">
@@ -525,6 +584,29 @@ export default function Sidebar({
           </button>
         </div>
       </aside>
+
+      <HelpCenterModal
+        isOpen={isHelpOpen}
+        isDark={isDark}
+        onClose={() => setIsHelpOpen(false)}
+        onSelectCategory={(category, title, descriptionTemplate) => {
+          try {
+            sessionStorage.setItem(
+              'sti_help_prefill_ticket',
+              JSON.stringify({
+                category,
+                title,
+                descriptionTemplate,
+              }),
+            );
+          } catch {
+            // O formulário poderá ser aberto mesmo se o armazenamento falhar.
+          }
+
+          setIsHelpOpen(false);
+          onNavigate('abrir-chamado');
+        }}
+      />
 
       {isFeedbackOpen && (
         <div

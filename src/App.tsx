@@ -148,33 +148,75 @@ function detectRoleFromEmail(email: string): { role: UserRole; user: User } {
   const normalizedEmail = email.toLowerCase().trim();
   const account = knownAccounts[normalizedEmail];
 
+  // Mantém as contas já configuradas no sistema.
   if (account) return account;
 
-  // Busca se foi cadastrado via tela de cadastro
+  // Recupera o cadastro local e o perfil salvo para este e-mail.
   try {
-    const customUsers = JSON.parse(localStorage.getItem('sti_registered_users') || '[]');
-    const found = customUsers.find((u: any) => u.email.toLowerCase() === normalizedEmail);
-    if (found) {
+    const customUsers = JSON.parse(
+      localStorage.getItem('sti_registered_users') || '[]'
+    );
+
+    const found = customUsers.find(
+      (u: any) => u.email?.toLowerCase().trim() === normalizedEmail
+    );
+
+    const savedProfile = JSON.parse(
+      localStorage.getItem(`sti_profile_${normalizedEmail}`) || 'null'
+    );
+
+    // Usa os dados do próprio usuário, sem reutilizar dados pessoais
+    // de outra conta como valores padrão.
+    if (found || savedProfile) {
+      const userData = {
+        ...currentUser,
+        ...(found || {}),
+        ...(savedProfile || {}),
+        name:
+          savedProfile?.name ||
+          found?.name ||
+          found?.nome ||
+          '',
+        email: normalizedEmail,
+        cpf:
+          savedProfile?.cpf ||
+          found?.cpf ||
+          '',
+        department:
+          savedProfile?.department ||
+          found?.department ||
+          found?.departamento ||
+          '',
+        phone:
+          savedProfile?.phone ||
+          found?.phone ||
+          found?.telefoneWhatsapp ||
+          '',
+        userRole: 'usuario' as UserRole,
+        roles: ['usuario'] as UserRole[],
+      };
+
       return {
         role: 'usuario',
-        user: {
-          ...currentUser,
-          name: found.name,
-          email: found.email,
-          department: found.department,
-          phone: found.phone || '(63) 98400-0000',
-          userRole: 'usuario',
-          roles: ['usuario'],
-        }
+        user: userData,
       };
     }
-  } catch (err) { }
+  } catch (err) {
+    console.error('[STI] Erro ao recuperar dados do usuário:', err);
+  }
 
+  // Não reutiliza nome, CPF, setor ou telefone de outra pessoa.
   return {
     role: 'usuario',
     user: {
       ...currentUser,
+      name: '',
       email: normalizedEmail,
+      cpf: '',
+      department: '',
+      phone: '',
+      userRole: 'usuario',
+      roles: ['usuario'],
     },
   };
 }
@@ -441,6 +483,7 @@ export default function App() {
           name: normalizedUser.name,
           department: normalizedUser.department,
           phone: normalizedUser.phone,
+          cpf: normalizedUser.cpf,
         };
 
         localStorage.setItem(
@@ -751,527 +794,529 @@ export default function App() {
     }
   };
 
-const handlePrintReport = (tipoRelatorio: string) => {
-  registrarAuditoria({
-    entidade: 'RELATORIO',
-    idEntidade: tipoRelatorio.toUpperCase().replace(/s+/g, '_'),
-    tipoOperacao: 'EMISSAO_RELATORIO',
-    autor: activeUser?.email || 'gestor@sti.chamados.com',
-    estadoAtual: { relatorio: tipoRelatorio, impressoEm: new Date().toISOString() },
-    metadados: { formato: 'PDF_PRINT', solicitante: activeUser?.name || 'Gestor' }
-  }).catch(err => console.error('[Auditoria] Falha ao registrar emissão de relatório:', err));
-  window.print();
-};
+  const handlePrintReport = (tipoRelatorio: string) => {
+    registrarAuditoria({
+      entidade: 'RELATORIO',
+      idEntidade: tipoRelatorio.toUpperCase().replace(/s+/g, '_'),
+      tipoOperacao: 'EMISSAO_RELATORIO',
+      autor: activeUser?.email || 'gestor@sti.chamados.com',
+      estadoAtual: { relatorio: tipoRelatorio, impressoEm: new Date().toISOString() },
+      metadados: { formato: 'PDF_PRINT', solicitante: activeUser?.name || 'Gestor' }
+    }).catch(err => console.error('[Auditoria] Falha ao registrar emissão de relatório:', err));
+    window.print();
+  };
 
 
 
-const handleTechMessage = (
-  id: string,
-  message: string,
-  attachments: MessageAttachment[] = []
-) => {
-  const now = new Date().toISOString();
+  const handleTechMessage = (
+    id: string,
+    message: string,
+    attachments: MessageAttachment[] = []
+  ) => {
+    const now = new Date().toISOString();
 
-  setTickets((prev) =>
-    prev.map((t) =>
-      t.id === id
-        ? {
+    setTickets((prev) =>
+      prev.map((t) =>
+        t.id === id
+          ? {
+            ...t,
+            updatedAt: now,
+            updates: [
+              ...t.updates,
+              {
+                id: String(Date.now()),
+                author: 'tecnico' as const,
+                authorName: activeUser.name,
+                message,
+                createdAt: now,
+                attachments,
+              },
+            ],
+          }
+          : t
+      )
+    );
+
+    registrarAuditoria({
+      entidade: 'CHAMADO',
+      idEntidade: id,
+      tipoOperacao: 'MENSAGEM_TECNICO',
+      autor: activeUser?.email || 'tecnico@sti.chamados.com',
+      estadoAtual: {
+        mensagem: message,
+        anexos: attachments.map((a) => ({
+          nome: a.name,
+          tipo: a.type,
+          tamanho: a.size,
+        })),
+      },
+      metadados: { origem: 'Chat Técnico' },
+    }).catch((err) =>
+      console.error('[Auditoria] Falha ao registrar mensagem técnica:', err)
+    );
+  };
+
+  const handleRequestInfo = (
+    id: string,
+    question: string,
+    attachments: MessageAttachment[] = []
+  ) => {
+    const now = new Date().toISOString();
+
+    setTickets((prev) =>
+      prev.map((t) =>
+        t.id === id
+          ? {
+            ...t,
+            status: 'aguardando' as TicketStatus,
+            updatedAt: now,
+            updates: [
+              ...t.updates,
+              {
+                id: String(Date.now()),
+                author: 'tecnico' as const,
+                authorName: activeUser.name,
+                message: question,
+                createdAt: now,
+                attachments,
+              },
+            ],
+          }
+          : t
+      )
+    );
+
+    registrarAuditoria({
+      entidade: 'CHAMADO',
+      idEntidade: id,
+      tipoOperacao: 'SOLICITACAO_INFORMACOES',
+      autor: activeUser?.email || 'tecnico@sti.chamados.com',
+      estadoAtual: {
+        status: 'aguardando',
+        pergunta: question,
+        anexos: attachments.map((a) => ({
+          nome: a.name,
+          tipo: a.type,
+          tamanho: a.size,
+        })),
+      },
+      metadados: { acao: 'Aguardando retorno do solicitante' },
+    }).catch((err) =>
+      console.error(
+        '[Auditoria] Falha ao registrar solicitação de informações:',
+        err
+      )
+    );
+  };
+
+
+  const handleChangeStatus = (id: string, status: TicketStatus) => {
+    const now = new Date().toISOString();
+
+    setTickets((prev) =>
+      prev.map((t) => {
+        if (t.id !== id) return t;
+
+        const resolvedAt =
+          status === 'resolvido'
+            ? t.resolvedAt || now
+            : status === 'fechado'
+              ? t.resolvedAt || null
+              : null;
+
+        return {
           ...t,
+          status,
+          resolvedAt,
+          updatedAt: now,
+        };
+      })
+    );
+
+    registrarAuditoria({
+      entidade: 'CHAMADO',
+      idEntidade: id,
+      tipoOperacao: 'ATUALIZACAO_STATUS',
+      autor: activeUser?.email || 'tecnico@sti.chamados.com',
+      estadoAtual: { status },
+      metadados: {
+        acao: 'Mudança manual de status pelo técnico',
+      },
+    }).catch((err) =>
+      console.error(
+        '[Auditoria] Falha ao registrar alteração de status:',
+        err
+      )
+    );
+  };
+
+  const handleResolve = (
+    id: string,
+    solution: string,
+    assetTag?: string,
+    replacedParts?: string
+  ) => {
+    // Despacho oficial para persistência e microsserviço DATA-AUDIT
+    dbRepository.atualizarStatusChamado(
+      id,
+      'RESOLVIDO',
+      (activeUser as any)?.name ||
+      (activeUser as any)?.email ||
+      'Técnico STI',
+      (activeUser as any)?.id || undefined,
+      solution
+    );
+
+    const now = new Date().toISOString();
+
+    setTickets((prev) =>
+      prev.map((t) =>
+        t.id === id
+          ? {
+            ...t,
+            status: 'resolvido' as TicketStatus,
+            solution,
+            assetTag: assetTag || t.assetTag,
+            replacedParts: replacedParts || t.replacedParts,
+
+            // Mantém a primeira data de resolução
+            resolvedAt: t.resolvedAt || now,
+
+            updatedAt: now,
+            updates: [
+              ...t.updates,
+              {
+                id: String(Date.now()),
+                author: 'tecnico' as const,
+                authorName: activeUser.name,
+                message: `Chamado resolvido. Solução: ${solution}`,
+                createdAt: now,
+              },
+            ],
+          }
+          : t
+      )
+    );
+
+    // Auditoria imutável: Resolução técnica do chamado
+    registrarAuditoria({
+      entidade: 'CHAMADO',
+      idEntidade: id,
+      tipoOperacao: 'RESOLUCAO',
+      autor: activeUser?.email || 'tecnico@sti.chamados.com',
+      estadoAtual: {
+        status: 'resolvido',
+        solucao: solution,
+        patrimonio: assetTag || null,
+        pecasTrocadas: replacedParts || null,
+      },
+      metadados: {
+        acao: 'Resolução técnica concluída',
+      },
+    }).catch((err) =>
+      console.error('[Auditoria] Falha ao registar resolução:', err)
+    );
+  };
+
+
+  const handleRateTicket = (id: string, rating: number, comment?: string) => {
+    const now = new Date().toISOString();
+    setTickets((prev) =>
+      prev.map((t) => {
+        if (t.id !== id) return t;
+        return {
+          ...t,
+          status: 'fechado' as const,
+          rating,
+          ratingComment: comment,
           updatedAt: now,
           updates: [
             ...t.updates,
             {
               id: String(Date.now()),
-              author: 'tecnico' as const,
+              author: 'usuario' as const,
               authorName: activeUser.name,
-              message,
-              createdAt: now,
-              attachments,
-            },
-          ],
-        }
-        : t
-    )
-  );
-
-  registrarAuditoria({
-    entidade: 'CHAMADO',
-    idEntidade: id,
-    tipoOperacao: 'MENSAGEM_TECNICO',
-    autor: activeUser?.email || 'tecnico@sti.chamados.com',
-    estadoAtual: {
-      mensagem: message,
-      anexos: attachments.map((a) => ({
-        nome: a.name,
-        tipo: a.type,
-        tamanho: a.size,
-      })),
-    },
-    metadados: { origem: 'Chat Técnico' },
-  }).catch((err) =>
-    console.error('[Auditoria] Falha ao registrar mensagem técnica:', err)
-  );
-};
-
-const handleRequestInfo = (
-  id: string,
-  question: string,
-  attachments: MessageAttachment[] = []
-) => {
-  const now = new Date().toISOString();
-
-  setTickets((prev) =>
-    prev.map((t) =>
-      t.id === id
-        ? {
-          ...t,
-          status: 'aguardando' as TicketStatus,
-          updatedAt: now,
-          updates: [
-            ...t.updates,
-            {
-              id: String(Date.now()),
-              author: 'tecnico' as const,
-              authorName: activeUser.name,
-              message: question,
-              createdAt: now,
-              attachments,
-            },
-          ],
-        }
-        : t
-    )
-  );
-
-  registrarAuditoria({
-    entidade: 'CHAMADO',
-    idEntidade: id,
-    tipoOperacao: 'SOLICITACAO_INFORMACOES',
-    autor: activeUser?.email || 'tecnico@sti.chamados.com',
-    estadoAtual: {
-      status: 'aguardando',
-      pergunta: question,
-      anexos: attachments.map((a) => ({
-        nome: a.name,
-        tipo: a.type,
-        tamanho: a.size,
-      })),
-    },
-    metadados: { acao: 'Aguardando retorno do solicitante' },
-  }).catch((err) =>
-    console.error(
-      '[Auditoria] Falha ao registrar solicitação de informações:',
-      err
-    )
-  );
-};
-
-
-const handleChangeStatus = (id: string, status: TicketStatus) => {
-  const now = new Date().toISOString();
-
-  setTickets((prev) =>
-    prev.map((t) => {
-      if (t.id !== id) return t;
-
-      const resolvedAt =
-        status === 'resolvido'
-          ? t.resolvedAt || now
-          : status === 'fechado'
-            ? t.resolvedAt || null
-            : null;
-
-      return {
-        ...t,
-        status,
-        resolvedAt,
-        updatedAt: now,
-      };
-    })
-  );
-
-  registrarAuditoria({
-    entidade: 'CHAMADO',
-    idEntidade: id,
-    tipoOperacao: 'ATUALIZACAO_STATUS',
-    autor: activeUser?.email || 'tecnico@sti.chamados.com',
-    estadoAtual: { status },
-    metadados: {
-      acao: 'Mudança manual de status pelo técnico',
-    },
-  }).catch((err) =>
-    console.error(
-      '[Auditoria] Falha ao registrar alteração de status:',
-      err
-    )
-  );
-};
-
-const handleResolve = (
-  id: string,
-  solution: string,
-  assetTag?: string,
-  replacedParts?: string
-) => {
-  // Despacho oficial para persistência e microsserviço DATA-AUDIT
-  dbRepository.atualizarStatusChamado(
-    id,
-    'RESOLVIDO',
-    (activeUser as any)?.name ||
-    (activeUser as any)?.email ||
-    'Técnico STI',
-    (activeUser as any)?.id || undefined,
-    solution
-  );
-
-  const now = new Date().toISOString();
-
-  setTickets((prev) =>
-    prev.map((t) =>
-      t.id === id
-        ? {
-          ...t,
-          status: 'resolvido' as TicketStatus,
-          solution,
-          assetTag: assetTag || t.assetTag,
-          replacedParts: replacedParts || t.replacedParts,
-
-          // Mantém a primeira data de resolução
-          resolvedAt: t.resolvedAt || now,
-
-          updatedAt: now,
-          updates: [
-            ...t.updates,
-            {
-              id: String(Date.now()),
-              author: 'tecnico' as const,
-              authorName: activeUser.name,
-              message: `Chamado resolvido. Solução: ${solution}`,
+              message: `Chamado avaliado com ${rating} de 5 estrelas pelo usuário.${comment ? ' Feedback: "' + comment + '"' : ''}`,
               createdAt: now,
             },
           ],
-        }
-        : t
-    )
-  );
+        };
+      })
+    );
 
-  // Auditoria imutável: Resolução técnica do chamado
-  registrarAuditoria({
-    entidade: 'CHAMADO',
-    idEntidade: id,
-    tipoOperacao: 'RESOLUCAO',
-    autor: activeUser?.email || 'tecnico@sti.chamados.com',
-    estadoAtual: {
-      status: 'resolvido',
-      solucao: solution,
-      patrimonio: assetTag || null,
-      pecasTrocadas: replacedParts || null,
-    },
-    metadados: {
-      acao: 'Resolução técnica concluída',
-    },
-  }).catch((err) =>
-    console.error('[Auditoria] Falha ao registar resolução:', err)
-  );
-};
+    // Auditoria imutável: Avaliação e Fechamento formal pelo solicitante
+    registrarAuditoria({
+      entidade: 'CHAMADO',
+      idEntidade: id,
+      tipoOperacao: 'AVALIACAO',
+      autor: activeUser?.email || 'solicitante@sti.chamados.com',
+      estadoAtual: {
+        status: 'fechado',
+        nota: rating,
+        comentario: comment || null
+      },
+      metadados: { acao: 'Encerramento formal com avaliação de satisfação' }
+    }).catch(err => console.error('[Auditoria] Falha ao registrar avaliação:', err));
+  };
+  const handleAddNote = (id: string, note: string) => {
+    const now = new Date().toISOString();
 
+    setTickets((prev) =>
+      prev.map((t) =>
+        t.id === id
+          ? {
+            ...t,
+            internalNotes: [
+              ...t.internalNotes,
+              {
+                id: String(Date.now()),
+                authorName: activeUser.name,
+                message: note,
+                createdAt: now,
+              },
+            ],
+          }
+          : t
+      )
+    );
+  };
 
-const handleRateTicket = (id: string, rating: number, comment?: string) => {
-  const now = new Date().toISOString();
-  setTickets((prev) =>
-    prev.map((t) => {
-      if (t.id !== id) return t;
-      return {
-        ...t,
-        status: 'fechado' as const,
-        rating,
-        ratingComment: comment,
-        updatedAt: now,
-        updates: [
-          ...t.updates,
-          {
-            id: String(Date.now()),
-            author: 'usuario' as const,
-            authorName: activeUser.name,
-            message: `Chamado avaliado com ${rating} de 5 estrelas pelo usuário.${comment ? ' Feedback: "' + comment + '"' : ''}`,
-            createdAt: now,
-          },
-        ],
-      };
-    })
-  );
+  // ---- Auth screens ----
+  if (!authed) {
+    if (authScreen === 'register') {
+      return <Register onBackToLogin={() => setAuthScreen('login')} />;
+    }
 
-  // Auditoria imutável: Avaliação e Fechamento formal pelo solicitante
-  registrarAuditoria({
-    entidade: 'CHAMADO',
-    idEntidade: id,
-    tipoOperacao: 'AVALIACAO',
-    autor: activeUser?.email || 'solicitante@sti.chamados.com',
-    estadoAtual: {
-      status: 'fechado',
-      nota: rating,
-      comentario: comment || null
-    },
-    metadados: { acao: 'Encerramento formal com avaliação de satisfação' }
-  }).catch(err => console.error('[Auditoria] Falha ao registrar avaliação:', err));
-};
-const handleAddNote = (id: string, note: string) => {
-  const now = new Date().toISOString();
-
-  setTickets((prev) =>
-    prev.map((t) =>
-      t.id === id
-        ? {
-          ...t,
-          internalNotes: [
-            ...t.internalNotes,
-            {
-              id: String(Date.now()),
-              authorName: activeUser.name,
-              message: note,
-              createdAt: now,
-            },
-          ],
-        }
-        : t
-    )
-  );
-};
-
-// ---- Auth screens ----
-if (!authed) {
-  if (authScreen === 'register') {
-    return <Register onBackToLogin={() => setAuthScreen('login')} />;
+    return (
+      <Login
+        onLogin={handleLogin}
+        onGoToRegister={() => setAuthScreen('register')}
+      />
+    );
   }
 
-  return (
-    <Login
-      onLogin={handleLogin}
-      onGoToRegister={() => setAuthScreen('register')}
-    />
-  );
-}
+  // ---- User area ----
+  if (role === 'usuario') {
+    const navigate = (p: Page) => setUserView({ page: p });
+    const openTicket = (id: string) =>
+      setUserView({ page: 'ticket-detail', ticketId: id });
 
-// ---- User area ----
-if (role === 'usuario') {
-  const navigate = (p: Page) => setUserView({ page: p });
-  const openTicket = (id: string) =>
-    setUserView({ page: 'ticket-detail', ticketId: id });
+    const currentTicket =
+      userView.page === 'ticket-detail'
+        ? tickets.find((t) => t.id === userView.ticketId)
+        : null;
 
-  const currentTicket =
-    userView.page === 'ticket-detail'
-      ? tickets.find((t) => t.id === userView.ticketId)
-      : null;
+    return (
+      <div className={`flex h-screen ${getThemeBackground()}`}>
+        <Sidebar
+          current={userView.page === 'ticket-detail' ? 'meus-chamados' : userView.page}
+          onNavigate={navigate}
+          onLogout={handleLogout}
+          userName={activeUser.name}
+          userRole={activeUser.department || 'Colaborador'}
+          tickets={tickets}
+          activeUser={activeUser}
+          onSwitchRole={handleSwitchRole}
+        />
 
-  return (
-    <div className={`flex h-screen ${getThemeBackground()}`}>
-      <Sidebar
-        current={userView.page === 'ticket-detail' ? 'meus-chamados' : userView.page}
-        onNavigate={navigate}
-        onLogout={handleLogout}
-        userName={activeUser.name}
-        userRole={activeUser.department || 'Colaborador'}
-        tickets={tickets}
-        activeUser={activeUser}
-        onSwitchRole={handleSwitchRole}
-      />
+        <PageContainer>
+          {userView.page === 'inicio' && (
+            <Dashboard
+              tickets={tickets}
+              onNavigate={navigate}
+              onOpenTicket={openTicket}
+              userName={activeUser?.name || ''}
+            />
+          )}
 
-      <PageContainer>
-        {userView.page === 'inicio' && (
-          <Dashboard
+          {userView.page === 'abrir-chamado' && (
+            <OpenTicket
+              user={activeUser}
+              onSubmit={handleSubmitTicket}
+              onNavigate={navigate}
+            />
+          )}
+
+          {userView.page === 'meus-chamados' && (<MyTickets
             tickets={tickets}
             onNavigate={navigate}
             onOpenTicket={openTicket}
-            userName={activeUser?.name || ''}
           />
-        )}
+          )}
 
-        {userView.page === 'abrir-chamado' && (<OpenTicket
-          onSubmit={handleSubmitTicket}
+          {userView.page === 'perfil' && <Profile user={activeUser} onSave={handleSaveProfile} />}
+
+          {userView.page === 'ticket-detail' && currentTicket && (
+            <TicketDetail
+              ticket={currentTicket}
+              onReply={(msg) => handleUserReply(currentTicket.id, msg)}
+              onNavigate={navigate}
+              onRateTicket={handleRateTicket}
+            />
+          )} </PageContainer>
+
+      </div>
+    );
+  }
+
+  // ---- Tech area ----
+  if (role === 'tecnico') {
+    const navigate = (p: TechPage) => setTechView({ page: p });
+    const openTicket = (id: string) =>
+      setTechView({ page: 'tech-ticket-detail', ticketId: id });
+
+    const currentTicket =
+      techView.page === 'tech-ticket-detail'
+        ? tickets.find((t) => t.id === techView.ticketId)
+        : null;
+
+    return (
+      <div className="flex h-screen">
+        <TechSidebar
+          current={
+            techView.page === 'tech-ticket-detail'
+              ? 'tech-chamados'
+              : techView.page
+          }
           onNavigate={navigate}
-        />
-        )}
-
-        {userView.page === 'meus-chamados' && (<MyTickets
+          onLogout={handleLogout}
+          userName={activeUser.name}
+          activeUser={activeUser}
+          onSwitchRole={handleSwitchRole}
           tickets={tickets}
-          onNavigate={navigate}
-          onOpenTicket={openTicket}
         />
-        )}
 
-        {userView.page === 'perfil' && <Profile user={activeUser} onSave={handleSaveProfile} />}
+        <TechPageContainer>
+          {techView.page === 'tech-inicio' && (
+            techView.page === ('auditoria' as any) ? (
+              <AuditCompliancePanel />
+            ) : (
+              <TechDashboard
+                tickets={tickets}
+                onNavigate={navigate}
+                onOpenTicket={openTicket}
+                onAssume={handleAssume}
+                techName={activeUser.name}
+                onFilterSelect={handleTechFilterSelect}
+              />
+            )
+          )}
 
-        {userView.page === 'ticket-detail' && currentTicket && (
-          <TicketDetail
-            ticket={currentTicket}
-            onReply={(msg) => handleUserReply(currentTicket.id, msg)}
-            onNavigate={navigate}
-            onRateTicket={handleRateTicket}
-          />
-        )} </PageContainer>
-
-    </div>
-  );
-}
-
-// ---- Tech area ----
-if (role === 'tecnico') {
-  const navigate = (p: TechPage) => setTechView({ page: p });
-  const openTicket = (id: string) =>
-    setTechView({ page: 'tech-ticket-detail', ticketId: id });
-
-  const currentTicket =
-    techView.page === 'tech-ticket-detail'
-      ? tickets.find((t) => t.id === techView.ticketId)
-      : null;
-
-  return (
-    <div className="flex h-screen">
-      <TechSidebar
-        current={
-          techView.page === 'tech-ticket-detail'
-            ? 'tech-chamados'
-            : techView.page
-        }
-        onNavigate={navigate}
-        onLogout={handleLogout}
-        userName={activeUser.name}
-        activeUser={activeUser}
-        onSwitchRole={handleSwitchRole}
-        tickets={tickets}
-      />
-
-      <TechPageContainer>
-        {techView.page === 'tech-inicio' && (
-          techView.page === ('auditoria' as any) ? (
-            <AuditCompliancePanel />
-          ) : (
-            <TechDashboard
+          {techView.page === 'tech-chamados' && (
+            <TechTickets
               tickets={tickets}
               onNavigate={navigate}
               onOpenTicket={openTicket}
               onAssume={handleAssume}
-              techName={activeUser.name}
-              onFilterSelect={handleTechFilterSelect}
+              initialStatus={techInitialStatus}
             />
-          )
-        )}
+          )}
 
-        {techView.page === 'tech-chamados' && (
-          <TechTickets
-            tickets={tickets}
-            onNavigate={navigate}
-            onOpenTicket={openTicket}
-            onAssume={handleAssume}
-            initialStatus={techInitialStatus}
-          />
-        )}
-
-        {techView.page === 'tech-atendimentos' && (
-          <TechMyAttendance
-            tickets={tickets}
-            onNavigate={navigate}
-            onOpenTicket={openTicket}
-            techName={activeUser.name}
-          />
-        )}
+          {techView.page === 'tech-atendimentos' && (
+            <TechMyAttendance
+              tickets={tickets}
+              onNavigate={navigate}
+              onOpenTicket={openTicket}
+              techName={activeUser.name}
+            />
+          )}
 
 
-        {techView.page === ('tech-feedbacks' as any) && (
-          <FeedbackCenter
-            currentRole="tecnico"
-            activeUserName={activeUser.name}
-            activeUserDepartment={activeUser.department}
-          />
-        )}
+          {techView.page === ('tech-feedbacks' as any) && (
+            <FeedbackCenter
+              currentRole="tecnico"
+              activeUserName={activeUser.name}
+              activeUserDepartment={activeUser.department}
+            />
+          )}
 
-        {techView.page === 'tech-perfil' && (
-          <Profile user={activeUser} onSave={handleSaveProfile} />
-        )}
+          {techView.page === 'tech-perfil' && (
+            <Profile user={activeUser} onSave={handleSaveProfile} />
+          )}
 
-        {techView.page === 'tech-ticket-detail' && currentTicket && (
-          <TechTicketDetail
-            ticket={currentTicket}
-            onNavigate={navigate}
-            onSendMessage={(id, msg, attachments) =>
-              handleTechMessage(id, msg, attachments)
-            }
-            onRequestInfo={(id, question, attachments) =>
-              handleRequestInfo(id, question, attachments)
-            }
-            onChangeStatus={(id, status) =>
-              handleChangeStatus(id, status)
-            }
-            onResolve={(id, solution, assetTag, replacedParts) =>
-              handleResolve(id, solution, assetTag, replacedParts)
-            }
-            onAddInternalNote={(id, note) =>
-              handleAddNote(id, note)
-            }
-            techName={activeUser.name}
-            technicians={mockTechnicians}
-            onAssign={handleAssignTicket}
-          />
-        )}
-      </TechPageContainer>
-    </div>
-  );
-}
+          {techView.page === 'tech-ticket-detail' && currentTicket && (
+            <TechTicketDetail
+              ticket={currentTicket}
+              onNavigate={navigate}
+              onSendMessage={(id, msg, attachments) =>
+                handleTechMessage(id, msg, attachments)
+              }
+              onRequestInfo={(id, question, attachments) =>
+                handleRequestInfo(id, question, attachments)
+              }
+              onChangeStatus={(id, status) =>
+                handleChangeStatus(id, status)
+              }
+              onResolve={(id, solution, assetTag, replacedParts) =>
+                handleResolve(id, solution, assetTag, replacedParts)
+              }
+              onAddInternalNote={(id, note) =>
+                handleAddNote(id, note)
+              }
+              techName={activeUser.name}
+              technicians={mockTechnicians}
+              onAssign={handleAssignTicket}
+            />
+          )}
+        </TechPageContainer>
+      </div>
+    );
+  }
 
-// ---- Gestor area ----
-if (role === 'gestor') {
-  return (
-    <div className={`flex min-h-screen ${getThemeBackground()}`}>
-      <GestorSidebar
-        current={gestorView}
-        onNavigate={(page: GestorPage) => setGestorView(page)}
-        onLogout={handleLogout}
-        activeUser={activeUser}
-        onSwitchRole={handleSwitchRole}
-      />
+  // ---- Gestor area ----
+  if (role === 'gestor') {
+    return (
+      <div className={`flex min-h-screen ${getThemeBackground()}`}>
+        <GestorSidebar
+          current={gestorView}
+          onNavigate={(page: GestorPage) => setGestorView(page)}
+          onLogout={handleLogout}
+          activeUser={activeUser}
+          onSwitchRole={handleSwitchRole}
+        />
 
-      <GestorPageContainer>
-        {gestorView === 'gestor-perfil' && (
-          <Profile user={activeUser} onSave={handleSaveProfile} />
-        )}
+        <GestorPageContainer>
+          {gestorView === 'gestor-perfil' && (
+            <Profile user={activeUser} onSave={handleSaveProfile} />
+          )}
 
-        {gestorView === 'gestor-dashboard' && (
-          <GestorDashboard
-            tickets={tickets}
-            onNavigate={(page: any) => setGestorView(page)}
-          />
-        )}
+          {gestorView === 'gestor-dashboard' && (
+            <GestorDashboard
+              tickets={tickets}
+              onNavigate={(page: any) => setGestorView(page)}
+            />
+          )}
 
-        {gestorView === 'gestor-equipe' && (
-          <GestorEquipe tickets={tickets} />
-        )}
+          {gestorView === 'gestor-equipe' && (
+            <GestorEquipe tickets={tickets} />
+          )}
 
-        {gestorView === 'gestor-auditoria' && (
-          <GestorAuditTable />
-        )}
+          {gestorView === 'gestor-auditoria' && (
+            <GestorAuditTable />
+          )}
 
-        {gestorView === 'gestor-feedbacks' && (
-          <GestorFeedbacks
-            currentRole={activeUser.role}
-            activeUserName={activeUser.name}
-            activeUserDepartment={activeUser.department}
-          />
-        )}
+          {gestorView === 'gestor-feedbacks' && (
+            <GestorFeedbacks
+              currentRole={activeUser.role}
+              activeUserName={activeUser.name}
+              activeUserDepartment={activeUser.department}
+            />
+          )}
 
-        {gestorView === 'gestor-relatorios' && (
-          <GestorRelatorios
-            tickets={tickets}
-            gestorName={activeUser.name}
-            reportModalOpen={reportModalOpen}
-            selectedReportType={selectedReportType}
-            onReportModalOpenChange={setReportModalOpen}
-            onSelectedReportTypeChange={setSelectedReportType}
-          />
-        )}
-      </GestorPageContainer>
-    </div>
-  );
-}
+          {gestorView === 'gestor-relatorios' && (
+            <GestorRelatorios
+              tickets={tickets}
+              gestorName={activeUser.name}
+              reportModalOpen={reportModalOpen}
+              selectedReportType={selectedReportType}
+              onReportModalOpenChange={setReportModalOpen}
+              onSelectedReportTypeChange={setSelectedReportType}
+            />
+          )}
+        </GestorPageContainer>
+      </div>
+    );
+  }
 
 
   return null;

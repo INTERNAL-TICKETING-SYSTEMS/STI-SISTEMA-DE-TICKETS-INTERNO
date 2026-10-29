@@ -1,7 +1,9 @@
-﻿import React, { useState, useRef } from 'react';
+﻿import React, { useEffect, useState, useRef } from 'react';
 import { User } from '@/types';
 import Button from '@/components/ui/Button';
+import { preencherDescricao } from './helpArticles';
 import './open-ticket-theme.css';
+import { SETORES_DETRAN } from '@/data/setores';
 import { Field, Input, Textarea, Select } from '@/components/ui/Field';
 import {
   Check,
@@ -25,6 +27,17 @@ import {
   ExternalLink,
   ShieldCheck,
   FileCheck2,
+  Bold,
+  Italic,
+  Underline,
+  List,
+  ListOrdered,
+  AlignLeft,
+  AlignCenter,
+  AlignRight,
+  Link,
+  Undo2,
+  Redo2,
 } from 'lucide-react';
 import { Page } from '@/components/Sidebar';
 
@@ -47,11 +60,7 @@ interface OpenTicketProps {
 }
 
 const categories = [
-  {
-    id: 'sistemas',
-    label: 'Sistemas DETRAN (RENAVAM, CNH, DetranNet)',
-    icon: Monitor,
-  },
+
   {
     id: 'rede',
     label: 'Redes e Internet (Wi-Fi, Cabeamento, VPN)',
@@ -84,11 +93,135 @@ const categories = [
   },
 ];
 
+function gerarModeloChamado(
+  categoryId: string,
+  user?: User,
+  tipoAcesso?: string,
+): { title: string; description: string } {
+  const nome = user?.name?.trim() || '[Preencher nome completo]';
+  const cpf = user?.cpf?.trim() || '[Conferir CPF, se necessário]';
+  const email = user?.email?.trim() || '[Preencher e-mail]';
+  const setor = user?.department?.trim() || '[Preencher setor/lotação]';
+
+  const identificacao = `
+Nome: ${nome}
+CPF: ${cpf}
+E-mail: ${email}
+Setor/Lotação: ${setor}`;
+
+  const modelos: Record<string, { title: string; problema: string }> = {
+    rede: {
+      title: 'Solicitação de suporte de rede ou internet',
+      problema: `Solicito análise técnica para solucionar dificuldades de conexão com a rede ou internet institucional.
+
+DESCRIÇÃO DO PROBLEMA
+[Descreva o problema, o local onde ocorre e quando começou.]
+
+INFORMAÇÕES COMPLEMENTARES
+Mensagem de erro: [Informar, se houver.]
+Equipamento afetado: [Informar, se necessário.]
+Procedimentos já realizados: [Informar, se houver.]`,
+    },
+
+    hardware: {
+      title: 'Solicitação de suporte para equipamento',
+      problema: `Solicito análise técnica do equipamento utilizado em minhas atividades institucionais.
+
+DESCRIÇÃO DO PROBLEMA
+[Descreva a falha, a lentidão ou o comportamento observado.]
+
+INFORMAÇÕES COMPLEMENTARES
+Identificação ou patrimônio: [Informar, se disponível.]
+Quando começou: [Informar.]
+Mensagem de erro: [Informar, se houver.]
+Procedimentos já realizados: [Informar, se houver.]`,
+    },
+
+    impressora: {
+      title: 'Solicitação de suporte para impressão',
+      problema: `Solicito verificação técnica da impressora ou do serviço de impressão utilizado nas atividades institucionais.
+
+DESCRIÇÃO DO PROBLEMA
+[Descreva o que acontece ao tentar imprimir ou digitalizar.]
+
+INFORMAÇÕES COMPLEMENTARES
+Identificação ou localização da impressora: [Informar.]
+Mensagem apresentada: [Informar, se houver.]
+Procedimentos já realizados: [Informar, se houver.]`,
+    },
+
+    telefonia: {
+      title: 'Solicitação de suporte de comunicação',
+      problema: `Solicito suporte técnico para solucionar uma dificuldade relacionada à telefonia ou à comunicação institucional.
+
+DESCRIÇÃO DO PROBLEMA
+[Informe se o problema está relacionado ao ramal, e-mail ou outro serviço de comunicação.]
+
+INFORMAÇÕES COMPLEMENTARES
+Ramal ou serviço afetado: [Informar.]
+Mensagem de erro: [Informar, se houver.]
+Quando começou: [Informar.]`,
+    },
+
+    acesso: {
+      title:
+        tipoAcesso === 'pasta'
+          ? 'Solicitação de acesso a pasta compartilhada'
+          : tipoAcesso === 'desbloqueio'
+            ? 'Solicitação de desbloqueio de conta'
+            : 'Solicitação de redefinição de senha',
+
+      problema:
+        tipoAcesso === 'pasta'
+          ? `Solicito acesso a uma pasta compartilhada da rede institucional para realizar minhas atividades de trabalho.`
+
+          : tipoAcesso === 'desbloqueio'
+            ? `Solicito a verificação e o desbloqueio da conta de acesso indicada abaixo, caso seja confirmado o bloqueio.
+
+Solicito a regularização do acesso conforme os procedimentos de segurança da organização.`
+
+            : `Solicito suporte para a redefinição da senha de acesso ao computador, domínio ou sistema institucional.`,
+    },
+
+    outro: {
+      title: 'Solicitação de suporte técnico',
+      problema: `Solicito análise da equipe de TI para a situação descrita a seguir.
+
+DESCRIÇÃO DA SOLICITAÇÃO
+[Explique o que aconteceu e qual suporte é necessário.]
+
+INFORMAÇÕES COMPLEMENTARES
+Quando começou: [Informar.]
+Mensagem de erro: [Informar, se houver.]
+Procedimentos já realizados: [Informar, se houver.]`,
+    },
+  };
+
+  const modelo = modelos[categoryId] ?? modelos.outro;
+
+  return {
+    title: modelo.title,
+    description: `Bom dia,
+
+${identificacao}
+
+
+
+
+Atenciosamente,
+${nome}`,
+  };
+}
+
 const steps = [
   'Classificação',
   'Detalhamento & Anexos',
   'Impacto & Urgência',
 ];
+
+function executarFormatacao(comando: string, valor?: string) {
+  document.execCommand(comando, false, valor);
+}
 
 export default function OpenTicket({
   user,
@@ -99,6 +232,56 @@ export default function OpenTicket({
   const [category, setCategory] = useState('');
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
+  const [showSuggestions, setShowSuggestions] = useState(true);
+
+  // Destinatário do chamado: o próprio solicitante ou outra pessoa.
+  const [showRecipientChoice, setShowRecipientChoice] = useState(false);
+  const [recipientType, setRecipientType] = useState<'self' | 'other' | null>(null);
+  const [baseDescription, setBaseDescription] = useState('');
+
+  const [beneficiaryName, setBeneficiaryName] = useState('');
+  const [beneficiaryCpf, setBeneficiaryCpf] = useState('');
+  const [beneficiaryEmail, setBeneficiaryEmail] = useState('');
+  const [beneficiaryDepartment, setBeneficiaryDepartment] = useState(
+    user?.department?.trim() || ''
+  );
+  const [sameDepartment, setSameDepartment] = useState(true);
+  const [beneficiaryError, setBeneficiaryError] = useState('');
+  useEffect(() => {
+    const raw = sessionStorage.getItem('sti_help_prefill_ticket');
+
+    if (!raw) return;
+
+    setShowSuggestions(false);
+
+    try {
+      const data = JSON.parse(raw) as {
+        category?: unknown;
+        title?: unknown;
+        descriptionTemplate?: unknown;
+      };
+
+      if (typeof data.category === 'string') {
+        setCategory(data.category);
+      }
+
+      if (typeof data.title === 'string') {
+        setTitle(data.title);
+      }
+
+      if (typeof data.descriptionTemplate === 'string') {
+        setDescription(
+          preencherDescricao(data.descriptionTemplate, user),
+        );
+      }
+
+      setStep(0);
+    } catch {
+      // Ignora dados inválidos armazenados.
+    } finally {
+      sessionStorage.removeItem('sti_help_prefill_ticket');
+    }
+  }, [user]);
   const [startDate, setStartDate] = useState('');
   const [blocking, setBlocking] = useState('');
   const [urgency, setUrgency] = useState('');
@@ -111,6 +294,253 @@ export default function OpenTicket({
   const [submitError, setSubmitError] = useState('');
 
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const modelosSolicitacao = [
+    {
+      id: 'reset_senha',
+      titulo: 'Reset de senha do computador',
+      descricao: 'Redefinição de senha do domínio TOCANTINS.',
+      categoria: 'acesso',
+      icone: KeyRound,
+    },
+    {
+      id: 'pasta_compartilhada',
+      titulo: 'Liberar acesso a pasta compartilhada',
+      descricao: 'Solicitar permissão para acessar uma pasta da rede.',
+      categoria: 'acesso',
+      icone: Server,
+    },
+    {
+      id: 'zimbra_detran',
+      titulo: 'Criar acesso ao e-mail Zimbra',
+      descricao: 'Solicitar criação de acesso ao e-mail institucional do DETRAN.',
+      categoria: 'acesso',
+      icone: ShieldCheck,
+    },
+    {
+      id: 'acesso_computador',
+      titulo: 'Criar acesso ao computador',
+      descricao: 'Solicitar criação ou configuração de acesso ao computador.',
+      categoria: 'acesso',
+      icone: Monitor,
+    },
+    {
+      id: 'acesso_completo',
+      titulo: 'Criar acessos completos',
+      descricao: 'Computador, e-mail Zimbra e pasta compartilhada.',
+      categoria: 'acesso',
+      icone: Building2,
+    },
+    {
+      id: 'impressora_acesso',
+      titulo: 'Liberar acesso à impressora',
+      descricao: 'Solicitar permissão para utilizar uma impressora institucional.',
+      categoria: 'impressora',
+      icone: Printer,
+    },
+    {
+      id: 'outro',
+      titulo: 'Outro problema ou solicitação',
+      descricao: 'Abrir um chamado para uma necessidade diferente das opções anteriores.',
+      categoria: 'outro',
+      icone: HelpCircle,
+    },
+  ];
+
+  
+  function selecionarModelo(modeloId: string) {
+    const modelo = modelosSolicitacao.find(
+      (item) => item.id === modeloId,
+    );
+
+    if (!modelo) return;
+
+    const nome =
+      user?.name?.trim() || '[Preencher nome completo]';
+
+    const cpf =
+      user?.cpf?.trim() || '[Conferir CPF, se necessário]';
+
+    const email =
+      user?.email?.trim() || '[Preencher e-mail]';
+
+    const setor =
+      user?.department?.trim() || '[Preencher setor/lotação]';
+
+    const identificacao = `Bom dia,
+
+Nome: ${nome}
+CPF: ${cpf}
+E-mail: ${email}
+Setor/Lotação: ${setor}`;
+
+    let novoTitulo = modelo.titulo;
+    let novaDescricao = '';
+
+    switch (modeloId) {
+      case 'reset_senha': {
+        novoTitulo = 'Reset de senha do computador — Domínio TOCANTINS';
+
+        novaDescricao = `Bom dia,
+
+Solicito a redefinição da senha de acesso ao computador no domínio TOCANTINS.
+
+
+Atenciosamente,
+${nome}`;
+
+        break;
+      }
+
+      case 'pasta_compartilhada': {
+        novoTitulo = 'Liberar acesso a pasta compartilhada';
+
+        novaDescricao = `Bom dia,
+
+Solicito acesso a uma pasta compartilhada da rede para realizar atividades correlacionadas.
+
+
+Nome: ${nome}
+CPF: ${cpf}
+E-mail: ${email}
+Setor/Lotação: ${setor}
+
+
+Atenciosamente,
+${nome}`;
+
+        break;
+      }
+
+      case 'zimbra_detran': {
+        novoTitulo = 'Criar acesso ao e-mail Zimbra do DETRAN';
+
+        novaDescricao = `Bom dia,
+
+Solicito a criação e configuração de acesso ao e-mail institucional Zimbra do DETRAN.
+
+DADOS DO SOLICITANTE
+Nome: ${nome}
+CPF: ${cpf}
+E-mail: ${email}
+Setor/Lotação: ${setor}
+
+
+
+Atenciosamente,
+${nome}`;
+
+        break;
+      }
+
+      case 'acesso_computador': {
+        novoTitulo = 'Criar acesso ao computador — Domínio TOCANTINS';
+
+        novaDescricao = `Bom dia,
+
+Solicito a criação ou configuração de acesso ao computador no domínio TOCANTINS.
+
+DADOS DO SOLICITANTE
+Nome: ${nome}
+CPF: ${cpf}
+E-mail: ${email}
+Setor/Lotação: ${setor}
+
+Atenciosamente,
+${nome}`;
+
+        break;
+      }
+
+      case 'acesso_completo': {
+        novoTitulo =
+          'Criar acesso ao computador, e-mail Zimbra e liberar acesso a pasta compartilhada';
+
+        novaDescricao = `Bom dia,
+
+Solicito a criação dos seguintes acessos institucionais:
+- Acesso ao computador no domínio TOCANTINS;
+- Acesso ao e-mail institucional Zimbra do DETRAN;
+- Acesso a pasta compartilhada da rede institucional.
+
+DADOS DO SOLICITANTE
+Nome: ${nome}
+CPF: ${cpf}
+E-mail: ${email}
+Setor/Lotação: ${setor}
+
+
+Atenciosamente,
+${nome}`;
+
+        break;
+      }
+
+      case 'impressora_acesso': {
+        novoTitulo = 'Liberar acesso à impressora — Domínio TOCANTINS';
+
+        novaDescricao = `Bom dia,
+
+Solicito a liberação de acesso à impressora institucional no domínio TOCANTINS.
+
+DADOS DO SOLICITANTE
+Nome: ${nome}
+CPF: ${cpf}
+E-mail: ${email}
+Setor/Lotação: ${setor}
+
+
+Atenciosamente,
+${nome}`;
+
+        break;
+      }
+
+      case 'outro': {
+        novoTitulo = 'Solicitação de suporte técnico';
+
+        novaDescricao = `Bom dia,
+
+Solicito suporte técnico para a seguinte situação:
+[Descreva o problema ou a necessidade.]
+
+DADOS DO SOLICITANTE
+Nome: ${nome}
+CPF: ${cpf}
+E-mail: ${email}
+Setor/Lotação: ${setor}
+
+
+
+Atenciosamente,
+${nome}`;
+
+        break;
+      }
+
+      default:
+        return;
+    }
+
+    // Atualiza a sauda��o conforme o hor�rio local do computador.
+    const horaAtual = new Date().getHours();
+    const saudacao = horaAtual < 12 ? 'Bom dia,' : 'Boa tarde,';
+    novaDescricao = novaDescricao.replace(/^Bom dia,/i, saudacao);
+
+    setCategory(modelo.categoria);
+    setTitle(novoTitulo);
+    setBaseDescription(novaDescricao);
+    setRecipientType(null);
+    setBeneficiaryError('');
+    setBeneficiaryName('');
+    setBeneficiaryCpf('');
+    setBeneficiaryEmail('');
+    setSameDepartment(true);
+    setBeneficiaryDepartment(user?.department?.trim() || '');
+    setShowRecipientChoice(true);
+    setStep(0);
+    setShowSuggestions(false);
+  }
 
   const canNext = () => {
     if (step === 0) {
@@ -179,6 +609,80 @@ export default function OpenTicket({
     setTimeout(() => {
       setCopied(false);
     }, 2000);
+  };
+
+  const continuarComoOutraPessoa = () => {
+    const nome = beneficiaryName.trim();
+    const cpf = beneficiaryCpf.trim();
+    const email = beneficiaryEmail.trim();
+    const setor = beneficiaryDepartment.trim();
+
+    if (!nome || !cpf || !email || !setor) {
+      setBeneficiaryError(
+        'Preencha o nome, CPF, e-mail e setor da pessoa que será atendida.'
+      );
+      return;
+    }
+
+    if (!/^\d{11}$/.test(cpf.replace(/\D/g, ''))) {
+      setBeneficiaryError('Informe um CPF válido com 11 dígitos.');
+      return;
+    }
+
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      setBeneficiaryError('Informe um endereço de e-mail válido.');
+      return;
+    }
+
+    const solicitanteNome = user?.name?.trim() || 'Não informado';
+    const solicitanteCpf = user?.cpf?.trim() || 'Não informado';
+    const solicitanteEmail = user?.email?.trim() || 'Não informado';
+    const solicitanteSetor = user?.department?.trim() || 'Não informado';
+
+    // Retira a sauda��o, os dados antigos do solicitante e a assinatura
+    // para evitar informa��es duplicadas na descri��o final.
+    const corpoModelo = baseDescription
+      .replace(/^\s*(?:Bom dia|Boa tarde),\s*/i, '')
+      .replace(
+        /DADOS DO SOLICITANTE\s*\r?\n\s*Nome:[^\r\n]*\r?\n\s*CPF:[^\r\n]*\r?\n\s*E-mail:[^\r\n]*\r?\n\s*Setor\/Lota��o:[^\r\n]*/i,
+        ''
+      )
+      .replace(
+        /(?:^|\r?\n)\s*Nome:[^\r\n]*\r?\n\s*CPF:[^\r\n]*\r?\n\s*E-mail:[^\r\n]*\r?\n\s*Setor\/Lota��o:[^\r\n]*/i,
+        ''
+      )
+      .replace(/\r?\n?\s*Atenciosamente,\s*\r?\n[\s\S]*$/i, '')
+      .trim();
+
+    // Usa o hor�rio local do computador.
+    const horaAtual = new Date().getHours();
+    const saudacao = horaAtual < 12 ? 'Bom dia,' : 'Boa tarde,';
+
+    // A solicita��o aparece logo ap�s a sauda��o.
+    const descricaoFinal = [
+      saudacao,
+      '',
+      corpoModelo,
+      '',
+      'DADOS DE QUEM ABRIU O CHAMADO',
+      `Nome: ${solicitanteNome}`,
+      `CPF: ${solicitanteCpf}`,
+      `E-mail: ${solicitanteEmail}`,
+      `Setor/Lotação: ${solicitanteSetor}`,
+      '',
+      'DADOS DA PESSOA QUE SERÁ ATENDIDA',
+      `Nome: ${nome}`,
+      `CPF: ${cpf}`,
+      `E-mail: ${email}`,
+      `Setor/Lotação: ${setor}`,
+      '',
+      'Atenciosamente,',
+      solicitanteNome,
+    ].join('\n');
+
+    setDescription(descricaoFinal);
+    setBeneficiaryError('');
+    setShowRecipientChoice(false);
   };
 
   const handleSubmit = async () => {
@@ -397,489 +901,594 @@ export default function OpenTicket({
     );
   }
 
+
+  if (showSuggestions) {
+    return (
+      <div className="min-h-screen bg-slate-50 px-4 py-8 dark:bg-slate-950 sm:px-6 lg:px-8">
+        <div className="mx-auto max-w-5xl">
+          <button
+            type="button"
+            onClick={() => onNavigate('inicio')}
+            className="mb-6 inline-flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-slate-600 transition hover:bg-slate-200 dark:text-slate-300 dark:hover:bg-slate-800"
+          >
+            <ChevronLeft size={18} />
+            Voltar ao início
+          </button>
+
+          <div className="mb-8">
+            <span className="mb-3 inline-flex items-center gap-2 rounded-full bg-teal-50 px-3 py-1 text-sm font-semibold text-teal-800 dark:bg-teal-950 dark:text-teal-200">
+              <ShieldCheck size={16} />
+              Central de solicitações
+            </span>
+
+            <h1 className="text-3xl font-bold tracking-tight text-slate-900 dark:text-white sm:text-4xl">
+              Como podemos ajudar?
+            </h1>
+
+            <p className="mt-3 max-w-2xl text-base leading-7 text-slate-600 dark:text-slate-400">
+              Selecione o tipo de solicitação. Vamos preparar o formulário
+              com as informações iniciais para facilitar a abertura do seu
+              chamado.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {modelosSolicitacao.map((modelo) => {
+              const Icone = modelo.icone;
+
+              return (
+                <button
+                  key={modelo.id}
+                  type="button"
+                  onClick={() => selecionarModelo(modelo.id)}
+                  className="group flex min-h-48 flex-col rounded-2xl border border-slate-200 bg-white p-5 text-left shadow-sm transition duration-200 hover:-translate-y-1 hover:border-teal-400 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 dark:border-slate-800 dark:bg-slate-900 dark:hover:border-teal-500 dark:focus:ring-offset-slate-950"
+                >
+                  <span className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-teal-50 text-teal-700 transition group-hover:bg-teal-100 dark:bg-teal-950 dark:text-teal-300 dark:group-hover:bg-teal-900">
+                    <Icone size={24} />
+                  </span>
+
+                  <span className="text-base font-semibold leading-6 text-slate-900 dark:text-white">
+                    {modelo.titulo}
+                  </span>
+
+                  <span className="mt-2 flex-1 text-sm leading-6 text-slate-600 dark:text-slate-400">
+                    {modelo.descricao}
+                  </span>
+
+                  <span className="mt-4 inline-flex items-center gap-2 text-sm font-semibold text-teal-700 dark:text-teal-300">
+                    Selecionar solicitação
+                    <ChevronRight
+                      size={16}
+                      className="transition group-hover:translate-x-1"
+                    />
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+
+          <div className="mt-8 rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900">
+            <p className="text-sm leading-6 text-slate-600 dark:text-slate-400">
+              <strong className="text-slate-900 dark:text-white">
+                Antes de enviar:
+              </strong>{' '}
+              confira o assunto, complete os campos pendentes e verifique
+              se a solicitação contém as informações necessárias.
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   // ============================================================
   // FORMULÁRIO
   // ============================================================
 
+  if (showRecipientChoice && recipientType === null) {
+    return (
+      <div className="open-ticket mx-auto max-w-3xl space-y-6">
+        <header className="space-y-2">
+          <button
+            type="button"
+            onClick={() => {
+              setShowRecipientChoice(false);
+              setShowSuggestions(true);
+            }}
+            className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:underline"
+          >
+            <ChevronLeft size={16} />
+            Voltar aos modelos
+          </button>
+
+          <h1 className="text-2xl font-bold">Para quem é este chamado?</h1>
+          <p className="text-sm text-muted-foreground">
+            Escolha quem precisa do atendimento. Os dados de quem abriu o chamado
+            serão mantidos separadamente.
+          </p>
+        </header>
+
+        <div className="grid gap-4 sm:grid-cols-2">
+          <button
+            type="button"
+            onClick={() => {
+              const nome = user?.name?.trim() || 'Não informado';
+              const cpf = user?.cpf?.trim() || 'Não informado';
+              const email = user?.email?.trim() || 'Não informado';
+              const setor = user?.department?.trim() || 'Não informado';
+
+              const saudacao =
+                new Date().getHours() < 12 ? 'Bom dia,' : 'Boa tarde,';
+
+              const isResetSenha = baseDescription.includes(
+                'Solicito a redefinição da senha de acesso ao computador no domínio TOCANTINS.'
+              );
+
+              if (isResetSenha) {
+                const corpo = baseDescription
+                  .replace(/^\s*(?:Bom dia|Boa tarde),\s*/i, '')
+                  .replace(/\s*Atenciosamente,[\s\S]*$/i, '')
+                  .trim();
+
+                const descricaoFinal = [
+                  saudacao,
+                  '',
+                  corpo,
+                  '',
+                  'DADOS DE QUEM ABRIU O CHAMADO',
+                  `Nome: ${nome}`,
+                  `CPF: ${cpf}`,
+                  `E-mail: ${email}`,
+                  `Setor/Lotação: ${setor}`,
+                  '',
+                  'Atenciosamente,',
+                  nome,
+                ].join('\n');
+
+                setDescription(descricaoFinal);
+              } else {
+                setDescription(baseDescription);
+              }
+
+              setRecipientType('self');
+              setShowRecipientChoice(false);
+            }}
+            className="rounded-xl border p-6 text-left transition hover:border-primary hover:bg-primary/5 focus:outline-none focus:ring-2 focus:ring-primary"
+          >
+            <div className="mb-3 flex items-center gap-3">
+              <div className="rounded-lg bg-primary/10 p-3">
+                <CheckCircle2 size={24} />
+              </div>
+              <span className="text-lg font-semibold">Para mim</span>
+            </div>
+            <p className="text-sm text-muted-foreground">
+              Eu preciso do atendimento. Usar meus dados cadastrados.
+            </p>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => {
+              setRecipientType('other');
+              setBeneficiaryError('');
+            }}
+            className="rounded-xl border p-6 text-left transition hover:border-primary hover:bg-primary/5 focus:outline-none focus:ring-2 focus:ring-primary"
+          >
+            <div className="mb-3 flex items-center gap-3">
+              <div className="rounded-lg bg-primary/10 p-3">
+                <Building2 size={24} />
+              </div>
+              <span className="text-lg font-semibold">Para outra pessoa</span>
+            </div>
+            <p className="text-sm text-muted-foreground">
+              Estou abrindo o chamado em nome de outra pessoa.
+            </p>
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (showRecipientChoice && recipientType === 'other') {
+    return (
+      <div className="open-ticket mx-auto max-w-3xl space-y-6">
+        <header className="space-y-2">
+          <button
+            type="button"
+            onClick={() => {
+              setRecipientType(null);
+              setBeneficiaryError('');
+            }}
+            className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:underline"
+          >
+            <ChevronLeft size={16} />
+            Voltar à escolha
+          </button>
+
+          <h1 className="text-2xl font-bold">Dados da pessoa atendida</h1>
+          <p className="text-sm text-muted-foreground">
+            Informe os dados de quem precisa do serviço solicitado.
+          </p>
+        </header>
+
+        <div className="space-y-5 rounded-xl border p-5 sm:p-6">
+          <div className="space-y-2">
+            <label htmlFor="beneficiary-name" className="text-sm font-medium">
+              Nome completo *
+            </label>
+            <Input
+              id="beneficiary-name"
+              value={beneficiaryName}
+              onChange={(event) => setBeneficiaryName(event.target.value)}
+              placeholder="Nome completo da pessoa atendida"
+              autoComplete="name"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <label htmlFor="beneficiary-cpf" className="text-sm font-medium">
+              CPF *
+            </label>
+            <Input
+              id="beneficiary-cpf"
+              type="text"
+              value={beneficiaryCpf}
+              onChange={(event) => {
+                const digitos = event.target.value
+                  .replace(/\D/g, '')
+                  .slice(0, 11);
+
+                let cpfFormatado = digitos;
+
+                if (digitos.length > 9) {
+                  cpfFormatado =
+                    `${digitos.slice(0, 3)}.${digitos.slice(3, 6)}.${digitos.slice(6, 9)}-${digitos.slice(9, 11)}`;
+                } else if (digitos.length > 6) {
+                  cpfFormatado =
+                    `${digitos.slice(0, 3)}.${digitos.slice(3, 6)}.${digitos.slice(6)}`;
+                } else if (digitos.length > 3) {
+                  cpfFormatado =
+                    `${digitos.slice(0, 3)}.${digitos.slice(3)}`;
+                }
+
+                setBeneficiaryCpf(cpfFormatado);
+              }}
+              placeholder="000.000.000-00"
+              inputMode="numeric"
+              maxLength={14}
+              autoComplete="off"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <label htmlFor="beneficiary-email" className="text-sm font-medium">
+              E-mail institucional *
+            </label>
+            <Input
+              id="beneficiary-email"
+              type="email"
+              value={beneficiaryEmail}
+              onChange={(event) => setBeneficiaryEmail(event.target.value)}
+              placeholder="nome@orgao.gov.br"
+              autoComplete="email"
+            />
+          </div>
+
+          <div className="space-y-3">
+            <label className="flex cursor-pointer items-start gap-3 text-sm">
+              <input
+                type="checkbox"
+                checked={sameDepartment}
+                onChange={(event) => {
+                  const marcado = event.target.checked;
+                  setSameDepartment(marcado);
+                  if (marcado) {
+                    setBeneficiaryDepartment(user?.department?.trim() || '');
+                  } else if (
+                    beneficiaryDepartment === user?.department?.trim()
+                  ) {
+                    setBeneficiaryDepartment('');
+                  }
+                }}
+                className="mt-1"
+              />
+              <span>
+                <span className="block font-medium">
+                  Utilizar o mesmo setor do solicitante
+                </span>
+                <span className="text-muted-foreground">
+                  {user?.department?.trim() || 'O setor do solicitante não está informado.'}
+                </span>
+              </span>
+            </label>
+
+            <div className="space-y-2">
+              <label htmlFor="beneficiary-department" className="text-sm font-medium">
+                Setor/Lotação da pessoa atendida *
+              </label>
+
+              <Select
+                id="beneficiary-department"
+                value={beneficiaryDepartment}
+                onChange={(event) => setBeneficiaryDepartment(event.target.value)}
+                disabled={sameDepartment}
+              >
+                <option value="">Selecione o setor</option>
+
+                {beneficiaryDepartment &&
+                  !SETORES_DETRAN.some(
+                    (setor) => setor.nome === beneficiaryDepartment
+                  ) && (
+                    <option value={beneficiaryDepartment}>
+                      {beneficiaryDepartment}
+                    </option>
+                  )}
+
+                {SETORES_DETRAN.map((setor) => (
+                  <option key={setor.sigla} value={setor.nome}>
+                    {setor.sigla} - {setor.nome}
+                  </option>
+                ))}
+              </Select>
+            </div>
+          </div>
+
+          {beneficiaryError && (
+            <p role="alert" className="text-sm font-medium text-red-600">
+              {beneficiaryError}
+            </p>
+          )}
+
+          <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={() => {
+                setRecipientType(null);
+                setBeneficiaryError('');
+              }}
+            >
+              Voltar
+            </Button>
+
+            <Button
+              type="button"
+              variant="primary"
+              onClick={continuarComoOutraPessoa}
+            >
+              Continuar
+              <ChevronRight size={16} className="ml-2" />
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
   return (
-    <div className="open-ticket max-w-3xl mx-auto">
-      <div className="mb-8">
-        <h1 className="text-2xl font-bold text-slate-900">
+    <div className="open-ticket mx-auto max-w-5xl space-y-6">
+      <header>
+        <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">
           Abertura de Chamado
         </h1>
 
-        <p className="mt-1 text-sm text-slate-500">
-          Registre incidentes ou solicitações de serviço com evidências visuais para a equipe de TI.
+        <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+          Descreva sua solicitação para a equipe de Tecnologia da Informação.
         </p>
-      </div>
+      </header>
 
       {user && (
-        <div className="mb-8 flex items-center gap-3 rounded-lg border border-blue-100 bg-blue-50/50 p-4">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-blue-100 text-blue-600">
-            <Building2 className="h-5 w-5" />
-          </div>
+        <div className="rounded-lg border border-blue-100 bg-blue-50 p-4 dark:border-blue-900 dark:bg-blue-950/40">
+          <p className="text-xs font-semibold uppercase tracking-wide text-blue-700 dark:text-blue-300">
+            Solicitante identificado
+          </p>
 
-          <div>
-            <p className="text-xs font-semibold text-blue-900 uppercase tracking-wider">
-              Solicitante Identificado
-            </p>
-
-            <p className="text-sm text-blue-800 mt-0.5">
-              <strong>
-                {user.name}
-              </strong>{' '}
-              &mdash; Lotação:{' '}
-              {user.department}
-            </p>
-          </div>
+          <p className="mt-1 text-sm text-blue-900 dark:text-blue-100">
+            <strong>{user.name}</strong>
+            {' — Lotação: '}
+            {user.department}
+          </p>
         </div>
       )}
 
-      {/* Stepper */}
-      <div className="mb-8">
-        <div className="flex items-center justify-between relative">
-          <div className="absolute left-0 top-1/2 -z-10 h-0.5 w-full -translate-y-1/2 bg-slate-100"></div>
+      <div className="space-y-5 rounded-xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-900 sm:p-7">
+        <div>
+          <label
+            htmlFor="ticket-subject"
+            className="mb-2 block text-sm font-semibold text-slate-800 dark:text-slate-100"
+          >
+            Assunto:
+          </label>
 
-          <div
-            className="absolute left-0 top-1/2 -z-10 h-0.5 -translate-y-1/2 bg-slate-800 transition-all duration-300"
-            style={{
-              width: `${(step /
-                (steps.length - 1)) *
-                100
-                }%`,
-            }}
-          ></div>
-
-          {steps.map((s, i) => (
-            <div
-              key={s}
-              className="flex flex-col items-center gap-2 bg-slate-50 px-2"
-            >
-              <div
-                className={`flex h-8 w-8 items-center justify-center rounded-full border-2 text-xs font-bold transition-colors ${step > i
-                  ? 'border-slate-900 bg-slate-900 text-white'
-                  : step === i
-                    ? 'border-slate-900 bg-white text-slate-900'
-                    : 'border-slate-200 bg-white text-slate-400'
-                  }`}
-              >
-                {step > i ? (
-                  <Check className="h-4 w-4" />
-                ) : (
-                  i + 1
-                )}
-              </div>
-
-              <span
-                className={`text-xs font-medium ${step >= i
-                  ? 'text-slate-800'
-                  : 'text-slate-400'
-                  }`}
-              >
-                {s}
-              </span>
-            </div>
-          ))}
+          <Input
+            id="ticket-subject"
+            value={title}
+            onChange={(event) => setTitle(event.target.value)}
+            placeholder="Informe o assunto do chamado"
+            maxLength={100}
+            required
+          />
         </div>
-      </div>
 
-      <div className="rounded-2xl border border-slate-200 bg-white p-6 sm:p-8 shadow-sm">
-        {/* STEP 0 */}
-        {step === 0 && (
-          <div className="space-y-6 animate-fade-in">
-            <Field label="1. Qual é a categoria do problema ou solicitação?">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-2">
-                {categories.map((c) => {
-                  const Icon = c.icon;
+        <section className="overflow-hidden rounded-lg border border-slate-200 dark:border-slate-700">
+          <div className="border-b border-slate-200 bg-slate-50 px-4 py-3 dark:border-slate-700 dark:bg-slate-800">
+            <h2 className="text-sm font-semibold text-slate-800 dark:text-slate-100">
+              Isso pode ser útil
+            </h2>
 
-                  const isSelected =
-                    category === c.id;
-
-                  return (
-                    <button
-                      key={c.id}
-                      type="button"
-                      onClick={() =>
-                        setCategory(c.id)
-                      }
-                      className={`flex items-start gap-3 rounded-xl border p-4 text-left transition-all duration-200 ${isSelected
-                        ? 'border-teal-500 bg-teal-50 ring-2 ring-teal-500/40 shadow-sm dark:border-teal-400 dark:bg-teal-950/70 dark:ring-teal-400/50'
-                        : 'border-slate-200 bg-white hover:border-teal-300 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:hover:border-teal-500 dark:hover:bg-slate-800'
-                        }`}
-                    >
-                      <Icon
-                        className={`mt-0.5 h-5 w-5 shrink-0 transition-colors ${isSelected
-                          ? 'text-teal-700 dark:text-teal-300'
-                          : 'text-slate-400'
-                          }`}
-                      />
-
-                      {isSelected && (
-                        <Check className="ml-auto h-5 w-5 shrink-0 rounded-full bg-teal-500 p-0.5 text-white" />
-                      )}
-
-                      <span
-                        className={`text-sm font-medium ${isSelected
-                          ? 'text-teal-900 dark:text-teal-100'
-                          : 'text-slate-700 dark:text-slate-200'
-                          }`}
-                      >
-                        {c.label}
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
-            </Field>
-
-            <Field
-              label="2. Resumo da solicitação (Título)"
-              hint="Ex: Erro de comunicação no módulo de habilitação"
-            >
-              <Input
-                placeholder="Digite um título claro e objetivo"
-                value={title}
-                onChange={(e) =>
-                  setTitle(
-                    e.target.value
-                  )
-                }
-                maxLength={100}
-                required
-              />
-            </Field>
+            <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+              Consulte uma sugestão relacionada ao assunto do seu chamado.
+            </p>
           </div>
-        )}
 
-        {/* STEP 1 */}
-        {step === 1 && (
-          <div className="space-y-6 animate-fade-in">
-            <Field
-              label="3. Descreva o problema detalhadamente"
-              hint="Descreva o que ocorreu e os sistemas envolvidos."
-            >
-              <Textarea
-                rows={4}
-                placeholder="Explique o que aconteceu, telas acessadas e mensagens de erro exibidas..."
-                value={description}
-                onChange={(e) =>
-                  setDescription(
-                    e.target.value
-                  )
-                }
-                required
-              />
-            </Field>
+          <div className="p-4">
+            {title.trim() ? (
+              <div className="space-y-2">
+                <p className="text-sm text-slate-700 dark:text-slate-200">
+                  Antes de enviar, descreva o que você estava tentando fazer,
+                  o que aconteceu e se apareceu alguma mensagem de erro.
+                </p>
 
-            <Field
-              label="Evidências Visuais / Fotos do Erro (Opcional)"
-              hint="Adicione capturas de tela ou fotos da tela/equipamento."
-            >
-              <div className="mt-2 space-y-3">
-                <input
-                  type="file"
-                  ref={fileInputRef}
-                  onChange={handleFileUpload}
-                  accept="image/*"
-                  multiple
-                  className="hidden"
-                />
+                <button
+                  type="button"
+                  onClick={() => {
+                    const sugestao =
+                      `Solicito análise técnica referente ao seguinte assunto: ${title.trim()}.\n\n` +
+                      'DESCRIÇÃO DO PROBLEMA\n' +
+                      '[Descreva o que aconteceu e em qual sistema ou equipamento.]\n\n' +
+                      'MENSAGEM DE ERRO\n' +
+                      '[Informe a mensagem apresentada, se houver.]\n\n' +
+                      'PROCEDIMENTOS REALIZADOS\n' +
+                      '[Informe as tentativas de solução, se houver.]';
 
-                <div
-                  onClick={() =>
-                    fileInputRef.current?.click()
-                  }
-                  className="flex flex-col items-center justify-center rounded-xl border-2 border-dashed border-slate-200 bg-slate-50/50 p-6 text-center transition-colors hover:border-slate-400 hover:bg-slate-50 cursor-pointer"
+                    setDescription(sugestao);
+                  }}
+                  className="text-sm font-semibold text-teal-700 hover:underline dark:text-teal-300"
                 >
-                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white shadow-sm border border-slate-200 mb-2">
-                    <Paperclip className="h-5 w-5 text-slate-500" />
-                  </div>
-
-                  <p className="text-xs font-semibold text-slate-700">
-                    Clique para anexar fotos ou capturas de tela
-                  </p>
-
-                  <p className="text-[11px] text-slate-400 mt-0.5">
-                    Formatos suportados:
-                    PNG, JPG ou WEBP
-                  </p>
-                </div>
-
-                {attachments.length > 0 && (
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-2">
-                    {attachments.map(
-                      (imgSrc, idx) => (
-                        <div
-                          key={idx}
-                          className="relative group rounded-lg overflow-hidden border border-slate-200 bg-slate-100 aspect-video"
-                        >
-                          <img
-                            src={imgSrc}
-                            alt={`Anexo ${idx + 1
-                              }`}
-                            className="h-full w-full object-cover"
-                          />
-
-                          <button
-                            type="button"
-                            onClick={() =>
-                              removeAttachment(
-                                idx
-                              )
-                            }
-                            className="absolute top-1 right-1 flex h-6 w-6 items-center justify-center rounded-full bg-slate-900/80 text-white hover:bg-rose-600 transition-colors"
-                            title="Remover anexo"
-                          >
-                            <X className="h-3.5 w-3.5" />
-                          </button>
-                        </div>
-                      )
-                    )}
-                  </div>
-                )}
+                  Usar modelo de descrição
+                </button>
               </div>
-            </Field>
+            ) : (
+              <p className="text-xs text-slate-500 dark:text-slate-400">
+                Insira um assunto para receber orientações úteis.
+              </p>
+            )}
+          </div>
+        </section>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-              <Field label="4. Quando o problema começou?">
-                <Input
-                  type="date"
-                  value={startDate}
-                  onChange={(e) =>
-                    setStartDate(
-                      e.target.value
-                    )
-                  }
-                  required
-                />
-              </Field>
+        <div>
+          <label
+            htmlFor="ticket-description"
+            className="mb-2 block text-sm font-semibold text-slate-800 dark:text-slate-100"
+          >
+            Texto:
+          </label>
 
-              <Field label="5. O problema impede suas atividades?">
-                <Select
-                  value={blocking}
-                  onChange={(e) =>
-                    setBlocking(
-                      e.target.value
-                    )
-                  }
-                  required
+          <div className="overflow-hidden rounded-xl border border-slate-300 bg-white dark:border-slate-600 dark:bg-slate-950">
+            <div
+              role="toolbar"
+              aria-label="Formatação do texto"
+              className="flex flex-wrap items-center gap-1 border-b border-slate-300 bg-slate-50 p-2 dark:border-slate-700 dark:bg-slate-800"
+            >
+              {[
+                { label: 'Negrito', command: 'bold', icon: Bold },
+                { label: 'Itálico', command: 'italic', icon: Italic },
+                { label: 'Sublinhado', command: 'underline', icon: Underline },
+                { label: 'Lista', command: 'insertUnorderedList', icon: List },
+                { label: 'Lista numerada', command: 'insertOrderedList', icon: ListOrdered },
+                { label: 'Alinhar à esquerda', command: 'justifyLeft', icon: AlignLeft },
+                { label: 'Centralizar', command: 'justifyCenter', icon: AlignCenter },
+                { label: 'Alinhar à direita', command: 'justifyRight', icon: AlignRight },
+                { label: 'Desfazer', command: 'undo', icon: Undo2 },
+                { label: 'Refazer', command: 'redo', icon: Redo2 },
+              ].map(({ label, command, icon: Icon }) => (
+                <button
+                  key={command}
+                  type="button"
+                  title={label}
+                  aria-label={label}
+                  onMouseDown={(event) => event.preventDefault()}
+                  onClick={() => executarFormatacao(command)}
+                  className="flex h-9 w-9 items-center justify-center rounded-md text-slate-700 transition hover:bg-slate-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 dark:text-slate-200 dark:hover:bg-slate-700"
                 >
-                  <option value="">
-                    Selecione...
-                  </option>
+                  <Icon className="h-4 w-4" />
+                </button>
+              ))}
+            </div>
 
-                  <option value="sim_total">
-                    Sim
-                  </option>
+            <Textarea
+              id="ticket-description"
+              rows={12}
+              value={description}
+              onChange={(event) => setDescription(event.target.value)}
+              placeholder="Descreva sua solicitação..."
+              className="min-h-[300px] resize-y rounded-none border-0 shadow-none focus-visible:ring-0"
+              required
+            />
+          </div>
 
-                  <option value="sim_parcial">
-                    Parcialmente
-                  </option>
+          <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
+            Informe os detalhes necessários para que a equipe técnica possa
+            compreender e analisar sua solicitação.
+          </p>
+        </div>
 
-                  <option value="nao">
-                    Não
-                  </option>
-                </Select>
-              </Field>
+        {attachments.length > 0 && (
+          <div className="space-y-2">
+            <p className="text-sm font-semibold text-slate-800 dark:text-slate-100">
+              Arquivos anexados
+            </p>
+
+            <div className="flex flex-wrap gap-2">
+              {attachments.map((arquivo, index) => (
+                <div
+                  key={index}
+                  className="flex items-center gap-2 rounded-lg border border-slate-200 px-3 py-2 text-xs dark:border-slate-700"
+                >
+                  <span>Imagem {index + 1}</span>
+
+                  <button
+                    type="button"
+                    onClick={() => removeAttachment(index)}
+                    className="text-red-600 hover:text-red-800"
+                    aria-label={`Remover imagem ${index + 1}`}
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                </div>
+              ))}
             </div>
           </div>
         )}
 
-        {/* STEP 2 */}
-        {step === 2 && (
-          <div className="space-y-6 animate-fade-in">
-            <Field label="6. Nível de Impacto Operacional">
-              <div className="space-y-3 mt-2">
-                <button
-                  type="button"
-                  onClick={() =>
-                    setUrgency('baixa')
-                  }
-                  className={`flex w-full items-center gap-4 rounded-xl border p-4 text-left transition-all ${urgency === 'baixa'
-                    ? 'border-blue-500 bg-blue-50 ring-1 ring-blue-500'
-                    : 'border-slate-200 hover:border-slate-300 bg-white'
-                    }`}
-                >
-                  <div
-                    className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full ${urgency === 'baixa'
-                      ? 'bg-blue-100 text-blue-600'
-                      : 'bg-slate-100 text-slate-500'
-                      }`}
-                  >
-                    <span className="font-bold">
-                      1
-                    </span>
-                  </div>
+        <div>
+          <input
+            type="file"
+            ref={fileInputRef}
+            onChange={handleFileUpload}
+            accept="image/*"
+            multiple
+            className="hidden"
+          />
 
-                  <div>
-                    <p
-                      className={`font-semibold ${urgency === 'baixa'
-                        ? 'text-blue-900'
-                        : 'text-slate-800'
-                        }`}
-                    >
-                      Baixa / Normal
-                    </p>
-
-                    <p
-                      className={`text-sm ${urgency === 'baixa'
-                        ? 'text-blue-700'
-                        : 'text-slate-500'
-                        }`}
-                    >
-                      Afeta apenas 1
-                      usuário, sem
-                      interrupção crítica
-                      do trabalho.
-                    </p>
-                  </div>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() =>
-                    setUrgency('media')
-                  }
-                  className={`flex w-full items-center gap-4 rounded-xl border p-4 text-left transition-all ${urgency === 'media'
-                    ? 'border-amber-500 bg-amber-50 ring-1 ring-amber-500'
-                    : 'border-slate-200 hover:border-slate-300 bg-white'
-                    }`}
-                >
-                  <div
-                    className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full ${urgency === 'media'
-                      ? 'bg-amber-100 text-amber-600'
-                      : 'bg-slate-100 text-slate-500'
-                      }`}
-                  >
-                    <span className="font-bold">
-                      2
-                    </span>
-                  </div>
-
-                  <div>
-                    <p
-                      className={`font-semibold ${urgency === 'media'
-                        ? 'text-amber-900'
-                        : 'text-slate-800'
-                        }`}
-                    >
-                      Média / Urgente
-                    </p>
-
-                    <p
-                      className={`text-sm ${urgency === 'media'
-                        ? 'text-amber-700'
-                        : 'text-slate-500'
-                        }`}
-                    >
-                      Afeta um setor
-                      inteiro ou
-                      processo importante
-                      da unidade.
-                    </p>
-                  </div>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() =>
-                    setUrgency('alta')
-                  }
-                  className={`flex w-full items-center gap-4 rounded-xl border p-4 text-left transition-all ${urgency === 'alta'
-                    ? 'border-rose-500 bg-rose-50 ring-1 ring-rose-500'
-                    : 'border-slate-200 hover:border-slate-300 bg-white'
-                    }`}
-                >
-                  <div
-                    className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full ${urgency === 'alta'
-                      ? 'bg-rose-100 text-rose-600'
-                      : 'bg-slate-100 text-slate-500'
-                      }`}
-                  >
-                    <ShieldAlert className="h-5 w-5" />
-                  </div>
-
-                  <div>
-                    <p
-                      className={`font-semibold ${urgency === 'alta'
-                        ? 'text-rose-900'
-                        : 'text-slate-800'
-                        }`}
-                    >
-                      Alta / Crítica
-                    </p>
-
-                    <p
-                      className={`text-sm ${urgency === 'alta'
-                        ? 'text-rose-700'
-                        : 'text-slate-500'
-                        }`}
-                    >
-                      Paralisação geral de
-                      serviço essencial do
-                      órgão.
-                    </p>
-                  </div>
-                </button>
-              </div>
-            </Field>
-          </div>
-        )}
-      </div>
-
-      <div className="mt-6 flex items-center justify-between">
-        <Button
-          variant="secondary"
-          onClick={() =>
-            step === 0
-              ? onNavigate('inicio')
-              : setStep(step - 1)
-          }
-        >
-          {step === 0 ? (
-            'Cancelar'
-          ) : (
-            <span className="flex items-center gap-1">
-              <ChevronLeft className="h-4 w-4" />
-              Voltar
+          <Button
+            variant="secondary"
+            onClick={() => fileInputRef.current?.click()}
+          >
+            <span className="flex items-center gap-2">
+              <Paperclip className="h-4 w-4" />
+              Anexar imagens
             </span>
-          )}
-        </Button>
+          </Button>
+        </div>
 
         {submitError && (
           <div
             role="alert"
-            className="mb-4 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700"
+            className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700"
           >
             {submitError}
           </div>
         )}
 
-        {step < steps.length - 1 ? (
+        <div className="flex flex-col-reverse justify-between gap-3 border-t border-slate-200 pt-5 dark:border-slate-700 sm:flex-row">
           <Button
-            variant="primary"
-            disabled={!canNext()}
-            onClick={() => setStep(step + 1)}
+            variant="secondary"
+            onClick={() => onNavigate('inicio')}
           >
-            <span className="flex items-center gap-1">
-              Próximo Passo
-              <ChevronRight className="h-4 w-4" />
-            </span>
+            Cancelar
           </Button>
-        ) : (
+
           <Button
             variant="primary"
-            disabled={!canNext() || submitting}
+            disabled={!title.trim() || !description.trim() || submitting}
             onClick={handleSubmit}
           >
-            <span className="flex items-center gap-1.5">
+            <span className="flex items-center gap-2">
               <Send className="h-4 w-4" />
-              {submitting
-                ? 'Registrando chamado...'
-                : 'Abrir Chamado Oficial'}
+              {submitting ? 'Registrando chamado...' : 'Abrir chamado'}
             </span>
           </Button>
-        )}
+        </div>
       </div>
     </div>
   );

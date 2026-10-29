@@ -288,3 +288,18 @@ html[data-theme="dark"] .open-ticket button.border-slate-200.bg-white:hover {
   border-color: #64748b !important;
   color: #ffffff !important;
 }
+
+/* Central de Ajuda: campos claros no modo claro */
+html[data-theme="light"] .open-ticket input:not([type="file"]),
+html[data-theme="light"] .open-ticket textarea,
+html[data-theme="light"] .open-ticket select {
+  color: #0f172a;
+  background-color: #ffffff;
+  border-color: #cbd5e1;
+}
+
+html[data-theme="light"] .open-ticket input::placeholder,
+html[data-theme="light"] .open-ticket textarea::placeholder {
+  color: #64748b;
+  opacity: 1;
+}
