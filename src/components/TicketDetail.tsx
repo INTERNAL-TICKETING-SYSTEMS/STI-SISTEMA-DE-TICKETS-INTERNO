@@ -1,4 +1,5 @@
 ﻿import React, { useState, useRef } from 'react';
+import './ticket-detail-theme.css';
 import { useTechTheme } from '@/components/tech/techTheme';
 import { Ticket } from '@/types';
 import StatusBadge from '@/components/ui/StatusBadge';
@@ -28,7 +29,7 @@ interface TicketDetailProps {
   ) => void;
   ticket: Ticket;
   onNavigate: (p: Page) => void;
-  onReply: (id: string, message: string) => void;
+  onReply: (message: string) => void;
 }
 
 export default function TicketDetail({
@@ -99,7 +100,7 @@ export default function TicketDetail({
         : imgPayloads;
     }
 
-    onReply(ticket.id, fullMessage);
+    onReply(fullMessage);
     setReply('');
     setChatAttachments([]);
   };
@@ -158,7 +159,7 @@ export default function TicketDetail({
   };
 
   return (
-    <div>
+    <div className="ticket-detail mx-auto w-full max-w-5xl">
       {/* Botão de retorno */}
       <button
         type="button"
@@ -172,48 +173,55 @@ export default function TicketDetail({
         Voltar para meus chamados
       </button>
 
-      {/* Cabeçalho do chamado */}
+      {/* Cabeçalho do chamado — visual inspirado no WhatsApp */}
       <div
-        className={`mb-6 rounded-2xl border p-6 shadow-sm ${isDark
-          ? 'border-slate-700 bg-slate-900'
-          : 'border-slate-200 bg-white'
+        className={`ticket-chat-header mb-0 rounded-t-xl rounded-b-none border px-4 py-5 shadow-none sm:px-6 ${isDark
+          ? 'border-slate-700 bg-[#075e54]'
+          : 'border-[#d5ddd7] bg-[#075e54]'
           }`}
       >
-        <div className="flex flex-col items-start justify-between gap-4 sm:flex-row">
-          <div className="min-w-0 flex-1">
-            <span className="font-mono text-xs font-semibold uppercase tracking-wider text-slate-400">
-              {ticket.protocol}
-            </span>
+        <div className="flex flex-col items-start justify-between gap-3 sm:flex-row sm:items-center">
+          <div className="flex min-w-0 items-center gap-3">
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-white/15 text-sm font-bold text-white">
+              <Headphones size={21} />
+            </div>
 
-            <h1
-              className={`mt-1 text-xl font-bold ${isDark ? 'text-slate-100' : 'text-slate-900'
-                }`}
-            >
-              {ticket.title}
-            </h1>
+            <div className="min-w-0">
+              <p className="text-xs font-medium text-white/75">
+                {ticket.protocol}
+              </p>
 
-            <div className="mt-3 flex flex-wrap items-center gap-4 text-xs text-slate-500">
-              <span className="inline-flex items-center gap-1.5 font-medium">
-                <Layers className="h-3.5 w-3.5 text-slate-400" />
-                {ticket.category}
-              </span>
+              <h1 className="mt-1 break-words text-lg font-semibold text-white sm:text-xl">
+                {ticket.title}
+              </h1>
 
-              <span className="inline-flex items-center gap-1.5">
-                <Clock className="h-3.5 w-3.5 text-slate-400" />
-                Aberto em {formatDate(ticket.createdAt)}
-              </span>
+              <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-white/75">
+                <span className="inline-flex items-center gap-1.5">
+                  <Layers size={14} />
+                  {ticket.category}
+                </span>
+
+                <span className="inline-flex items-center gap-1.5">
+                  <Clock size={14} />
+                  Aberto em {formatDate(ticket.createdAt)}
+                </span>
+              </div>
             </div>
           </div>
 
-          <StatusBadge status={ticket.status} />
+          <div className="shrink-0 rounded-full bg-white/15 px-3 py-1.5 text-white [&_*]:!text-white">
+            <StatusBadge status={ticket.status} />
+          </div>
         </div>
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-3">
+      {/* Organização do chat e da barra lateral */}
+      <div className="grid grid-cols-1 gap-5 lg:grid-cols-3 lg:gap-6">
+
         {/* Painel central: chat e mensagens */}
         <div className="space-y-6 lg:col-span-2">
           <div
-            className={`flex min-h-[500px] flex-col rounded-2xl border p-6 shadow-sm ${isDark
+            className={`flex min-h-[500px] flex-col rounded-xl border p-5 shadow-sm sm:p-7 ${isDark
               ? 'border-slate-700 bg-slate-900'
               : 'border-slate-200 bg-white'
               }`}
@@ -233,11 +241,11 @@ export default function TicketDetail({
                     </div>
 
                     <div>
-                      <p className="text-xs font-semibold uppercase tracking-wider ${isDark ? 'text-emerald-300' : 'text-emerald-900'}">
+                      <p className={`text-xs font-semibold uppercase tracking-wider ${isDark ? 'text-emerald-300' : 'text-emerald-900'}`}>
                         Atendimento Técnico em Andamento
                       </p>
 
-                      <p className="text-sm font-medium ${isDark ? 'text-emerald-200' : 'text-emerald-800'}">
+                      <p className={`text-sm font-medium ${isDark ? 'text-emerald-200' : 'text-emerald-800'}`}>
                         Responsável: <strong>{ticket.assignee}</strong>{' '}
                         (DTI - Suporte Técnico)
                       </p>
@@ -274,8 +282,8 @@ export default function TicketDetail({
             <div className="flex-1 space-y-5 overflow-y-auto pr-1">
               {/* Relato inicial */}
               <div className="flex flex-col items-end">
-                <div className="max-w-[85%] rounded-2xl rounded-tr-sm bg-slate-900 px-4 py-3 text-white shadow-sm">
-                  <p className="mb-1 text-xs font-semibold uppercase tracking-wider text-slate-300">
+                <div className={`max-w-[85%] rounded-xl rounded-tr-sm border px-4 py-3 shadow-sm ${isDark ? 'border-slate-700 bg-slate-800 text-slate-100' : 'border-slate-200 bg-white text-slate-800'}`}>
+                  <p className={`mb-1 text-xs font-semibold uppercase tracking-wider ${isDark ? 'text-slate-300' : 'text-slate-500'}`}>
                     Relato Inicial
                   </p>
 
@@ -335,7 +343,9 @@ export default function TicketDetail({
 
                       <div
                         className={`rounded-2xl px-4 py-3 shadow-sm ${isUser
-                          ? 'rounded-tr-sm bg-slate-900 text-white'
+                          ? (isDark
+                            ? 'rounded-tr-sm border border-slate-700 bg-slate-800 text-slate-100'
+                            : 'rounded-tr-sm border border-slate-200 bg-slate-50 text-slate-800')
                           : isDark
                             ? 'rounded-tl-sm border border-slate-700 bg-slate-800 text-slate-100'
                             : 'rounded-tl-sm border border-slate-200 bg-slate-100 text-slate-800'
@@ -521,8 +531,8 @@ export default function TicketDetail({
                         placeholder="Deixe um comentário opcional sobre a solução ou o técnico responsável..."
                         rows={2}
                         className={`w-full rounded-xl border p-3 text-xs placeholder:text-slate-400 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500 ${isDark
-                            ? 'border-emerald-500/30 bg-slate-800 text-slate-100'
-                            : 'border-emerald-200 bg-white text-slate-800'
+                          ? 'border-emerald-500/30 bg-slate-800 text-slate-100'
+                          : 'border-emerald-200 bg-white text-slate-800'
                           }`}
                       />
                     </div>
@@ -586,7 +596,7 @@ export default function TicketDetail({
         {/* Barra lateral com metadados */}
         <div className="flex flex-col gap-4">
           <div
-            className={`rounded-2xl border p-5 shadow-sm ${isDark
+            className={`rounded-xl border p-5 shadow-sm ${isDark
               ? 'border-slate-700 bg-slate-900'
               : 'border-slate-200 bg-white'
               }`}
@@ -667,7 +677,7 @@ export default function TicketDetail({
           </div>
 
           <div
-            className={`rounded-2xl border p-5 shadow-sm ${isDark
+            className={`rounded-xl border p-5 shadow-sm ${isDark
               ? 'border-slate-700 bg-slate-900'
               : 'border-slate-200 bg-white'
               }`}
@@ -691,7 +701,7 @@ export default function TicketDetail({
                 </p>
 
                 <p className="text-xs text-slate-500">
-                  Horário: 08:00 às 18:00
+                  Horário: 08:00 às 14:00
                 </p>
               </div>
             </div>

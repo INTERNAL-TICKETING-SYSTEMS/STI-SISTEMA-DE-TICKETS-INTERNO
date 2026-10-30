@@ -1,0 +1,217 @@
+/*
+ * STI — Detalhes do Chamado do Solicitante
+ * Estilos exclusivos desta tela.
+ * Não altera a tela de abertura nem a tela do técnico.
+ */
+
+.ticket-detail {
+  --detail-border: #e2e8f0;
+  --detail-surface: #ffffff;
+  --detail-surface-soft: #f8fafc;
+  --detail-text: #0f172a;
+  --detail-muted: #64748b;
+  --detail-input-border: #cbd5e1;
+  --detail-input-background: #ffffff;
+  --detail-input-text: #0f172a;
+
+  width: 100%;
+  color: var(--detail-text);
+}
+
+/* Cabeçalho e cartões: padrão visual do STI */
+.ticket-detail > .rounded-xl.border,
+.ticket-detail .rounded-xl.border.p-5.shadow-sm,
+.ticket-detail .rounded-xl.border.p-4.shadow-sm {
+  border-color: var(--detail-border);
+  border-radius: 0.75rem;
+}
+
+/* Hierarquia visual */
+.ticket-detail h1,
+.ticket-detail h2,
+.ticket-detail h3 {
+  letter-spacing: -0.015em;
+}
+
+.ticket-detail p {
+  line-height: 1.6;
+}
+
+/* Campos de mensagem e avaliação */
+.ticket-detail textarea,
+.ticket-detail input:not([type="file"]) {
+  color: var(--detail-input-text);
+  background-color: var(--detail-input-background);
+  border-color: var(--detail-input-border);
+  border-radius: 0.75rem;
+  transition:
+    border-color 160ms ease,
+    box-shadow 160ms ease,
+    background-color 160ms ease;
+}
+
+.ticket-detail textarea::placeholder,
+.ticket-detail input::placeholder {
+  color: #64748b;
+  opacity: 1;
+}
+
+.ticket-detail textarea:focus,
+.ticket-detail input:not([type="file"]):focus {
+  outline: none;
+  border-color: #0d9488;
+  box-shadow: 0 0 0 3px rgb(13 148 136 / 12%);
+}
+
+/* Botões acessíveis */
+.ticket-detail button {
+  transition:
+    background-color 160ms ease,
+    border-color 160ms ease,
+    box-shadow 160ms ease;
+}
+
+.ticket-detail button:focus-visible {
+  outline: 2px solid #0d9488;
+  outline-offset: 3px;
+}
+
+/* MODO CLARO */
+html[data-theme="light"] .ticket-detail {
+  --detail-border: #e2e8f0;
+  --detail-surface: #ffffff;
+  --detail-surface-soft: #f8fafc;
+  --detail-text: #0f172a;
+  --detail-muted: #64748b;
+  --detail-input-border: #cbd5e1;
+  --detail-input-background: #ffffff;
+  --detail-input-text: #0f172a;
+}
+
+html[data-theme="light"] .ticket-detail .bg-white {
+  background-color: #ffffff;
+}
+
+html[data-theme="light"] .ticket-detail .bg-slate-50,
+html[data-theme="light"] .ticket-detail .bg-slate-50\/50,
+html[data-theme="light"] .ticket-detail .bg-slate-50\/60 {
+  background-color: #f8fafc;
+}
+
+html[data-theme="light"] .ticket-detail .border-slate-200,
+html[data-theme="light"] .ticket-detail .border-slate-100 {
+  border-color: #e2e8f0;
+}
+
+html[data-theme="light"] .ticket-detail .text-slate-900 {
+  color: #0f172a;
+}
+
+html[data-theme="light"] .ticket-detail .text-slate-800 {
+  color: #1e293b;
+}
+
+html[data-theme="light"] .ticket-detail .text-slate-700 {
+  color: #334155;
+}
+
+html[data-theme="light"] .ticket-detail .text-slate-600,
+html[data-theme="light"] .ticket-detail .text-slate-500 {
+  color: #64748b;
+}
+
+html[data-theme="light"] .ticket-detail .text-slate-400 {
+  color: #94a3b8;
+}
+
+/* MODO ESCURO */
+html[data-theme="dark"] .ticket-detail {
+  --detail-border: #334155;
+  --detail-surface: #111c2b;
+  --detail-surface-soft: #172334;
+  --detail-text: #f1f5f9;
+  --detail-muted: #a8b6c8;
+  --detail-input-border: #475569;
+  --detail-input-background: #0f172a;
+  --detail-input-text: #f1f5f9;
+
+  color: var(--detail-text);
+}
+
+html[data-theme="dark"] .ticket-detail > .rounded-xl.border,
+html[data-theme="dark"] .ticket-detail .rounded-xl.border.p-5.shadow-sm,
+html[data-theme="dark"] .ticket-detail .rounded-xl.border.p-4.shadow-sm {
+  border-color: #334155;
+}
+
+html[data-theme="dark"] .ticket-detail .bg-white,
+html[data-theme="dark"] .ticket-detail .bg-slate-900 {
+  background-color: #111c2b;
+}
+
+html[data-theme="dark"] .ticket-detail .bg-slate-50,
+html[data-theme="dark"] .ticket-detail .bg-slate-50\/50,
+html[data-theme="dark"] .ticket-detail .bg-slate-50\/60 {
+  background-color: #172334;
+}
+
+html[data-theme="dark"] .ticket-detail .border-slate-200,
+html[data-theme="dark"] .ticket-detail .border-slate-100,
+html[data-theme="dark"] .ticket-detail .border-t {
+  border-color: #334155;
+}
+
+html[data-theme="dark"] .ticket-detail .text-slate-900,
+html[data-theme="dark"] .ticket-detail .text-slate-800 {
+  color: #f1f5f9;
+}
+
+html[data-theme="dark"] .ticket-detail .text-slate-700 {
+  color: #e2e8f0;
+}
+
+html[data-theme="dark"] .ticket-detail .text-slate-600,
+html[data-theme="dark"] .ticket-detail .text-slate-500 {
+  color: #a8b6c8;
+}
+
+html[data-theme="dark"] .ticket-detail .text-slate-400 {
+  color: #94a3b8;
+}
+
+html[data-theme="dark"] .ticket-detail .hover\:bg-slate-50:hover {
+  background-color: #223247;
+}
+
+html[data-theme="dark"] .ticket-detail .hover\:border-slate-300:hover {
+  border-color: #64748b;
+}
+
+/* Campos no modo escuro */
+html[data-theme="dark"] .ticket-detail textarea,
+html[data-theme="dark"] .ticket-detail input:not([type="file"]) {
+  color: #f1f5f9;
+  background-color: #0f172a;
+  border-color: #475569;
+}
+
+html[data-theme="dark"] .ticket-detail textarea::placeholder,
+html[data-theme="dark"] .ticket-detail input::placeholder {
+  color: #94a3b8;
+}
+
+/* Mantém a interação confortável em telas menores */
+@media (max-width: 640px) {
+  .ticket-detail > .rounded-xl.border {
+    padding: 1rem;
+  }
+}
+
+/* Respeita a preferência do sistema por menos animações */
+@media (prefers-reduced-motion: reduce) {
+  .ticket-detail button,
+  .ticket-detail textarea,
+  .ticket-detail input {
+    transition: none;
+  }
+}
