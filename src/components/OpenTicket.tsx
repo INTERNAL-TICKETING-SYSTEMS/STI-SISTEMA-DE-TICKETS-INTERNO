@@ -21,6 +21,7 @@ import {
   ShieldAlert,
   Building2,
   Paperclip,
+  ImageIcon,
   X,
   Copy,
   Clock,
@@ -233,6 +234,7 @@ export default function OpenTicket({
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [showSuggestions, setShowSuggestions] = useState(true);
+  const historyEntryActive = useRef(false);
 
   // Destinatário do chamado: o próprio solicitante ou outra pessoa.
   const [showRecipientChoice, setShowRecipientChoice] = useState(false);
@@ -247,6 +249,23 @@ export default function OpenTicket({
   );
   const [sameDepartment, setSameDepartment] = useState(true);
   const [beneficiaryError, setBeneficiaryError] = useState('');
+  useEffect(() => {
+    const handlePopState = () => {
+      if (historyEntryActive.current) {
+        historyEntryActive.current = false;
+        setShowSuggestions(true);
+        setShowRecipientChoice(false);
+        setRecipientType(null);
+        setStep(0);
+      }
+    };
+
+    window.addEventListener('popstate', handlePopState);
+
+    return () => {
+      window.removeEventListener('popstate', handlePopState);
+    };
+  }, []);
   useEffect(() => {
     const raw = sessionStorage.getItem('sti_help_prefill_ticket');
 
@@ -286,6 +305,7 @@ export default function OpenTicket({
   const [blocking, setBlocking] = useState('');
   const [urgency, setUrgency] = useState('');
   const [attachments, setAttachments] = useState<string[]>([]);
+  const [previewImage, setPreviewImage] = useState<string | null>(null);
   const [submitted, setSubmitted] = useState(false);
   const [protocol, setProtocol] = useState('');
   const [copied, setCopied] = useState(false);
@@ -347,13 +367,23 @@ export default function OpenTicket({
     },
   ];
 
-  
+
   function selecionarModelo(modeloId: string) {
+
     const modelo = modelosSolicitacao.find(
       (item) => item.id === modeloId,
     );
 
     if (!modelo) return;
+    if (!historyEntryActive.current) {
+      window.history.pushState(
+        { ...window.history.state, stiOpenTicketStep: 'formulario' },
+        '',
+        window.location.href
+      );
+
+      historyEntryActive.current = true;
+    }
 
     const nome =
       user?.name?.trim() || '[Preencher nome completo]';
@@ -992,8 +1022,12 @@ ${nome}`;
           <button
             type="button"
             onClick={() => {
-              setShowRecipientChoice(false);
-              setShowSuggestions(true);
+              if (historyEntryActive.current) {
+                window.history.back();
+              } else {
+                setShowRecipientChoice(false);
+                setShowSuggestions(true);
+              }
             }}
             className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:underline"
           >
@@ -1277,218 +1311,341 @@ ${nome}`;
       </header>
 
       {user && (
-        <div className="rounded-lg border border-blue-100 bg-blue-50 p-4 dark:border-blue-900 dark:bg-blue-950/40">
-          <p className="text-xs font-semibold uppercase tracking-wide text-blue-700 dark:text-blue-300">
-            Solicitante identificado
-          </p>
+        <div className="overflow-hidden rounded-xl border border-blue-200 bg-white shadow-sm dark:border-blue-900 dark:bg-slate-900">
+          <div className="flex items-center gap-2 border-b border-blue-100 bg-blue-50/80 px-4 py-3 dark:border-blue-900 dark:bg-blue-950/40">
+            <span
+              className="flex h-7 w-7 items-center justify-center rounded-full bg-blue-100 text-sm font-bold text-blue-700 dark:bg-blue-900 dark:text-blue-200"
+              aria-hidden="true"
+            >
+              ✓
+            </span>
 
-          <p className="mt-1 text-sm text-blue-900 dark:text-blue-100">
-            <strong>{user.name}</strong>
-            {' — Lotação: '}
-            {user.department}
-          </p>
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-wide text-blue-800 dark:text-blue-200">
+                Solicitante identificado
+              </p>
+              <p className="text-xs text-blue-600 dark:text-blue-300">
+                Dados vinculados à sua conta
+              </p>
+            </div>
+          </div>
+
+          <div className="grid gap-3 p-4 sm:grid-cols-2">
+            <div>
+              <p className="text-xs font-medium text-slate-500 dark:text-slate-400">
+                Nome do solicitante
+              </p>
+              <p className="mt-1 text-sm font-semibold text-slate-900 dark:text-slate-100">
+                {user.name}
+              </p>
+            </div>
+
+            <div>
+              <p className="text-xs font-medium text-slate-500 dark:text-slate-400">
+                Lotação / Departamento
+              </p>
+              <p className="mt-1 text-sm font-semibold text-slate-900 dark:text-slate-100">
+                {user.department}
+              </p>
+            </div>
+          </div>
         </div>
       )}
 
-      <div className="space-y-5 rounded-xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-900 sm:p-7">
-        <div>
-          <label
-            htmlFor="ticket-subject"
-            className="mb-2 block text-sm font-semibold text-slate-800 dark:text-slate-100"
-          >
-            Assunto:
-          </label>
+      <div className="space-y-2">
+        <label
+          htmlFor="ticket-subject"
+          className="block text-sm font-semibold text-slate-800 dark:text-slate-100"
+        >
+          Assunto do chamado *
+        </label>
 
-          <Input
-            id="ticket-subject"
-            value={title}
-            onChange={(event) => setTitle(event.target.value)}
-            placeholder="Informe o assunto do chamado"
-            maxLength={100}
+        <Input
+          id="ticket-subject"
+          value={title}
+          onChange={(event) => setTitle(event.target.value)}
+          placeholder="Ex.: Computador não conecta à internet"
+          maxLength={100}
+          required
+        />
+
+        <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+          <p className="text-xs text-slate-500 dark:text-slate-400">
+            Resuma o problema ou a solicitação em poucas palavras.
+          </p>
+
+          <p className="text-right text-xs text-slate-400 dark:text-slate-500">
+            {title.length}/100 caracteres
+          </p>
+        </div>
+      </div>
+
+
+      <details className="group overflow-hidden rounded-xl border border-teal-200 bg-teal-50/50 dark:border-teal-900 dark:bg-teal-950/20">
+        <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3">
+          <div>
+            <h2 className="text-sm font-semibold text-teal-900 dark:text-teal-100">
+              Orientações para descrever sua solicitação
+            </h2>
+            <p className="mt-1 text-xs text-teal-800 dark:text-teal-200">
+              Veja algumas dicas para preencher sua solicitação.
+            </p>
+          </div>
+          <ChevronRight className="h-5 w-5 shrink-0 text-teal-700 transition-transform group-open:rotate-90 dark:text-teal-300" />
+        </summary>
+
+        <div className="space-y-3 border-t border-teal-200 p-4 dark:border-teal-900">
+          <p className="text-sm font-medium text-slate-800 dark:text-slate-100">
+            Ao preencher a descrição, procure informar:
+          </p>
+
+          <ul className="space-y-2 text-sm text-slate-700 dark:text-slate-300">
+            <li>1. O que você estava tentando fazer?</li>
+            <li>2. O que aconteceu ou qual problema foi apresentado?</li>
+            <li>3. Qual sistema, equipamento ou serviço foi afetado?</li>
+            <li>4. Apareceu alguma mensagem de erro? Se sim, informe qual.</li>
+          </ul>
+
+          {title.trim() && (
+            <div className="border-t border-teal-200 pt-3 dark:border-teal-900">
+              <button
+                type="button"
+                onClick={() => {
+                  const sugestao =
+                    `Solicito análise técnica referente ao seguinte assunto: ${title.trim()}.\n\n` +
+                    'DESCRIÇÃO DO PROBLEMA\n' +
+                    '[Descreva o que aconteceu e em qual sistema ou equipamento.]\n\n' +
+                    'MENSAGEM DE ERRO\n' +
+                    '[Informe a mensagem apresentada, se houver.]\n\n' +
+                    'PROCEDIMENTOS REALIZADOS\n' +
+                    '[Informe as tentativas de solução, se houver.]';
+
+                  setDescription(sugestao);
+                }}
+                className="inline-flex items-center gap-2 text-sm font-semibold text-teal-700 transition hover:text-teal-900 hover:underline dark:text-teal-300 dark:hover:text-teal-100"
+              >
+                Usar modelo de descrição
+                <ChevronRight size={16} />
+              </button>
+            </div>
+          )}
+
+          {!title.trim() && (
+            <p className="border-t border-teal-200 pt-3 text-xs text-slate-500 dark:border-teal-900 dark:text-slate-400">
+              Preencha o assunto para disponibilizar um modelo de descrição.
+            </p>
+          )}
+        </div>
+      </details>
+
+
+      <div>
+        <label
+          htmlFor="ticket-description"
+          className="mb-2 block text-sm font-semibold text-slate-800 dark:text-slate-100"
+        >
+          Texto:
+        </label>
+
+        <div className="overflow-hidden rounded-xl border border-slate-300 bg-white dark:border-slate-600 dark:bg-slate-950">
+          <div
+            role="toolbar"
+            aria-label="Formatação do texto"
+            className="flex flex-wrap items-center gap-1 border-b border-slate-300 bg-slate-50 p-2 dark:border-slate-700 dark:bg-slate-800"
+          >
+            {[
+              { label: 'Negrito', command: 'bold', icon: Bold },
+              { label: 'Itálico', command: 'italic', icon: Italic },
+              { label: 'Sublinhado', command: 'underline', icon: Underline },
+              { label: 'Lista', command: 'insertUnorderedList', icon: List },
+              { label: 'Lista numerada', command: 'insertOrderedList', icon: ListOrdered },
+              { label: 'Alinhar à esquerda', command: 'justifyLeft', icon: AlignLeft },
+              { label: 'Centralizar', command: 'justifyCenter', icon: AlignCenter },
+              { label: 'Alinhar à direita', command: 'justifyRight', icon: AlignRight },
+              { label: 'Desfazer', command: 'undo', icon: Undo2 },
+              { label: 'Refazer', command: 'redo', icon: Redo2 },
+            ].map(({ label, command, icon: Icon }) => (
+              <button
+                key={command}
+                type="button"
+                title={label}
+                aria-label={label}
+                onMouseDown={(event) => event.preventDefault()}
+                onClick={() => executarFormatacao(command)}
+                className="flex h-9 w-9 items-center justify-center rounded-md text-slate-700 transition hover:bg-slate-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 dark:text-slate-200 dark:hover:bg-slate-700"
+              >
+                <Icon className="h-4 w-4" />
+              </button>
+            ))}
+          </div>
+
+          <Textarea
+            id="ticket-description"
+            rows={10}
+            value={description}
+            onChange={(event) => setDescription(event.target.value)}
+            placeholder="Descreva sua solicitação..."
+            className="min-h-[260px] resize-y rounded-none border-0 shadow-none focus-visible:ring-0"
             required
           />
         </div>
 
-        <section className="overflow-hidden rounded-lg border border-slate-200 dark:border-slate-700">
-          <div className="border-b border-slate-200 bg-slate-50 px-4 py-3 dark:border-slate-700 dark:bg-slate-800">
-            <h2 className="text-sm font-semibold text-slate-800 dark:text-slate-100">
-              Isso pode ser útil
-            </h2>
+        <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
+          Informe os detalhes necessários para que a equipe técnica possa
+          compreender e analisar sua solicitação.
+        </p>
+      </div>
 
-            <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-              Consulte uma sugestão relacionada ao assunto do seu chamado.
-            </p>
+      {attachments.length > 0 && (
+        <div className="space-y-3 rounded-xl border border-slate-200 bg-slate-50/70 p-4 dark:border-slate-700 dark:bg-slate-800/40">
+          <div className="flex items-center justify-between gap-2">
+            <div>
+              <p className="text-sm font-semibold text-slate-800 dark:text-slate-100">
+                Imagens anexadas
+              </p>
+              <p className="text-xs text-slate-500 dark:text-slate-400">
+                Revise os arquivos antes de abrir o chamado.
+              </p>
+            </div>
+
+            <span className="rounded-full bg-blue-100 px-3 py-1 text-xs font-semibold text-blue-700 dark:bg-blue-900/50 dark:text-blue-200">
+              {attachments.length} {attachments.length === 1 ? 'imagem' : 'imagens'}
+            </span>
           </div>
 
-          <div className="p-4">
-            {title.trim() ? (
-              <div className="space-y-2">
-                <p className="text-sm text-slate-700 dark:text-slate-200">
-                  Antes de enviar, descreva o que você estava tentando fazer,
-                  o que aconteceu e se apareceu alguma mensagem de erro.
-                </p>
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+            {attachments.map((arquivo, index) => (
+              <div
+                key={index}
+                className="flex min-w-0 items-center gap-3 rounded-lg border border-slate-200 bg-white p-3 dark:border-slate-700 dark:bg-slate-900"
+              >
+                <button
+                  type="button"
+                  onClick={() => setPreviewImage(arquivo)}
+                  className="h-14 w-14 shrink-0 overflow-hidden rounded-lg border border-slate-200 bg-slate-100 transition hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 dark:border-slate-700 dark:bg-slate-800"
+                  aria-label={`Visualizar imagem ${index + 1}`}
+                  title="Clique para ampliar"
+                >
+                  <img
+                    src={arquivo}
+                    alt={`Pré-visualização da imagem ${index + 1}`}
+                    className="h-full w-full object-cover"
+                  />
+                </button>
+
+                {previewImage && (
+                  <div
+                    className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4"
+                    onClick={() => setPreviewImage(null)}
+                  >
+                    <div
+                      role="dialog"
+                      aria-modal="true"
+                      aria-label="Visualização da imagem anexada"
+                      className="relative flex max-h-[90vh] w-full max-w-4xl flex-col items-center rounded-xl bg-white p-3 shadow-2xl dark:bg-slate-900"
+                      onClick={(event) => event.stopPropagation()}
+                    >
+                      <div className="mb-3 flex w-full items-center justify-between">
+                        <p className="text-sm font-semibold text-slate-800 dark:text-slate-100">
+                          Pré-visualização do anexo
+                        </p>
+
+                        <button
+                          type="button"
+                          onClick={() => setPreviewImage(null)}
+                          className="flex h-9 w-9 items-center justify-center rounded-lg text-slate-600 transition hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800"
+                          aria-label="Fechar visualização"
+                          title="Fechar"
+                        >
+                          <X className="h-5 w-5" />
+                        </button>
+                      </div>
+
+                      <img
+                        src={previewImage}
+                        alt="Imagem anexada ao chamado em tamanho ampliado"
+                        className="max-h-[75vh] max-w-full rounded-lg object-contain"
+                      />
+
+                      <p className="mt-3 text-xs text-slate-500 dark:text-slate-400">
+                        Confira se esta é a imagem correta antes de enviar o chamado.
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-medium text-slate-800 dark:text-slate-100">
+                    Imagem {index + 1}
+                  </p>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">
+                    Anexo do chamado
+                  </p>
+                </div>
 
                 <button
                   type="button"
-                  onClick={() => {
-                    const sugestao =
-                      `Solicito análise técnica referente ao seguinte assunto: ${title.trim()}.\n\n` +
-                      'DESCRIÇÃO DO PROBLEMA\n' +
-                      '[Descreva o que aconteceu e em qual sistema ou equipamento.]\n\n' +
-                      'MENSAGEM DE ERRO\n' +
-                      '[Informe a mensagem apresentada, se houver.]\n\n' +
-                      'PROCEDIMENTOS REALIZADOS\n' +
-                      '[Informe as tentativas de solução, se houver.]';
-
-                    setDescription(sugestao);
-                  }}
-                  className="text-sm font-semibold text-teal-700 hover:underline dark:text-teal-300"
+                  onClick={() => removeAttachment(index)}
+                  className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-red-600 transition hover:bg-red-50 hover:text-red-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500 dark:text-red-400 dark:hover:bg-red-950/40"
+                  aria-label={`Remover imagem ${index + 1}`}
+                  title="Remover imagem"
                 >
-                  Usar modelo de descrição
+                  <X className="h-4 w-4" />
                 </button>
               </div>
-            ) : (
-              <p className="text-xs text-slate-500 dark:text-slate-400">
-                Insira um assunto para receber orientações úteis.
-              </p>
-            )}
+            ))}
           </div>
-        </section>
-
-        <div>
-          <label
-            htmlFor="ticket-description"
-            className="mb-2 block text-sm font-semibold text-slate-800 dark:text-slate-100"
-          >
-            Texto:
-          </label>
-
-          <div className="overflow-hidden rounded-xl border border-slate-300 bg-white dark:border-slate-600 dark:bg-slate-950">
-            <div
-              role="toolbar"
-              aria-label="Formatação do texto"
-              className="flex flex-wrap items-center gap-1 border-b border-slate-300 bg-slate-50 p-2 dark:border-slate-700 dark:bg-slate-800"
-            >
-              {[
-                { label: 'Negrito', command: 'bold', icon: Bold },
-                { label: 'Itálico', command: 'italic', icon: Italic },
-                { label: 'Sublinhado', command: 'underline', icon: Underline },
-                { label: 'Lista', command: 'insertUnorderedList', icon: List },
-                { label: 'Lista numerada', command: 'insertOrderedList', icon: ListOrdered },
-                { label: 'Alinhar à esquerda', command: 'justifyLeft', icon: AlignLeft },
-                { label: 'Centralizar', command: 'justifyCenter', icon: AlignCenter },
-                { label: 'Alinhar à direita', command: 'justifyRight', icon: AlignRight },
-                { label: 'Desfazer', command: 'undo', icon: Undo2 },
-                { label: 'Refazer', command: 'redo', icon: Redo2 },
-              ].map(({ label, command, icon: Icon }) => (
-                <button
-                  key={command}
-                  type="button"
-                  title={label}
-                  aria-label={label}
-                  onMouseDown={(event) => event.preventDefault()}
-                  onClick={() => executarFormatacao(command)}
-                  className="flex h-9 w-9 items-center justify-center rounded-md text-slate-700 transition hover:bg-slate-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 dark:text-slate-200 dark:hover:bg-slate-700"
-                >
-                  <Icon className="h-4 w-4" />
-                </button>
-              ))}
-            </div>
-
-            <Textarea
-              id="ticket-description"
-              rows={12}
-              value={description}
-              onChange={(event) => setDescription(event.target.value)}
-              placeholder="Descreva sua solicitação..."
-              className="min-h-[300px] resize-y rounded-none border-0 shadow-none focus-visible:ring-0"
-              required
-            />
-          </div>
-
-          <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
-            Informe os detalhes necessários para que a equipe técnica possa
-            compreender e analisar sua solicitação.
-          </p>
         </div>
+      )}
 
-        {attachments.length > 0 && (
-          <div className="space-y-2">
-            <p className="text-sm font-semibold text-slate-800 dark:text-slate-100">
-              Arquivos anexados
-            </p>
+      <div>
+        <input
+          type="file"
+          ref={fileInputRef}
+          onChange={handleFileUpload}
+          accept="image/*"
+          multiple
+          className="hidden"
+        />
 
-            <div className="flex flex-wrap gap-2">
-              {attachments.map((arquivo, index) => (
-                <div
-                  key={index}
-                  className="flex items-center gap-2 rounded-lg border border-slate-200 px-3 py-2 text-xs dark:border-slate-700"
-                >
-                  <span>Imagem {index + 1}</span>
+        <Button
+          variant="secondary"
+          onClick={() => fileInputRef.current?.click()}
+        >
+          <span className="flex items-center gap-2">
+            <Paperclip className="h-4 w-4" />
+            Anexar imagens
+          </span>
+        </Button>
+      </div>
 
-                  <button
-                    type="button"
-                    onClick={() => removeAttachment(index)}
-                    className="text-red-600 hover:text-red-800"
-                    aria-label={`Remover imagem ${index + 1}`}
-                  >
-                    <X className="h-4 w-4" />
-                  </button>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        <div>
-          <input
-            type="file"
-            ref={fileInputRef}
-            onChange={handleFileUpload}
-            accept="image/*"
-            multiple
-            className="hidden"
-          />
-
-          <Button
-            variant="secondary"
-            onClick={() => fileInputRef.current?.click()}
-          >
-            <span className="flex items-center gap-2">
-              <Paperclip className="h-4 w-4" />
-              Anexar imagens
-            </span>
-          </Button>
+      {submitError && (
+        <div
+          role="alert"
+          className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700"
+        >
+          {submitError}
         </div>
+      )}
 
-        {submitError && (
-          <div
-            role="alert"
-            className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700"
-          >
-            {submitError}
-          </div>
-        )}
+      <div className="flex flex-col-reverse justify-between gap-3 border-t border-slate-200 pt-5 dark:border-slate-700 sm:flex-row">
+        <Button
+          variant="secondary"
+          onClick={() => onNavigate('inicio')}
+        >
+          Cancelar
+        </Button>
 
-        <div className="flex flex-col-reverse justify-between gap-3 border-t border-slate-200 pt-5 dark:border-slate-700 sm:flex-row">
-          <Button
-            variant="secondary"
-            onClick={() => onNavigate('inicio')}
-          >
-            Cancelar
-          </Button>
-
-          <Button
-            variant="primary"
-            disabled={!title.trim() || !description.trim() || submitting}
-            onClick={handleSubmit}
-          >
-            <span className="flex items-center gap-2">
-              <Send className="h-4 w-4" />
-              {submitting ? 'Registrando chamado...' : 'Abrir chamado'}
-            </span>
-          </Button>
-        </div>
+        <Button
+          variant="primary"
+          disabled={!title.trim() || !description.trim() || submitting}
+          onClick={handleSubmit}
+        >
+          <span className="flex items-center gap-2">
+            <Send className="h-4 w-4" />
+            {submitting ? 'Registrando chamado...' : 'Abrir chamado'}
+          </span>
+        </Button>
       </div>
     </div>
   );

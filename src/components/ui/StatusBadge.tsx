@@ -8,8 +8,8 @@ const statusConfig: Record<TicketStatus, { label: string; classes: string; dot: 
   },
   em_andamento: {
     label: 'Em atendimento',
-    classes: 'bg-blue-50 text-blue-700 border-blue-200',
-    dot: 'bg-blue-500',
+    classes: 'bg-blue-100 text-blue-800 border-blue-300',
+    dot: 'bg-blue-600',
   },
   aguardando: {
     label: 'Aguardando usuário',

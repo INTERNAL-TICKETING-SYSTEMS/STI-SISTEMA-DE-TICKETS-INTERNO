@@ -1,4 +1,4 @@
-import { dbRepository } from '@/services/dbRepository';
+﻿import { dbRepository } from '@/services/dbRepository';
 import { AuditCompliancePanel } from './components/tech/AuditCompliancePanel';
 
 import GestorAuditTable from '@/components/gestor/GestorAuditTable';
@@ -642,7 +642,11 @@ export default function App() {
       protocolo: chamadoSalvo.protocolo,
     };
   };
-  const handleUserReply = (id: string, message: string) => {
+  const handleUserReply = (
+    id: string,
+    message: string,
+    replyToId?: string
+  ) => {
     const now = new Date().toISOString();
 
     setTickets((prev) =>
@@ -660,6 +664,7 @@ export default function App() {
                 authorName: activeUser.name,
                 message,
                 createdAt: now,
+                replyToId,
               },
             ],
           }
@@ -811,7 +816,8 @@ export default function App() {
   const handleTechMessage = (
     id: string,
     message: string,
-    attachments: MessageAttachment[] = []
+    attachments: MessageAttachment[] = [],
+    replyToId?: string
   ) => {
     const now = new Date().toISOString();
 
@@ -830,6 +836,7 @@ export default function App() {
                 message,
                 createdAt: now,
                 attachments,
+                replyToId,
               },
             ],
           }
@@ -1149,7 +1156,9 @@ export default function App() {
           {userView.page === 'ticket-detail' && currentTicket && (
             <TicketDetail
               ticket={currentTicket}
-              onReply={(msg) => handleUserReply(currentTicket.id, msg)}
+              onReply={(msg, replyToId) =>
+                handleUserReply(currentTicket.id, msg, replyToId)
+              }
               onNavigate={navigate}
               onRateTicket={handleRateTicket}
             />
@@ -1238,8 +1247,8 @@ export default function App() {
             <TechTicketDetail
               ticket={currentTicket}
               onNavigate={navigate}
-              onSendMessage={(id, msg, attachments) =>
-                handleTechMessage(id, msg, attachments)
+              onSendMessage={(id, msg, attachments, replyToId) =>
+                handleTechMessage(id, msg, attachments, replyToId)
               }
               onRequestInfo={(id, question, attachments) =>
                 handleRequestInfo(id, question, attachments)

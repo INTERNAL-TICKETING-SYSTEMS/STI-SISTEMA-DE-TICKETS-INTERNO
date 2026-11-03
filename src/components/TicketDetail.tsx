@@ -1,7 +1,7 @@
-﻿import React, { useState, useRef } from 'react';
+﻿import React, { useState, useRef, useEffect } from 'react';
 import './ticket-detail-theme.css';
 import { useTechTheme } from '@/components/tech/techTheme';
-import { Ticket } from '@/types';
+import { Ticket, TicketUpdate } from '@/types';
 import StatusBadge from '@/components/ui/StatusBadge';
 import Button from '@/components/ui/Button';
 import { formatDate } from '@/data';
@@ -29,7 +29,7 @@ interface TicketDetailProps {
   ) => void;
   ticket: Ticket;
   onNavigate: (p: Page) => void;
-  onReply: (message: string) => void;
+  onReply: (message: string, replyToId?: string) => void;
 }
 
 export default function TicketDetail({
@@ -41,6 +41,10 @@ export default function TicketDetail({
   const { isDark } = useTechTheme();
 
   const [reply, setReply] = useState('');
+  const [selectedReply, setSelectedReply] =
+    useState<TicketUpdate | null>(null);
+
+  const chatScrollRef = useRef<HTMLDivElement>(null);
   const [userRating, setUserRating] = useState(ticket.rating ?? 5);
   const [hoverRating, setHoverRating] = useState(0);
   const [ratingComment, setRatingComment] = useState(
@@ -51,6 +55,16 @@ export default function TicketDetail({
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
+  useEffect(() => {
+    const container = chatScrollRef.current;
+
+    if (container) {
+      container.scrollTo({
+        top: container.scrollHeight,
+        behavior: 'smooth',
+      });
+    }
+  }, [ticket.id, ticket.updates.length]);
 
   const handleFileUpload = (
     e: React.ChangeEvent<HTMLInputElement>
@@ -100,9 +114,11 @@ export default function TicketDetail({
         : imgPayloads;
     }
 
-    onReply(fullMessage);
+    onReply(fullMessage, selectedReply?.id);
+
     setReply('');
     setChatAttachments([]);
+    setSelectedReply(null);
   };
 
   const handleKeyDown = (
@@ -134,11 +150,11 @@ export default function TicketDetail({
         )}
 
         {images.length > 0 && (
-          <div className="grid grid-cols-2 gap-2 pt-1">
+          <div className="flex flex-wrap justify-end gap-2 pt-1">
             {images.map((src, i) => (
               <div
                 key={i}
-                className="relative group aspect-video cursor-pointer overflow-hidden rounded-lg border border-black/10 bg-black/5"
+                className="relative group aspect-video w-52 max-w-full cursor-pointer overflow-hidden rounded-lg border border-black/10 bg-black/5"
                 onClick={() => setSelectedImage(src)}
               >
                 <img
@@ -209,7 +225,7 @@ export default function TicketDetail({
             </div>
           </div>
 
-          <div className="shrink-0 rounded-full bg-white/15 px-3 py-1.5 text-white [&_*]:!text-white">
+          <div className="shrink-0 rounded-full bg-white/15 px-3 py-1.5 text-white">
             <StatusBadge status={ticket.status} />
           </div>
         </div>
@@ -221,13 +237,13 @@ export default function TicketDetail({
         {/* Painel central: chat e mensagens */}
         <div className="space-y-6 lg:col-span-2">
           <div
-            className={`flex min-h-[500px] flex-col rounded-xl border p-5 shadow-sm sm:p-7 ${isDark
-              ? 'border-slate-700 bg-slate-900'
-              : 'border-slate-200 bg-white'
+            className={`flex h-[70vh] min-h-[500px] max-h-[800px] flex-col overflow-hidden rounded-xl border shadow-sm ${isDark
+              ? 'border-slate-700 bg-[#0b141a]'
+              : 'border-[#d5ddd7] bg-[#efeae2]'
               }`}
           >
             {/* Banner de atendimento técnico */}
-            <div className="mb-6">
+            <div className="m-3 mb-0">
               {ticket.assignee ? (
                 <div
                   className={`flex items-center justify-between rounded-xl border p-3.5 ${isDark
@@ -279,10 +295,25 @@ export default function TicketDetail({
             </div>
 
             {/* Histórico de mensagens */}
-            <div className="flex-1 space-y-5 overflow-y-auto pr-1">
+            <div
+              ref={chatScrollRef}
+              className={`h-[420px] min-h-0 flex-1 space-y-4 overflow-x-hidden overflow-y-auto px-3 py-5 sm:h-[500px] sm:px-6 ${isDark ? 'bg-[#0b141a]' : 'bg-[#efeae2]'
+                }`}
+              style={{
+                backgroundImage: isDark
+                  ? 'radial-gradient(circle, rgba(255,255,255,.035) 1px, transparent 1px)'
+                  : 'radial-gradient(circle, rgba(70,90,75,.07) 1px, transparent 1px)',
+                backgroundSize: '24px 24px',
+              }}
+            >
               {/* Relato inicial */}
               <div className="flex flex-col items-end">
-                <div className={`max-w-[85%] rounded-xl rounded-tr-sm border px-4 py-3 shadow-sm ${isDark ? 'border-slate-700 bg-slate-800 text-slate-100' : 'border-slate-200 bg-white text-slate-800'}`}>
+                <div
+                  className={`max-w-[88%] rounded-lg rounded-tr-none px-3 py-2 shadow-sm sm:max-w-[78%] ${isDark
+                    ? 'bg-[#005c4b] text-slate-100'
+                    : 'bg-[#d9fdd3] text-[#172b20]'
+                    }`}
+                >
                   <p className={`mb-1 text-xs font-semibold uppercase tracking-wider ${isDark ? 'text-slate-300' : 'text-slate-500'}`}>
                     Relato Inicial
                   </p>
@@ -324,33 +355,40 @@ export default function TicketDetail({
               {/* Respostas e atualizações */}
               {ticket.updates.map((u) => {
                 const isUser = u.author === 'usuario';
+                const originalMessage = u.replyToId
+                  ? ticket.updates.find((item) => item.id === u.replyToId)
+                  : null;
 
                 return (
                   <div
                     key={u.id}
+                    id={`message-${u.id}`}
                     className={`flex flex-col ${isUser ? 'items-end' : 'items-start'
                       }`}
                   >
                     <div
-                      className={`flex max-w-[85%] items-start gap-2.5 ${isUser ? 'flex-row-reverse' : 'flex-row'
+                      className={`flex max-w-[88%] sm:max-w-[78%] ${isUser ? 'justify-end' : 'justify-start'
                         }`}
                     >
-                      {!isUser && (
-                        <div className="mt-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-slate-900 text-white shadow-sm">
-                          <Headphones className="h-4 w-4" />
-                        </div>
-                      )}
+
 
                       <div
-                        className={`rounded-2xl px-4 py-3 shadow-sm ${isUser
-                          ? (isDark
-                            ? 'rounded-tr-sm border border-slate-700 bg-slate-800 text-slate-100'
-                            : 'rounded-tr-sm border border-slate-200 bg-slate-50 text-slate-800')
+                        className={`rounded-lg px-3 py-2 shadow-sm ${isUser
+                          ? 'rounded-tr-none bg-[#d9fdd3] text-[#172b20] dark:bg-[#005c4b] dark:text-slate-100'
                           : isDark
-                            ? 'rounded-tl-sm border border-slate-700 bg-slate-800 text-slate-100'
-                            : 'rounded-tl-sm border border-slate-200 bg-slate-100 text-slate-800'
+                            ? 'rounded-tl-none bg-[#202c33] text-slate-100'
+                            : 'rounded-tl-none bg-white text-slate-800'
                           }`}
                       >
+
+                        <p
+                          className={`mb-1 text-[11px] font-semibold ${isUser
+                            ? 'text-emerald-800 dark:text-emerald-200'
+                            : 'text-slate-500 dark:text-slate-300'
+                            }`}
+                        >
+                          {isUser ? 'Você' : u.authorName}
+                        </p>
                         {!isUser && (
                           <p
                             className={`mb-1 flex items-center gap-1 text-[11px] font-bold ${isDark
@@ -365,7 +403,47 @@ export default function TicketDetail({
                           </p>
                         )}
 
+                        {originalMessage && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              document
+                                .getElementById(`message-${originalMessage.id}`)
+                                ?.scrollIntoView({
+                                  behavior: 'smooth',
+                                  block: 'center',
+                                });
+                            }}
+                            className={`mb-2 block w-full rounded-lg border-l-4 px-3 py-2 text-left text-xs ${isDark
+                              ? 'border-sky-400 bg-slate-900/70 text-slate-300'
+                              : 'border-sky-600 bg-white/80 text-slate-600'
+                              }`}
+                          >
+                            <span className="mb-1 block font-bold">
+                              Respondendo a {
+                                originalMessage.author === 'usuario'
+                                  ? 'Você'
+                                  : originalMessage.authorName
+                              }
+                            </span>
+                            <span className="block truncate">
+                              {originalMessage.message.split('[ATTACHMENT:')[0]}
+                            </span>
+                          </button>
+                        )}
+
                         {renderMessageContent(u.message)}
+
+                        <button
+                          type="button"
+                          onClick={() => setSelectedReply(u)}
+                          className={`mt-2 text-xs font-semibold transition-colors ${isDark
+                            ? 'text-sky-300 hover:text-sky-200'
+                            : 'text-sky-700 hover:text-sky-900'
+                            }`}
+                        >
+                          Responder
+                        </button>
                       </div>
                     </div>
 
@@ -385,9 +463,43 @@ export default function TicketDetail({
             {ticket.status !== 'fechado' &&
               ticket.status !== 'resolvido' ? (
               <div
-                className={`mt-6 border-t pt-4 ${isDark ? 'border-slate-700' : 'border-slate-200'
+                className={`border-t p-3 sm:px-4 ${isDark
+                  ? 'border-slate-700 bg-[#202c33]'
+                  : 'border-[#d5ddd7] bg-[#f0f2f5]'
                   }`}
               >
+
+                {selectedReply && (
+                  <div
+                    className={`mb-3 flex items-center justify-between gap-3 rounded-xl border-l-4 px-3 py-2 ${isDark
+                      ? 'border-sky-400 bg-slate-800 text-slate-200'
+                      : 'border-sky-600 bg-sky-50 text-slate-700'
+                      }`}
+                  >
+                    <div className="min-w-0">
+                      <p className="text-xs font-bold">
+                        Respondendo a {
+                          selectedReply.author === 'usuario'
+                            ? 'Você'
+                            : selectedReply.authorName
+                        }
+                      </p>
+                      <p className="truncate text-xs opacity-80">
+                        {selectedReply.message.split('[ATTACHMENT:')[0]}
+                      </p>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => setSelectedReply(null)}
+                      aria-label="Cancelar resposta"
+                      className="shrink-0 rounded-full p-1 hover:bg-slate-500/20"
+                    >
+                      <X className="h-4 w-4" />
+                    </button>
+                  </div>
+                )}
+
                 {/* Pré-visualização dos anexos */}
                 {chatAttachments.length > 0 && (
                   <div className="mb-3 flex flex-wrap gap-2">
@@ -417,8 +529,8 @@ export default function TicketDetail({
 
                 <div
                   className={`relative rounded-xl border p-2 transition-all focus-within:ring-1 ${isDark
-                    ? 'border-slate-700 bg-slate-800 focus-within:border-slate-500 focus-within:ring-slate-500'
-                    : 'border-slate-200 bg-slate-50/50 focus-within:border-slate-400 focus-within:bg-white focus-within:ring-slate-400'
+                      ? 'border-slate-600 bg-[#2a3942] focus-within:border-slate-500 focus-within:ring-slate-500'
+                      : 'border-[#d5ddd7] bg-white focus-within:border-emerald-500 focus-within:ring-emerald-500'
                     }`}
                 >
                   <textarea

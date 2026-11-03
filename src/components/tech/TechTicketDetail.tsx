@@ -10,6 +10,7 @@ import {
   TicketStatus,
   User,
   MessageAttachment,
+  TicketUpdate,
 } from '@/types';
 import StatusBadge from '@/components/ui/StatusBadge';
 import Button from '@/components/ui/Button';
@@ -50,7 +51,8 @@ interface TechTicketDetailProps {
   onSendMessage: (
     id: string,
     message: string,
-    attachments?: MessageAttachment[]
+    attachments?: MessageAttachment[],
+    replyToId?: string
   ) => void;
 
   onRequestInfo: (
@@ -101,6 +103,11 @@ export default function TechTicketDetail({
   const [tab, setTab] = useState<Tab>('interactions');
 
   const [message, setMessage] = useState('');
+  const [selectedReply, setSelectedReply] =
+    useState<TicketUpdate | null>(null);
+
+  const chatScrollRef = useRef<HTMLDivElement>(null);
+
 
   const [pendingFiles, setPendingFiles] = useState<File[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -173,6 +180,17 @@ export default function TechTicketDetail({
   ]);
 
   useEffect(() => {
+    const container = chatScrollRef.current;
+
+    if (container) {
+      container.scrollTo({
+        top: container.scrollHeight,
+        behavior: 'smooth',
+      });
+    }
+  }, [ticket.id, ticket.updates.length]);
+
+  useEffect(() => {
     // Limpa os rascunhos somente ao trocar de chamado.
     setMessage('');
     setMessageMode('message');
@@ -182,6 +200,7 @@ export default function TechTicketDetail({
     setShowTransferSelect(false);
     setIntegrityStatus(null);
     setForensicEvent(null);
+    setSelectedReply(null);
   }, [ticket.id]);
 
 
@@ -284,12 +303,18 @@ export default function TechTicketDetail({
     if (messageMode === 'request') {
       onRequestInfo(ticket.id, text, attachments);
     } else {
-      onSendMessage(ticket.id, text, attachments);
+      onSendMessage(
+        ticket.id,
+        text,
+        attachments,
+        selectedReply?.id
+      );
     }
 
     setMessage('');
     setPendingFiles([]);
     setMessageMode('message');
+    setSelectedReply(null);
   };
 
 
@@ -477,6 +502,7 @@ export default function TechTicketDetail({
                 </div>
 
                 <div
+                  ref={chatScrollRef}
                   className={`h-[420px] space-y-4 overflow-y-auto px-3 py-5 sm:h-[500px] sm:px-6 ${isDark ? 'bg-[#0b141a]' : 'bg-[#efeae2]'
                     }`}
                   style={{
@@ -519,9 +545,14 @@ export default function TechTicketDetail({
                   {ticket.updates.map((u) => {
                     const isTech = u.author === 'tecnico';
 
+                    const originalMessage = u.replyToId
+                      ? ticket.updates.find((item) => item.id === u.replyToId)
+                      : null;
+
                     return (
                       <div
                         key={u.id}
+                        id={`message-${u.id}`}
                         className={`flex ${isTech ? 'justify-end' : 'justify-start'
                           }`}
                       >
@@ -541,6 +572,28 @@ export default function TechTicketDetail({
                           >
                             {isTech ? 'Você · Técnico' : u.authorName}
                           </p>
+
+                          {originalMessage && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                document
+                                  .getElementById(`message-${originalMessage.id}`)
+                                  ?.scrollIntoView({
+                                    behavior: 'smooth',
+                                    block: 'center',
+                                  });
+                              }}
+                              className="mb-2 block w-full rounded-lg border-l-4 border-emerald-500 bg-black/5 px-3 py-2 text-left text-xs dark:bg-black/20"
+                            >
+                              <span className="mb-1 block font-bold">
+                                Respondendo a {originalMessage.authorName}
+                              </span>
+                              <span className="block truncate opacity-80">
+                                {originalMessage.message.split('[ATTACHMENT:')[0]}
+                              </span>
+                            </button>
+                          )}
 
                           <p className="whitespace-pre-wrap break-words text-sm leading-relaxed">
                             {u.message}
@@ -587,6 +640,17 @@ export default function TechTicketDetail({
                             </div>
                           )}
 
+
+                          {messageMode === 'message' && (
+                            <button
+                              type="button"
+                              onClick={() => setSelectedReply(u)}
+                              className="mt-2 block text-xs font-semibold text-emerald-700 hover:text-emerald-600 dark:text-emerald-300"
+                            >
+                              Responder
+                            </button>
+                          )}
+
                           <p className="mt-1.5 text-right text-[10px] opacity-60">
                             {formatMessageTime(u.createdAt)}
                           </p>
@@ -616,8 +680,10 @@ export default function TechTicketDetail({
                       <button
                         type="button"
                         onClick={() => {
+                          setSelectedReply(null);
                           setMessageMode((current) =>
                             current === 'message' ? 'request' : 'message'
+
                           );
                           setMessage('');
                         }}
@@ -629,7 +695,27 @@ export default function TechTicketDetail({
                       </button>
                     </div>
 
+                    {selectedReply && messageMode === 'message' && (
+                      <div className="mb-3 flex items-center justify-between gap-3 rounded-xl border-l-4 border-emerald-500 bg-black/5 px-3 py-2 dark:bg-white/5">
+                        <div className="min-w-0">
+                          <p className="text-xs font-bold">
+                            Respondendo a {selectedReply.authorName}
+                          </p>
+                          <p className="truncate text-xs opacity-70">
+                            {selectedReply.message.split('[ATTACHMENT:')[0]}
+                          </p>
+                        </div>
 
+                        <button
+                          type="button"
+                          onClick={() => setSelectedReply(null)}
+                          aria-label="Cancelar resposta"
+                          className="shrink-0 rounded-full p-1 hover:bg-black/10 dark:hover:bg-white/10"
+                        >
+                          <X className="h-4 w-4" />
+                        </button>
+                      </div>
+                    )}
 
                     {pendingFiles.length > 0 && (
                       <div className="mb-3 flex flex-wrap gap-2">

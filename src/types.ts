@@ -27,6 +27,7 @@ export interface TicketUpdate {
   message: string;
   createdAt: string;
   attachments?: MessageAttachment[];
+  replyToId?: string;
 }
 
 
