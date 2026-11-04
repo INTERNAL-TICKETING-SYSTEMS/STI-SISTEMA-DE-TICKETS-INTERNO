@@ -1,4 +1,4 @@
-
+﻿
 import { dbRepository } from '../services/dbRepository';
 import { useTechTheme } from '@/components/tech/techTheme';
 import React, { useState } from 'react';
@@ -10,6 +10,7 @@ import {
   UserPlus,
   ArrowRight,
   MessagesSquare,
+  AlertCircle,
   Shield,
   Activity,
   BarChart3,
@@ -17,6 +18,8 @@ import {
   Moon,
   Sun,
   X,
+  Eye,
+  EyeOff,
 } from 'lucide-react';
 
 import Button from '@/components/ui/Button';
@@ -119,6 +122,9 @@ export default function Login({
 
   const [email, setEmail] = useState('');
   const [senha, setSenha] = useState('');
+  const [mostrarSenha, setMostrarSenha] = useState(false);
+  const [isLoggingIn, setIsLoggingIn] = useState(false);
+  const [loginErrorMessage, setLoginErrorMessage] = useState('');
 
   const [multiRoleData, setMultiRoleData] = useState<{
     email: string;
@@ -273,6 +279,9 @@ export default function Login({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
+    if (isLoggingIn) return;
+    setLoginErrorMessage('');
+
     const cleanEmail = email.toLowerCase().trim();
 
     if (!cleanEmail) return;
@@ -297,8 +306,8 @@ export default function Login({
       senha !== 'ati2020' &&
       (!customPass || customPass !== senha)
     ) {
-      alert(
-        'Senha incorreta para perfil técnico de suporte STI. Use a credencial operacional autorizada.',
+      setLoginErrorMessage(
+        'Senha incorreta. Confira sua senha e tente novamente.',
       );
       return;
     }
@@ -311,6 +320,7 @@ export default function Login({
       return;
     }
 
+    setIsLoggingIn(true);
     onLogin(cleanEmail);
   };
 
@@ -321,12 +331,14 @@ export default function Login({
   };
 
   const inputClassName = `
-    h-14 w-full rounded-xl border px-4 pl-12 text-base
-    outline-none transition-colors sm:text-lg
-    ${inputBackground} ${inputText} ${inputBorder}
-    ${inputPlaceholder}
-    focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20
-  `;
+  h-14 w-full rounded-xl border px-4 pl-12 text-base
+  outline-none transition-all duration-200 sm:text-base
+  ${inputBackground} ${inputText} ${inputBorder}
+  ${inputPlaceholder}
+  shadow-sm
+  hover:border-cyan-400/70
+  focus:border-cyan-500 focus:ring-4 focus:ring-cyan-500/10
+`;
 
   const modalInputClassName = `
     h-14 w-full rounded-xl border px-4 text-base outline-none
@@ -373,11 +385,10 @@ export default function Login({
                     key={r.id}
                     type="button"
                     onClick={() => handleSelectRoleAndEnter(r.id)}
-                    className={`group flex w-full items-start gap-4 rounded-2xl border p-5 text-left transition-all focus:outline-none focus:ring-2 focus:ring-cyan-400 ${
-                      isDark
-                        ? 'border-white/10 bg-white/[0.04] hover:border-cyan-500/50 hover:bg-cyan-950/30'
-                        : 'border-slate-200 bg-slate-50 hover:border-cyan-400 hover:bg-cyan-50'
-                    }`}
+                    className={`group flex w-full items-start gap-4 rounded-2xl border p-5 text-left transition-all focus:outline-none focus:ring-2 focus:ring-cyan-400 ${isDark
+                      ? 'border-white/10 bg-white/[0.04] hover:border-cyan-500/50 hover:bg-cyan-950/30'
+                      : 'border-slate-200 bg-slate-50 hover:border-cyan-400 hover:bg-cyan-50'
+                      }`}
                   >
                     <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-cyan-500/10 text-cyan-500">
                       <Icon className="h-6 w-6" />
@@ -405,11 +416,10 @@ export default function Login({
               <button
                 type="button"
                 onClick={() => setMultiRoleData(null)}
-                className={`min-h-11 rounded-xl px-4 text-sm font-semibold transition-colors ${
-                  isDark
-                    ? 'text-slate-400 hover:bg-white/5 hover:text-white'
-                    : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
-                }`}
+                className={`min-h-11 rounded-xl px-4 text-sm font-semibold transition-colors ${isDark
+                  ? 'text-slate-400 hover:bg-white/5 hover:text-white'
+                  : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+                  }`}
               >
                 Cancelar e voltar ao login
               </button>
@@ -425,11 +435,10 @@ export default function Login({
           onClick={toggleTheme}
           aria-label={isDark ? 'Ativar modo claro' : 'Ativar modo escuro'}
           title={isDark ? 'Ativar modo claro' : 'Ativar modo escuro'}
-          className={`flex min-h-11 items-center gap-2 rounded-xl border px-3 text-sm font-semibold transition-all focus:outline-none focus:ring-2 focus:ring-cyan-400 ${
-            isDark
-              ? 'border-slate-600 bg-slate-900/90 text-cyan-300 hover:border-cyan-500/60 hover:bg-slate-800'
-              : 'border-slate-300 bg-white text-slate-700 shadow-sm hover:border-cyan-400 hover:text-cyan-700'
-          }`}
+          className={`flex min-h-11 items-center gap-2 rounded-xl border px-3 text-sm font-semibold transition-all focus:outline-none focus:ring-2 focus:ring-cyan-400 ${isDark
+            ? 'border-slate-600 bg-slate-900/90 text-cyan-300 hover:border-cyan-500/60 hover:bg-slate-800'
+            : 'border-slate-300 bg-white text-slate-700 shadow-sm hover:border-cyan-400 hover:text-cyan-700'
+            }`}
         >
           {isDark ? (
             <>
@@ -447,20 +456,17 @@ export default function Login({
 
       {/* Painel esquerdo */}
       <section
-        className={`relative hidden overflow-hidden md:flex md:w-[42%] md:flex-col lg:w-[44%] ${
-          isDark ? 'bg-[#081522]' : 'bg-slate-200'
-        }`}
+        className={`relative hidden overflow-hidden md:flex md:w-[42%] md:flex-col lg:w-[44%] ${isDark ? 'bg-[#081522]' : 'bg-slate-200'
+          }`}
       >
         <div
-          className={`pointer-events-none absolute -left-32 -top-32 h-96 w-96 rounded-full blur-3xl ${
-            isDark ? 'bg-cyan-500/10' : 'bg-cyan-400/20'
-          }`}
+          className={`pointer-events-none absolute -left-32 -top-32 h-96 w-96 rounded-full blur-3xl ${isDark ? 'bg-cyan-500/10' : 'bg-cyan-400/20'
+            }`}
         />
 
         <div
-          className={`relative z-10 flex min-h-screen w-full flex-col justify-between p-8 lg:p-12 ${
-            isDark ? 'text-white' : 'text-slate-900'
-          }`}
+          className={`relative z-10 flex min-h-screen w-full flex-col justify-between p-8 lg:p-12 ${isDark ? 'text-white' : 'text-slate-900'
+            }`}
         >
           <div className="w-fit max-w-full animate-sti-logo">
             <Logo
@@ -472,11 +478,10 @@ export default function Login({
 
           <div className="my-10 max-w-xl space-y-7">
             <div
-              className={`inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-semibold ${
-                isDark
-                  ? 'border-cyan-500/20 bg-cyan-500/10 text-cyan-300'
-                  : 'border-cyan-600/20 bg-cyan-500/10 text-cyan-800'
-              }`}
+              className={`inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-semibold ${isDark
+                ? 'border-cyan-500/20 bg-cyan-500/10 text-cyan-300'
+                : 'border-cyan-600/20 bg-cyan-500/10 text-cyan-800'
+                }`}
             >
               <span className="h-2.5 w-2.5 animate-pulse rounded-full bg-teal-400" />
               Suporte de TI em um só lugar
@@ -489,12 +494,64 @@ export default function Login({
                 ajuda?
               </h2>
               <p
-                className={`max-w-lg text-base leading-relaxed lg:text-lg ${
-                  isDark ? 'text-slate-300' : 'text-slate-600'
-                }`}
+                className={`max-w-lg text-base leading-relaxed lg:text-lg ${isDark ? 'text-slate-300' : 'text-slate-600'
+                  }`}
               >
                 Abra seu chamado, acompanhe o atendimento e veja as atualizações sem complicação.
               </p>
+
+              <div className="space-y-3 pt-2">
+                <div
+                  className={`flex items-center gap-4 rounded-2xl border p-4 ${isDark
+                    ? 'border-white/10 bg-white/[0.03]'
+                    : 'border-slate-300/70 bg-white/60'
+                    }`}
+                >
+                  <div className="rounded-xl bg-cyan-500/15 p-3 text-cyan-500">
+                    <ShieldCheck className="h-6 w-6" />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-bold">Acesso centralizado</h3>
+                    <p className={`mt-1 text-xs ${mutedColor}`}>
+                      Um único ambiente para solicitar suporte.
+                    </p>
+                  </div>
+                </div>
+
+                <div
+                  className={`flex items-center gap-4 rounded-2xl border p-4 ${isDark
+                    ? 'border-white/10 bg-white/[0.03]'
+                    : 'border-slate-300/70 bg-white/60'
+                    }`}
+                >
+                  <div className="rounded-xl bg-cyan-500/15 p-3 text-cyan-500">
+                    <Activity className="h-6 w-6" />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-bold">Acompanhamento fácil</h3>
+                    <p className={`mt-1 text-xs ${mutedColor}`}>
+                      Consulte o andamento dos seus chamados.
+                    </p>
+                  </div>
+                </div>
+
+                <div
+                  className={`flex items-center gap-4 rounded-2xl border p-4 ${isDark
+                    ? 'border-white/10 bg-white/[0.03]'
+                    : 'border-slate-300/70 bg-white/60'
+                    }`}
+                >
+                  <div className="rounded-xl bg-cyan-500/15 p-3 text-cyan-500">
+                    <BarChart3 className="h-6 w-6" />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-bold">Atendimento organizado</h3>
+                    <p className={`mt-1 text-xs ${mutedColor}`}>
+                      Mais clareza durante todo o atendimento.
+                    </p>
+                  </div>
+                </div>
+              </div>
             </div>
 
 
@@ -512,9 +569,10 @@ export default function Login({
       >
         <div className="w-full max-w-xl">
           <div
-            className={`space-y-7 rounded-3xl border p-8 shadow-2xl sm:p-10 lg:p-12 ${cardBackground} ${cardBorder} ${
-              isDark ? 'shadow-black/30' : 'shadow-slate-300/50'
-            }`}
+            className={`space-y-8 rounded-3xl border p-7 shadow-2xl backdrop-blur-sm transition-all duration-300 sm:p-10 lg:p-11 ${cardBackground} ${cardBorder} ${isDark
+              ? 'shadow-black/40 ring-1 ring-white/[0.03]'
+              : 'shadow-slate-300/60 ring-1 ring-white/80'
+              }`}
           >
             <div className="space-y-3">
               <h1 className={`text-3xl font-bold tracking-tight sm:text-4xl ${headingColor}`}>
@@ -547,18 +605,56 @@ export default function Login({
                 <div className="relative">
                   <Lock className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
                   <Input
-                    type="password"
+                    type={mostrarSenha ? 'text' : 'password'}
                     required
                     autoComplete="current-password"
-                    placeholder="••••••••••••"
+                    placeholder="Digite sua senha"
                     value={senha}
                     onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
                       setSenha(e.target.value)
                     }
-                    className={inputClassName}
+                    className={`${inputClassName} pr-12`}
                   />
+
+                  <button
+                    type="button"
+                    onClick={() => setMostrarSenha((anterior) => !anterior)}
+                    aria-label={mostrarSenha ? 'Ocultar senha' : 'Mostrar senha'}
+                    title={mostrarSenha ? 'Ocultar senha' : 'Mostrar senha'}
+                    className={`absolute right-4 top-1/2 -translate-y-1/2 rounded-lg p-1.5 transition-colors focus:outline-none focus:ring-2 focus:ring-cyan-400 ${isDark
+                      ? 'text-slate-400 hover:bg-white/5 hover:text-cyan-300'
+                      : 'text-slate-500 hover:bg-slate-100 hover:text-cyan-700'
+                      }`}
+                  >
+                    {mostrarSenha ? (
+                      <EyeOff className="h-5 w-5" />
+                    ) : (
+                      <Eye className="h-5 w-5" />
+                    )}
+                  </button>
                 </div>
               </Field>
+              {loginErrorMessage && (
+                <div
+                  role="alert"
+                  className={`flex items-start gap-3 rounded-xl border p-4 ${isDark
+                      ? 'border-red-500/30 bg-red-500/10 text-red-300'
+                      : 'border-red-200 bg-red-50 text-red-700'
+                    }`}
+                >
+                  <AlertCircle className="mt-0.5 h-5 w-5 shrink-0" />
+
+                  <div className="min-w-0">
+                    <p className="text-sm font-semibold">
+                      Não foi possível entrar
+                    </p>
+
+                    <p className="mt-1 text-sm leading-relaxed">
+                      {loginErrorMessage}
+                    </p>
+                  </div>
+                </div>
+              )}
 
               <div className="flex justify-end">
                 <button
@@ -577,21 +673,30 @@ export default function Login({
 
               <Button
                 type="submit"
+                disabled={isLoggingIn}
                 className="flex h-14 w-full items-center justify-center gap-3 rounded-xl bg-cyan-600 text-base font-bold text-white shadow-lg shadow-cyan-600/20 transition-all hover:bg-cyan-500 hover:shadow-cyan-500/30 focus:outline-none focus:ring-2 focus:ring-cyan-400 focus:ring-offset-2"
               >
-                <span>Entrar no Sistema</span>
-                <ArrowRight className="h-5 w-5" />
+                {isLoggingIn ? (
+                  <>
+                    <span className="h-5 w-5 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+                    <span>Validando acesso...</span>
+                  </>
+                ) : (
+                  <>
+                    <span>Entrar no Sistema</span>
+                    <ArrowRight className="h-5 w-5" />
+                  </>
+                )}
               </Button>
 
               <div className="pt-1">
                 <div className="relative my-5 flex items-center justify-center">
                   <div className={`w-full border-t ${modalBorder}`} />
                   <span
-                    className={`absolute px-4 text-xs font-semibold uppercase tracking-wider ${
-                      isDark
-                        ? 'bg-[#0b1727] text-slate-500'
-                        : 'bg-white text-slate-400'
-                    }`}
+                    className={`absolute px-4 text-xs font-semibold uppercase tracking-wider ${isDark
+                      ? 'bg-[#0b1727] text-slate-500'
+                      : 'bg-white text-slate-400'
+                      }`}
                   >
                     ou
                   </span>
@@ -600,11 +705,10 @@ export default function Login({
                 <button
                   type="button"
                   onClick={onGoToRegister}
-                  className={`flex min-h-14 w-full items-center justify-center gap-3 rounded-xl border text-sm font-semibold transition-none focus:outline-none focus:ring-2 focus:ring-cyan-400 ${
-                    isDark
-                      ? 'border-slate-600 bg-slate-800/70 text-slate-200 hover:border-cyan-500/60 hover:bg-slate-800'
-                      : 'border-slate-200 bg-slate-50 text-slate-700 hover:border-cyan-300 hover:bg-slate-100'
-                  }`}
+                  className={`flex min-h-14 w-full items-center justify-center gap-3 rounded-xl border text-sm font-semibold transition-none focus:outline-none focus:ring-2 focus:ring-cyan-400 ${isDark
+                    ? 'border-slate-600 bg-slate-800/70 text-slate-200 hover:border-cyan-500/60 hover:bg-slate-800'
+                    : 'border-slate-200 bg-slate-50 text-slate-700 hover:border-cyan-300 hover:bg-slate-100'
+                    }`}
                 >
                   <UserPlus className="h-5 w-5 text-cyan-500" />
                   <span>Primeiro Acesso / Cadastrar Servidor</span>
@@ -642,11 +746,10 @@ export default function Login({
                 type="button"
                 onClick={() => setIsForgotOpen(false)}
                 aria-label="Fechar recuperação de senha"
-                className={`flex h-11 w-11 items-center justify-center rounded-xl transition-colors ${
-                  isDark
-                    ? 'text-slate-400 hover:bg-white/10 hover:text-white'
-                    : 'text-slate-500 hover:bg-slate-100 hover:text-slate-900'
-                }`}
+                className={`flex h-11 w-11 items-center justify-center rounded-xl transition-colors ${isDark
+                  ? 'text-slate-400 hover:bg-white/10 hover:text-white'
+                  : 'text-slate-500 hover:bg-slate-100 hover:text-slate-900'
+                  }`}
               >
                 <X className="h-5 w-5" />
               </button>
@@ -699,11 +802,10 @@ export default function Login({
                     <button
                       type="button"
                       onClick={() => setIsForgotOpen(false)}
-                      className={`min-h-12 rounded-xl px-5 text-sm font-semibold ${
-                        isDark
-                          ? 'text-slate-400 hover:bg-white/5 hover:text-white'
-                          : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
-                      }`}
+                      className={`min-h-12 rounded-xl px-5 text-sm font-semibold ${isDark
+                        ? 'text-slate-400 hover:bg-white/5 hover:text-white'
+                        : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+                        }`}
                     >
                       Cancelar
                     </button>
@@ -786,11 +888,10 @@ export default function Login({
                     <button
                       type="button"
                       onClick={() => setForgotStep('IDENTIFY')}
-                      className={`min-h-12 rounded-xl px-4 text-sm font-semibold ${
-                        isDark
-                          ? 'text-slate-400 hover:bg-white/5 hover:text-white'
-                          : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
-                      }`}
+                      className={`min-h-12 rounded-xl px-4 text-sm font-semibold ${isDark
+                        ? 'text-slate-400 hover:bg-white/5 hover:text-white'
+                        : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+                        }`}
                     >
                       ← Voltar
                     </button>

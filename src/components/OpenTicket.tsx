@@ -1,6 +1,7 @@
 ﻿import React, { useEffect, useState, useRef } from 'react';
 import { User } from '@/types';
 import Button from '@/components/ui/Button';
+import RichTextEditor from './RichTextEditor';
 import { preencherDescricao } from './helpArticles';
 import './open-ticket-theme.css';
 import { SETORES_DETRAN } from '@/data/setores';
@@ -16,6 +17,7 @@ import {
   Wifi,
   KeyRound,
   HelpCircle,
+  Search,
   Server,
   Phone,
   ShieldAlert,
@@ -28,17 +30,6 @@ import {
   ExternalLink,
   ShieldCheck,
   FileCheck2,
-  Bold,
-  Italic,
-  Underline,
-  List,
-  ListOrdered,
-  AlignLeft,
-  AlignCenter,
-  AlignRight,
-  Link,
-  Undo2,
-  Redo2,
 } from 'lucide-react';
 import { Page } from '@/components/Sidebar';
 
@@ -220,8 +211,35 @@ const steps = [
   'Impacto & Urgência',
 ];
 
-function executarFormatacao(comando: string, valor?: string) {
-  document.execCommand(comando, false, valor);
+function escaparHtml(texto: string): string {
+  return texto
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
+// Converte os textos dos modelos automáticos para HTML.
+function textoParaHtml(texto: string): string {
+  return texto
+    .split(/\r?\n/)
+    .map((linha) =>
+      linha.trim()
+        ? `<div>${escaparHtml(linha)}</div>`
+        : '<div><br></div>',
+    )
+    .join('');
+}
+
+// Extrai o texto real do HTML para validar o preenchimento.
+function htmlParaTexto(html: string): string {
+  const elemento = document.createElement('div');
+  elemento.innerHTML = html;
+
+  return (elemento.textContent || '')
+    .replace(/\u00a0/g, ' ')
+    .trim();
 }
 
 export default function OpenTicket({
@@ -232,14 +250,15 @@ export default function OpenTicket({
   const [step, setStep] = useState(0);
   const [category, setCategory] = useState('');
   const [title, setTitle] = useState('');
-  const [description, setDescription] = useState('');
   const [showSuggestions, setShowSuggestions] = useState(true);
+  const [pesquisaModelo, setPesquisaModelo] = useState('');
   const historyEntryActive = useRef(false);
 
   // Destinatário do chamado: o próprio solicitante ou outra pessoa.
   const [showRecipientChoice, setShowRecipientChoice] = useState(false);
   const [recipientType, setRecipientType] = useState<'self' | 'other' | null>(null);
   const [baseDescription, setBaseDescription] = useState('');
+  const [description, setDescription] = useState('');
 
   const [beneficiaryName, setBeneficiaryName] = useState('');
   const [beneficiaryCpf, setBeneficiaryCpf] = useState('');
@@ -290,7 +309,7 @@ export default function OpenTicket({
 
       if (typeof data.descriptionTemplate === 'string') {
         setDescription(
-          preencherDescricao(data.descriptionTemplate, user),
+          textoParaHtml(preencherDescricao(data.descriptionTemplate, user)),
         );
       }
 
@@ -314,6 +333,7 @@ export default function OpenTicket({
   const [submitError, setSubmitError] = useState('');
 
   const fileInputRef = useRef<HTMLInputElement>(null);
+
 
   const modelosSolicitacao = [
     {
@@ -491,7 +511,7 @@ ${nome}`;
 Solicito a criação dos seguintes acessos institucionais:
 - Acesso ao computador no domínio TOCANTINS;
 - Acesso ao e-mail institucional Zimbra do DETRAN;
-- Acesso a pasta compartilhada da rede institucional.
+- Acesso a pasta compartilhada da rede.
 
 DADOS DO SOLICITANTE
 Nome: ${nome}
@@ -579,7 +599,7 @@ ${nome}`;
 
     if (step === 1) {
       return (
-        description.trim() !== '' &&
+        htmlParaTexto(description) !== '' &&
         startDate !== '' &&
         blocking !== ''
       );
@@ -710,7 +730,7 @@ ${nome}`;
       solicitanteNome,
     ].join('\n');
 
-    setDescription(descricaoFinal);
+    setDescription(textoParaHtml(descricaoFinal));
     setBeneficiaryError('');
     setShowRecipientChoice(false);
   };
@@ -962,40 +982,147 @@ ${nome}`;
             </p>
           </div>
 
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {modelosSolicitacao.map((modelo) => {
-              const Icone = modelo.icone;
+          <div className="mb-8">
+            <label
+              htmlFor="pesquisa-modelo"
+              className="mb-2 block text-sm font-semibold text-slate-700 dark:text-slate-200"
+            >
+              Encontre sua solicitação
+            </label>
 
-              return (
-                <button
-                  key={modelo.id}
-                  type="button"
-                  onClick={() => selecionarModelo(modelo.id)}
-                  className="group flex min-h-48 flex-col rounded-2xl border border-slate-200 bg-white p-5 text-left shadow-sm transition duration-200 hover:-translate-y-1 hover:border-teal-400 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 dark:border-slate-800 dark:bg-slate-900 dark:hover:border-teal-500 dark:focus:ring-offset-slate-950"
-                >
-                  <span className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-teal-50 text-teal-700 transition group-hover:bg-teal-100 dark:bg-teal-950 dark:text-teal-300 dark:group-hover:bg-teal-900">
-                    <Icone size={24} />
-                  </span>
+            <div className="relative">
+              <Search
+                size={20}
+                className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"
+              />
 
-                  <span className="text-base font-semibold leading-6 text-slate-900 dark:text-white">
-                    {modelo.titulo}
-                  </span>
-
-                  <span className="mt-2 flex-1 text-sm leading-6 text-slate-600 dark:text-slate-400">
-                    {modelo.descricao}
-                  </span>
-
-                  <span className="mt-4 inline-flex items-center gap-2 text-sm font-semibold text-teal-700 dark:text-teal-300">
-                    Selecionar solicitação
-                    <ChevronRight
-                      size={16}
-                      className="transition group-hover:translate-x-1"
-                    />
-                  </span>
-                </button>
-              );
-            })}
+              <input
+                id="pesquisa-modelo"
+                type="search"
+                value={pesquisaModelo}
+                onChange={(e) => setPesquisaModelo(e.target.value)}
+                placeholder="Ex.: senha, impressora, e-mail..."
+                className="h-12 w-full rounded-xl border border-slate-200 bg-white pl-12 pr-4 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 dark:border-slate-700 dark:bg-slate-900 dark:text-white"
+              />
+            </div>
           </div>
+
+
+          {[
+            {
+              titulo: 'Acessos e contas',
+              descricao: 'Solicitações relacionadas a contas, senhas e permissões institucionais.',
+              modelos: modelosSolicitacao.filter(
+                (modelo) =>
+                  modelo.categoria === 'acesso' &&
+                  `${modelo.titulo} ${modelo.descricao}`
+                    .toLowerCase()
+                    .includes(pesquisaModelo.trim().toLowerCase()),
+              ),
+            },
+            {
+              titulo: 'Equipamentos e periféricos',
+              descricao: 'Acesso e utilização dos equipamentos institucionais.',
+              modelos: modelosSolicitacao.filter(
+                (modelo) =>
+                  modelo.categoria === 'impressora' &&
+                  `${modelo.titulo} ${modelo.descricao}`
+                    .toLowerCase()
+                    .includes(pesquisaModelo.trim().toLowerCase()),
+              ),
+            },
+            {
+              titulo: 'Outras solicitações',
+              descricao: 'Para situações que não se encaixam nas opções anteriores.',
+              modelos: modelosSolicitacao.filter(
+                (modelo) =>
+                  modelo.categoria === 'outro' &&
+                  `${modelo.titulo} ${modelo.descricao}`
+                    .toLowerCase()
+                    .includes(
+                      pesquisaModelo.trim().length < 2
+                        ? ''
+                        : pesquisaModelo.trim().toLowerCase(),
+                    ),
+              ),
+            },
+          ]
+            .filter((grupo) => grupo.modelos.length > 0)
+            .map((grupo) => (
+              <section key={grupo.titulo} className="mb-9">
+                <div className="mb-4">
+                  <h2 className="text-xl font-bold text-slate-900 dark:text-white">
+                    {grupo.titulo}
+                  </h2>
+                  <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">
+                    {grupo.descricao}
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                  {grupo.modelos.map((modelo) => {
+                    const Icone = modelo.icone;
+
+                    return (
+                      <button
+                        key={modelo.id}
+                        type="button"
+                        onClick={() => selecionarModelo(modelo.id)}
+                        className="group flex min-h-48 flex-col rounded-2xl border border-slate-200 bg-white p-5 text-left shadow-sm transition duration-200 hover:-translate-y-1 hover:border-teal-400 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 dark:border-slate-800 dark:bg-slate-900 dark:hover:border-teal-500 dark:focus:ring-offset-slate-950"
+                      >
+
+                        <span
+                          className={`mb-4 flex h-12 w-12 items-center justify-center rounded-xl transition ${modelo.categoria === 'acesso'
+                            ? 'bg-blue-50 text-blue-700 group-hover:bg-blue-100 dark:bg-blue-950 dark:text-blue-300 dark:group-hover:bg-blue-900'
+                            : modelo.categoria === 'impressora'
+                              ? 'bg-purple-50 text-purple-700 group-hover:bg-purple-100 dark:bg-purple-950 dark:text-purple-300 dark:group-hover:bg-purple-900'
+                              : 'bg-orange-50 text-orange-700 group-hover:bg-orange-100 dark:bg-orange-950 dark:text-orange-300 dark:group-hover:bg-orange-900'
+                            }`}
+                        >
+                          <Icone size={24} />
+                        </span>
+
+
+
+                        <span
+                          className={`mb-2 w-fit rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider ${modelo.categoria === 'acesso'
+                            ? 'bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300'
+                            : modelo.categoria === 'impressora'
+                              ? 'bg-purple-100 text-purple-700 dark:bg-purple-950 dark:text-purple-300'
+                              : 'bg-orange-100 text-orange-700 dark:bg-orange-950 dark:text-orange-300'
+                            }`}
+                        >
+                          {modelo.categoria === 'acesso'
+                            ? 'Acesso'
+                            : modelo.categoria === 'impressora'
+                              ? 'Equipamento'
+                              : 'Geral'}
+                        </span>
+
+                        <span className="text-base font-semibold leading-6 text-slate-900 dark:text-white">
+                          {modelo.titulo}
+                        </span>
+
+
+
+                        <span className="mt-2 flex-1 text-sm leading-6 text-slate-600 dark:text-slate-400">
+                          {modelo.descricao}
+                        </span>
+
+                        <span className="mt-4 inline-flex items-center gap-2 text-sm font-semibold text-teal-700 dark:text-teal-300">
+                          Selecionar solicitação
+                          <ChevronRight
+                            size={16}
+                            className="transition group-hover:translate-x-1"
+                          />
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </section>
+            ))}
+
 
           <div className="mt-8 rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900">
             <p className="text-sm leading-6 text-slate-600 dark:text-slate-400">
@@ -1079,9 +1206,9 @@ ${nome}`;
                   nome,
                 ].join('\n');
 
-                setDescription(descricaoFinal);
+                setDescription(textoParaHtml(descricaoFinal));
               } else {
-                setDescription(baseDescription);
+                setDescription(textoParaHtml(baseDescription));
               }
 
               setRecipientType('self');
@@ -1420,7 +1547,7 @@ ${nome}`;
                     'PROCEDIMENTOS REALIZADOS\n' +
                     '[Informe as tentativas de solução, se houver.]';
 
-                  setDescription(sugestao);
+                  setDescription(textoParaHtml(sugestao));
                 }}
                 className="inline-flex items-center gap-2 text-sm font-semibold text-teal-700 transition hover:text-teal-900 hover:underline dark:text-teal-300 dark:hover:text-teal-100"
               >
@@ -1447,47 +1574,25 @@ ${nome}`;
           Texto:
         </label>
 
-        <div className="overflow-hidden rounded-xl border border-slate-300 bg-white dark:border-slate-600 dark:bg-slate-950">
-          <div
-            role="toolbar"
-            aria-label="Formatação do texto"
-            className="flex flex-wrap items-center gap-1 border-b border-slate-300 bg-slate-50 p-2 dark:border-slate-700 dark:bg-slate-800"
-          >
-            {[
-              { label: 'Negrito', command: 'bold', icon: Bold },
-              { label: 'Itálico', command: 'italic', icon: Italic },
-              { label: 'Sublinhado', command: 'underline', icon: Underline },
-              { label: 'Lista', command: 'insertUnorderedList', icon: List },
-              { label: 'Lista numerada', command: 'insertOrderedList', icon: ListOrdered },
-              { label: 'Alinhar à esquerda', command: 'justifyLeft', icon: AlignLeft },
-              { label: 'Centralizar', command: 'justifyCenter', icon: AlignCenter },
-              { label: 'Alinhar à direita', command: 'justifyRight', icon: AlignRight },
-              { label: 'Desfazer', command: 'undo', icon: Undo2 },
-              { label: 'Refazer', command: 'redo', icon: Redo2 },
-            ].map(({ label, command, icon: Icon }) => (
-              <button
-                key={command}
-                type="button"
-                title={label}
-                aria-label={label}
-                onMouseDown={(event) => event.preventDefault()}
-                onClick={() => executarFormatacao(command)}
-                className="flex h-9 w-9 items-center justify-center rounded-md text-slate-700 transition hover:bg-slate-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 dark:text-slate-200 dark:hover:bg-slate-700"
-              >
-                <Icon className="h-4 w-4" />
-              </button>
-            ))}
-          </div>
 
-          <Textarea
-            id="ticket-description"
-            rows={10}
+        <div>
+          <label
+            htmlFor="ticket-description"
+            className="mb-2 block text-sm font-semibold text-slate-800 dark:text-slate-100"
+          >
+            Texto:
+          </label>
+
+          <RichTextEditor
             value={description}
-            onChange={(event) => setDescription(event.target.value)}
-            placeholder="Descreva sua solicitação..."
-            className="min-h-[260px] resize-y rounded-none border-0 shadow-none focus-visible:ring-0"
-            required
+            onChange={setDescription}
+            disabled={submitting}
           />
+
+          <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
+            Informe os detalhes necessários para que a equipe técnica possa
+            compreender e analisar sua solicitação.
+          </p>
         </div>
 
         <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
@@ -1638,7 +1743,11 @@ ${nome}`;
 
         <Button
           variant="primary"
-          disabled={!title.trim() || !description.trim() || submitting}
+          disabled={
+            !title.trim() ||
+            !htmlParaTexto(description) ||
+            submitting
+          }
           onClick={handleSubmit}
         >
           <span className="flex items-center gap-2">

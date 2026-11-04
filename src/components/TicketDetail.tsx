@@ -1,4 +1,5 @@
 ﻿import React, { useState, useRef, useEffect } from 'react';
+import DOMPurify from 'dompurify';
 import './ticket-detail-theme.css';
 import { useTechTheme } from '@/components/tech/techTheme';
 import { Ticket, TicketUpdate } from '@/types';
@@ -318,9 +319,22 @@ export default function TicketDetail({
                     Relato Inicial
                   </p>
 
-                  <p className="whitespace-pre-wrap text-sm leading-relaxed">
-                    {ticket.description}
-                  </p>
+                  {/<\/?(?:div|p|strong|b|em|i|u|ul|ol|li|span|br)\b/i.test(
+                    ticket.description ?? '',
+                  ) ? (
+                    <div
+                      className="ticket-description-content text-sm leading-relaxed"
+                      dangerouslySetInnerHTML={{
+                        __html: DOMPurify.sanitize(ticket.description ?? '', {
+                          USE_PROFILES: { html: true },
+                        }),
+                      }}
+                    />
+                  ) : (
+                    <p className="whitespace-pre-wrap text-sm leading-relaxed">
+                      {ticket.description}
+                    </p>
+                  )}
 
                   {/* Anexos da abertura do chamado */}
                   {ticket.attachments &&
@@ -529,8 +543,8 @@ export default function TicketDetail({
 
                 <div
                   className={`relative rounded-xl border p-2 transition-all focus-within:ring-1 ${isDark
-                      ? 'border-slate-600 bg-[#2a3942] focus-within:border-slate-500 focus-within:ring-slate-500'
-                      : 'border-[#d5ddd7] bg-white focus-within:border-emerald-500 focus-within:ring-emerald-500'
+                    ? 'border-slate-600 bg-[#2a3942] focus-within:border-slate-500 focus-within:ring-slate-500'
+                    : 'border-[#d5ddd7] bg-white focus-within:border-emerald-500 focus-within:ring-emerald-500'
                     }`}
                 >
                   <textarea
