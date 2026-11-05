@@ -50,6 +50,7 @@ export interface Ticket {
   updatedAt: string;
   updates: TicketUpdate[];
   requesterName: string;
+  requesterEmail?: string;
   requesterDepartment: string;
   requesterLocation: string;
   requesterContact: string;

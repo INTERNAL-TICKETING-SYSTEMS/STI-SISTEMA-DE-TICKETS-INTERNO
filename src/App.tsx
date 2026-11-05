@@ -419,6 +419,7 @@ export default function App() {
             updatedAt: chamado.atualizadoEm || criadoEm,
             updates: [],
             requesterName: chamado.solicitanteNome || 'Não informado',
+            requesterEmail: chamado.solicitanteEmail || '',
             requesterDepartment:
               chamado.solicitanteDepartamento || 'Não informado',
             requesterLocation: 'A definir',
@@ -591,6 +592,7 @@ export default function App() {
       updatedAt: chamadoSalvo.atualizadoEm || now,
       updates: [],
       requesterName: chamadoSalvo.solicitanteNome,
+      requesterEmail: activeUser.email,
       requesterDepartment:
         chamadoSalvo.solicitanteDepartamento ||
         activeUser.department,
@@ -1148,6 +1150,7 @@ export default function App() {
             tickets={tickets}
             onNavigate={navigate}
             onOpenTicket={openTicket}
+            activeUser={activeUser}
           />
           )}
 

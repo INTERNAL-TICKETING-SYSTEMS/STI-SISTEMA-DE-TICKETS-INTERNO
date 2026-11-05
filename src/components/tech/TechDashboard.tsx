@@ -1,9 +1,10 @@
-﻿import React from 'react';
+﻿import React, { useMemo, useState } from 'react';
 
 import {
   Inbox,
   Headphones,
   Clock,
+  Search,
   CheckCircle2,
   AlertCircle,
   ArrowRight,
@@ -40,6 +41,15 @@ export default function TechDashboard({
   techName,
 }: TechDashboardProps) {
   const { isDark } = useTechTheme();
+
+  const [searchTerm, setSearchTerm] = useState('');
+
+  const formattedDate = new Date().toLocaleDateString('pt-BR', {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  });
 
   const open = tickets.filter((t) => t.status === 'aberto');
   const inProgress = tickets.filter((t) => t.status === 'em_andamento');
@@ -81,7 +91,28 @@ export default function TechDashboard({
     },
   ];
 
-  const attention = [...open, ...inProgress, ...waiting].slice(0, 6);
+  const pendingTickets = [...open, ...inProgress, ...waiting];
+
+  const filteredAttention = useMemo(() => {
+    const normalizedSearch = searchTerm.trim().toLowerCase();
+
+    if (!normalizedSearch) {
+      return pendingTickets.slice(0, 6);
+    }
+
+    return pendingTickets.filter((ticket) => {
+      const searchableContent = [
+        ticket.id,
+        ticket.title,
+        ticket.requesterName,
+        ticket.requesterDepartment,
+      ]
+        .join(' ')
+        .toLowerCase();
+
+      return searchableContent.includes(normalizedSearch);
+    });
+  }, [tickets, searchTerm]);
 
   const getStatusBadge = (status: TicketStatus) => {
     switch (status) {
@@ -216,7 +247,10 @@ export default function TechDashboard({
                 onClick={() => onFilterSelect?.(ind.status)}
                 className={[
                   'group relative flex min-h-[112px] items-center justify-between overflow-hidden rounded-2xl border p-5 text-left shadow-sm',
-                  'hover:shadow-lg',
+                  'transition-all duration-300 ease-out',
+                  'hover:-translate-y-1 hover:shadow-xl',
+                  'active:scale-[0.98]',
+                  'motion-reduce:transform-none motion-reduce:transition-none',
                   'focus:outline-none focus:ring-2 focus:ring-teal-500/50',
                   isDark
                     ? 'border-white/10 bg-[#0b1624] hover:border-teal-500/40 hover:bg-[#102033]'
@@ -225,6 +259,7 @@ export default function TechDashboard({
               >
                 <div
                   className={[
+                    'transition-transform duration-300 group-hover:scale-110',
                     'pointer-events-none absolute -right-8 -top-8 h-24 w-24 rounded-full blur-2xl',
                     'opacity-0 group-hover:opacity-100',
                     isDark ? 'bg-teal-500/10' : 'bg-teal-300/30',
@@ -234,6 +269,7 @@ export default function TechDashboard({
                 <div className="relative z-10 flex items-center gap-4">
                   <div
                     className={[
+                      'transition-colors duration-300',
                       'flex h-12 w-12 shrink-0 items-center justify-center rounded-xl',
                       ind.iconBg,
                       ind.iconColor,
@@ -342,6 +378,39 @@ export default function TechDashboard({
               Ver todos
               <ArrowRight className="h-4 w-4" />
             </button>
+            <div className="relative w-full">
+              <Search
+                className={[
+                  'pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2',
+                  isDark ? 'text-slate-500' : 'text-slate-400',
+                ].join(' ')}
+              />
+
+              <input
+                type="search"
+                value={searchTerm}
+                onChange={(event) => setSearchTerm(event.target.value)}
+                placeholder="Pesquisar protocolo, assunto, solicitante ou setor..."
+                aria-label="Pesquisar chamados"
+                className={[
+                  'h-11 w-full rounded-xl border pl-10 pr-4 text-sm outline-none transition-all duration-200',
+                  'focus:border-teal-500 focus:ring-4 focus:ring-teal-500/10',
+                  isDark
+                    ? 'border-white/10 bg-white/[0.03] text-white placeholder:text-slate-500'
+                    : 'border-slate-200 bg-slate-50 text-slate-800 placeholder:text-slate-400',
+                ].join(' ')}
+              />
+            </div>
+
+            <p
+              className={[
+                'text-xs',
+                isDark ? 'text-slate-500' : 'text-slate-500',
+              ].join(' ')}
+            >
+              Exibindo {filteredAttention.length} chamado(s)
+            </p>
+
           </div>
 
           {/* TABELA */}
@@ -366,7 +435,7 @@ export default function TechDashboard({
               </thead>
 
               <tbody>
-                {attention.length === 0 ? (
+                {filteredAttention.length === 0 ? (
                   <tr>
                     <td
                       colSpan={6}
@@ -410,7 +479,7 @@ export default function TechDashboard({
                     </td>
                   </tr>
                 ) : (
-                  attention.map((t) => (
+                  filteredAttention.map((t) => (
                     <tr
                       key={t.id}
                       onClick={() => onOpenTicket(t.id)}

@@ -181,3 +181,41 @@ html.theme-switching aside::after {
   transition: none !important;
   animation: none !important;
 }
+
+@keyframes dashboardFadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.dashboard-enter {
+  animation: dashboardFadeUp 450ms ease-out both;
+}
+
+.dashboard-card-1 {
+  animation-delay: 50ms;
+}
+
+.dashboard-card-2 {
+  animation-delay: 100ms;
+}
+
+.dashboard-card-3 {
+  animation-delay: 150ms;
+}
+
+.dashboard-card-4 {
+  animation-delay: 200ms;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dashboard-enter {
+    animation: none;
+  }
+}

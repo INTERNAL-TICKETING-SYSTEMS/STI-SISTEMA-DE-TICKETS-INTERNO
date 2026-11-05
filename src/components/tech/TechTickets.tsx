@@ -11,6 +11,11 @@ import {
   UserCheck,
   ArrowRightLeft,
   Filter,
+  ClipboardList,
+  Clock3,
+  CheckCircle2,
+  CircleAlert,
+  X,
 } from 'lucide-react';
 import { mockTechnicians } from '@/data';
 
@@ -97,13 +102,16 @@ export default function TechTickets({
     }
 
     if (search.trim()) {
-      const q = search.toLowerCase();
+      const q = search.trim().toLowerCase();
 
-      return (
-        (t.title || '').toLowerCase().includes(q) ||
-        (t.protocol || '').toLowerCase().includes(q) ||
-        (t.assignee || '').toLowerCase().includes(q) ||
-        (t.requesterName || '').toLowerCase().includes(q)
+      return [
+        t.title,
+        t.protocol,
+        t.assignee,
+        t.requesterName,
+        t.requesterDepartment,
+      ].some((value) =>
+        String(value || '').toLowerCase().includes(q)
       );
     }
 
@@ -190,34 +198,199 @@ export default function TechTickets({
           </div>
         </div>
 
-        {/* BUSCA */}
+        {/* INDICADORES */}
 
-        <div className="relative">
-          <Search
-            className={[
-              'pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2',
-              isDark ? 'text-slate-500' : 'text-slate-400',
-            ].join(' ')}
-          />
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
 
-          <input
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Buscar por protocolo, assunto, solicitante ou técnico responsável…"
+          <button
+            type="button"
+            onClick={() => setStatusFilter('todos')}
             className={[
-              'w-full rounded-xl border py-3 pl-11 pr-4 text-sm shadow-sm outline-none',
-              'focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20',
-              isDark
-                ? 'border-white/10 bg-[#0b1624] text-slate-100 placeholder:text-slate-500'
-                : 'border-slate-200 bg-white text-slate-900 placeholder:text-slate-400',
+              'group rounded-2xl border p-4 text-left shadow-sm',
+              'transition-all duration-300 hover:-translate-y-1 hover:shadow-lg',
+              statusFilter === 'todos'
+                ? isDark
+                  ? 'border-teal-500/40 bg-teal-500/[0.08]'
+                  : 'border-teal-300 bg-teal-50/70'
+                : isDark
+                  ? 'border-white/10 bg-[#0b1624] hover:border-teal-500/30'
+                  : 'border-slate-200 bg-white hover:border-teal-200',
             ].join(' ')}
-          />
+          >
+            <div className="flex items-center justify-between">
+              <span className={`text-xs font-medium ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+                Total de chamados
+              </span>
+              <ClipboardList className="h-5 w-5 text-teal-500 transition-transform duration-300 group-hover:scale-110" />
+            </div>
+            <p className={`mt-3 text-2xl font-bold tabular-nums ${isDark ? 'text-white' : 'text-slate-900'}`}>
+              {tickets.length}
+            </p>
+            <span className="mt-1 block text-[11px] text-teal-600">
+              Visualizar todos
+            </span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setStatusFilter('aberto')}
+            className={[
+              'group rounded-2xl border p-4 text-left shadow-sm',
+              'transition-all duration-300 hover:-translate-y-1 hover:shadow-lg',
+              statusFilter === 'aberto'
+                ? isDark
+                  ? 'border-amber-400/50 bg-amber-500/[0.08]'
+                  : 'border-amber-300 bg-amber-50/70'
+                : isDark
+                  ? 'border-white/10 bg-[#0b1624] hover:border-amber-500/30'
+                  : 'border-slate-200 bg-white hover:border-amber-200',
+            ].join(' ')}
+          >
+            <div className="flex items-center justify-between">
+              <span className={`text-xs font-medium ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+                Chamados abertos
+              </span>
+              <CircleAlert className="h-5 w-5 text-amber-500 transition-transform duration-300 group-hover:scale-110" />
+            </div>
+            <p className={`mt-3 text-2xl font-bold tabular-nums ${isDark ? 'text-white' : 'text-slate-900'}`}>
+              {counts['aberto'] ?? 0}
+            </p>
+            <span className="mt-1 block text-[11px] text-amber-600">
+              Aguardando atendimento
+            </span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setStatusFilter('em_andamento')}
+            className={[
+              'group rounded-2xl border p-4 text-left shadow-sm',
+              'transition-all duration-300 hover:-translate-y-1 hover:shadow-lg',
+              statusFilter === 'em_andamento'
+                ? isDark
+                  ? 'border-blue-400/50 bg-blue-500/[0.08]'
+                  : 'border-blue-300 bg-blue-50/70'
+                : isDark
+                  ? 'border-white/10 bg-[#0b1624] hover:border-blue-500/30'
+                  : 'border-slate-200 bg-white hover:border-blue-200',
+            ].join(' ')}
+          >
+            <div className="flex items-center justify-between">
+              <span className={`text-xs font-medium ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+                Em atendimento
+              </span>
+              <Clock3 className="h-5 w-5 text-blue-500 transition-transform duration-300 group-hover:scale-110" />
+            </div>
+            <p className={`mt-3 text-2xl font-bold tabular-nums ${isDark ? 'text-white' : 'text-slate-900'}`}>
+              {counts['em_andamento'] ?? 0}
+            </p>
+            <span className="mt-1 block text-[11px] text-blue-600">
+              Em execução pelos técnicos
+            </span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setStatusFilter('aguardando')}
+            className={[
+              'group rounded-2xl border p-4 text-left shadow-sm',
+              'transition-all duration-300 hover:-translate-y-1 hover:shadow-lg',
+              statusFilter === 'aguardando'
+                ? isDark
+                  ? 'border-violet-400/50 bg-violet-500/[0.08]'
+                  : 'border-violet-300 bg-violet-50/70'
+                : isDark
+                  ? 'border-white/10 bg-[#0b1624] hover:border-violet-500/30'
+                  : 'border-slate-200 bg-white hover:border-violet-200',
+            ].join(' ')}
+          >
+            <div className="flex items-center justify-between">
+              <span className={`text-xs font-medium ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+                Aguardando usuário
+              </span>
+              <CheckCircle2 className="h-5 w-5 text-violet-500 transition-transform duration-300 group-hover:scale-110" />
+            </div>
+            <p className={`mt-3 text-2xl font-bold tabular-nums ${isDark ? 'text-white' : 'text-slate-900'}`}>
+              {counts['aguardando'] ?? 0}
+            </p>
+            <span className="mt-1 block text-[11px] text-violet-600">
+              Dependem de retorno
+            </span>
+          </button>
+
+        </div>
+
+        {/* PESQUISA */}
+
+        <div
+          className={[
+            'rounded-2xl border p-4 shadow-sm transition-colors duration-300',
+            isDark
+              ? 'border-white/10 bg-[#0b1624]'
+              : 'border-slate-200 bg-white',
+          ].join(' ')}
+        >
+          <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+            <div>
+              <h2 className={`text-sm font-semibold ${isDark ? 'text-white' : 'text-slate-800'}`}>
+                Localizar chamados
+              </h2>
+              <p className={`mt-0.5 text-xs ${isDark ? 'text-slate-500' : 'text-slate-500'}`}>
+                Pesquise por protocolo, assunto, solicitante, setor ou técnico.
+              </p>
+            </div>
+
+            <span className={`text-xs font-medium ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+              {filtered.length} resultado(s)
+            </span>
+          </div>
+
+          <div className="relative">
+            <Search
+              className={[
+                'pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2',
+                isDark ? 'text-slate-500' : 'text-slate-400',
+              ].join(' ')}
+            />
+
+            <input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Digite o protocolo, assunto ou nome..."
+              aria-label="Pesquisar chamados"
+              className={[
+                'h-12 w-full rounded-xl border py-3 pl-11 pr-11 text-sm outline-none',
+                'transition-all duration-200 focus:border-teal-500 focus:ring-4 focus:ring-teal-500/10',
+                isDark
+                  ? 'border-white/10 bg-white/[0.03] text-white placeholder:text-slate-500'
+                  : 'border-slate-200 bg-slate-50 text-slate-800 placeholder:text-slate-400',
+              ].join(' ')}
+            />
+
+            {search && (
+              <button
+                type="button"
+                onClick={() => setSearch('')}
+                aria-label="Limpar pesquisa"
+                className={[
+                  'absolute right-3 top-1/2 -translate-y-1/2 rounded-lg p-1.5',
+                  'transition-colors duration-200',
+                  isDark
+                    ? 'text-slate-400 hover:bg-white/10 hover:text-white'
+                    : 'text-slate-400 hover:bg-slate-200 hover:text-slate-700',
+                ].join(' ')}
+              >
+                <X className="h-4 w-4" />
+              </button>
+            )}
+          </div>
         </div>
 
         {/* FILTROS POR RESPONSÁVEL */}
 
         <div
           className={[
+            'transition-all duration-200 ease-out',
             'flex flex-wrap items-center gap-1.5 rounded-xl border p-2 shadow-sm',
             isDark
               ? 'border-white/10 bg-[#0b1624]'
@@ -226,6 +399,7 @@ export default function TechTickets({
         >
           <span
             className={[
+              'transition-all duration-200 ease-out',
               'flex items-center gap-1.5 px-2 text-xs font-semibold uppercase tracking-wider',
               isDark ? 'text-slate-400' : 'text-slate-500',
             ].join(' ')}
@@ -238,6 +412,7 @@ export default function TechTickets({
             type="button"
             onClick={() => setTechFilter('todos')}
             className={[
+              'transition-all duration-200 ease-out active:scale-[0.97]',
               'rounded-lg px-3 py-1.5 text-xs font-medium',
               techFilter === 'todos'
                 ? 'bg-[#00A896] text-white shadow-sm'
@@ -253,6 +428,7 @@ export default function TechTickets({
             type="button"
             onClick={() => setTechFilter('sem_tecnico')}
             className={[
+              'transition-all duration-200 ease-out active:scale-[0.97]',
               'flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium',
               techFilter === 'sem_tecnico'
                 ? 'bg-amber-600 text-white shadow-sm'
@@ -269,6 +445,7 @@ export default function TechTickets({
             type="button"
             onClick={() => setTechFilter('meus')}
             className={[
+              'transition-all duration-200 ease-out active:scale-[0.97]',
               'flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium',
               techFilter === 'meus'
                 ? 'bg-[#00A896] text-white shadow-sm'
@@ -304,6 +481,7 @@ export default function TechTickets({
                 key={tech.email}
                 onClick={() => setTechFilter(tech.name)}
                 className={[
+                  'transition-all duration-200 ease-out active:scale-[0.97]',
                   'rounded-lg px-2.5 py-1.5 text-xs font-medium',
                   isSelected
                     ? 'bg-[#00A896] text-white shadow-sm'
@@ -335,6 +513,7 @@ export default function TechTickets({
                 key={f.id}
                 onClick={() => setStatusFilter(f.id)}
                 className={[
+                  'transition-all duration-200 ease-out active:scale-[0.97]',
                   'inline-flex items-center gap-2 rounded-lg border px-3 py-1.5 text-xs font-medium',
                   active
                     ? 'border-[#00A896] bg-[#00A896] text-white shadow-sm'
@@ -419,12 +598,11 @@ export default function TechTickets({
               <table className="w-full text-left text-sm">
                 <thead>
                   <tr
-                    className={[
-                      'border-b text-xs font-semibold uppercase tracking-wider',
+                    className={
                       isDark
-                        ? 'border-white/10 bg-[#102033] text-slate-400'
-                        : 'border-slate-200 bg-slate-50 text-slate-500',
-                    ].join(' ')}
+                        ? 'border-b border-white/10 bg-white/[0.03] text-slate-400'
+                        : 'border-b border-slate-200 bg-slate-50 text-slate-600'
+                    }
                   >
                     <th className="px-4 py-3.5">Protocolo</th>
                     <th className="px-4 py-3.5">Assunto &amp; Contexto</th>
@@ -450,11 +628,12 @@ export default function TechTickets({
                     return (
                       <tr
                         key={t.id}
-                        className={
+                        className={[
+                          'group transition-all duration-200 ease-out',
                           isDark
-                            ? 'group hover:bg-teal-500/[0.04]'
-                            : 'group hover:bg-teal-50/60'
-                        }
+                            ? 'hover:bg-teal-500/[0.06]'
+                            : 'hover:bg-teal-50/70',
+                        ].join(' ')}
                       >
                         <td
                           className={[
@@ -563,7 +742,7 @@ export default function TechTickets({
                                 <button
                                   type="button"
                                   onClick={() => onAssume(t.id)}
-                                  className="inline-flex items-center gap-1 rounded-lg bg-[#00A896] px-2.5 py-1.5 text-xs font-semibold text-white shadow-sm hover:bg-[#008f80]"
+                                  className="inline-flex items-center gap-1 rounded-lg bg-[#00A896] px-2.5 py-1.5 text-xs font-semibold text-white shadow-sm hover:bg-[#008f80] transition-all duration-200 ease-out active:scale-[0.97]"
                                   title="Assumir este chamado para mim"
                                 >
                                   <UserCheck className="h-3.5 w-3.5" />

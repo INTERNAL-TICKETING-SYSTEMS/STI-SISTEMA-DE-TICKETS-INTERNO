@@ -1,4 +1,3 @@
-
 import React from 'react';
 import {
   Clock,
@@ -7,6 +6,9 @@ import {
   Inbox,
   CheckCircle2,
   Headphones,
+  Filter,
+  X,
+  ClipboardList,
 } from 'lucide-react';
 
 import { Ticket, TicketStatus } from '@/types';
@@ -19,6 +21,17 @@ interface TechMyAttendanceProps {
   techName: string;
 }
 
+const statusFilters: {
+  id: TicketStatus | 'todos';
+  label: string;
+}[] = [
+  { id: 'todos', label: 'Todos' },
+  { id: 'aberto', label: 'Abertos' },
+  { id: 'em_andamento', label: 'Em atendimento' },
+  { id: 'aguardando', label: 'Aguardando usuário' },
+  { id: 'resolvido', label: 'Resolvidos' },
+];
+
 export default function TechMyAttendance({
   tickets,
   onOpenTicket,
@@ -27,25 +40,56 @@ export default function TechMyAttendance({
   const { isDark } = useTechTheme();
 
   const [search, setSearch] = React.useState('');
+  const [statusFilter, setStatusFilter] =
+    React.useState<TicketStatus | 'todos'>('todos');
 
-  // Chamados atribuídos ao técnico
+  // Chamados atribuídos ao técnico.
+  // Chamados fechados permanecem fora desta tela, como na versão anterior.
   const myTickets = tickets.filter(
     (ticket) =>
       ticket.assignee === techName &&
       ticket.status !== 'fechado'
   );
 
-  // Busca
+  // Indicadores
+  const inProgressCount = myTickets.filter(
+    (ticket) => ticket.status === 'em_andamento'
+  ).length;
+
+  const resolvedCount = myTickets.filter(
+    (ticket) => ticket.status === 'resolvido'
+  ).length;
+
+  const openCount = myTickets.filter(
+    (ticket) => ticket.status === 'aberto'
+  ).length;
+
+  const waitingCount = myTickets.filter(
+    (ticket) => ticket.status === 'aguardando'
+  ).length;
+
+  // Pesquisa e filtros combinados
   const filteredTickets = myTickets.filter((ticket) => {
+    if (
+      statusFilter !== 'todos' &&
+      ticket.status !== statusFilter
+    ) {
+      return false;
+    }
+
     const query = search.trim().toLowerCase();
 
     if (!query) return true;
 
-    return (
-      ticket.id.toLowerCase().includes(query) ||
-      ticket.title.toLowerCase().includes(query) ||
-      ticket.requesterName.toLowerCase().includes(query) ||
-      ticket.requesterDepartment.toLowerCase().includes(query)
+    return [
+      ticket.id,
+      ticket.protocol,
+      ticket.title,
+      ticket.requesterName,
+      ticket.requesterDepartment,
+      ticket.assignee,
+    ].some((value) =>
+      String(value || '').toLowerCase().includes(query)
     );
   });
 
@@ -71,8 +115,8 @@ export default function TechMyAttendance({
     switch (status) {
       case 'aberto':
         return isDark
-          ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-300'
-          : 'border-emerald-200 bg-emerald-50 text-emerald-700';
+          ? 'border-amber-500/30 bg-amber-500/10 text-amber-300'
+          : 'border-amber-200 bg-amber-50 text-amber-700';
 
       case 'em_andamento':
         return isDark
@@ -81,8 +125,8 @@ export default function TechMyAttendance({
 
       case 'aguardando':
         return isDark
-          ? 'border-amber-500/30 bg-amber-500/10 text-amber-300'
-          : 'border-amber-200 bg-amber-50 text-amber-700';
+          ? 'border-violet-500/30 bg-violet-500/10 text-violet-300'
+          : 'border-violet-200 bg-violet-50 text-violet-700';
 
       case 'resolvido':
         return isDark
@@ -104,11 +148,11 @@ export default function TechMyAttendance({
   const getStatusDot = (status: TicketStatus) => {
     switch (status) {
       case 'aberto':
-        return 'bg-emerald-400';
+        return 'bg-amber-400';
       case 'em_andamento':
         return 'bg-blue-400';
       case 'aguardando':
-        return 'bg-amber-400';
+        return 'bg-violet-400';
       case 'resolvido':
         return 'bg-emerald-400';
       case 'fechado':
@@ -126,28 +170,20 @@ export default function TechMyAttendance({
       (ticket as any).created_at ??
       (ticket as any).date;
 
-    if (!rawDate) return '23/09/2026';
+    if (!rawDate) return '—';
 
-    try {
-      const date = new Date(rawDate);
+    const date = new Date(rawDate);
 
-      if (Number.isNaN(date.getTime())) {
-        return '23/09/2026';
-      }
-
-      return date.toLocaleDateString('pt-BR');
-    } catch {
-      return '23/09/2026';
+    if (Number.isNaN(date.getTime())) {
+      return '—';
     }
+
+    return date.toLocaleDateString('pt-BR');
   };
 
-  const inProgressCount = myTickets.filter(
-    (ticket) => ticket.status === 'em_andamento'
-  ).length;
-
-  const resolvedCount = myTickets.filter(
-    (ticket) => ticket.status === 'resolvido'
-  ).length;
+  // Protocolo com alternativa para registros antigos
+  const getProtocol = (ticket: Ticket) =>
+    ticket.protocol || ticket.id;
 
   return (
     <div
@@ -167,11 +203,12 @@ export default function TechMyAttendance({
       />
 
       <div className="mx-auto w-full max-w-[1400px] space-y-6 px-4 py-5 sm:px-6 lg:px-8">
-        {/* Cabeçalho sem botão de tema */}
+
+        {/* CABEÇALHO */}
+
         <section
           className={[
             'flex flex-col gap-5 rounded-2xl border p-5 shadow-sm',
-            'sm:flex-row sm:items-center sm:justify-between',
             isDark
               ? 'border-white/10 bg-[#0b1624]'
               : 'border-slate-200 bg-white',
@@ -182,11 +219,11 @@ export default function TechMyAttendance({
               className={[
                 'flex h-11 w-11 shrink-0 items-center justify-center rounded-xl',
                 isDark
-                  ? 'bg-blue-500/10 text-blue-300'
-                  : 'bg-blue-50 text-blue-600',
+                  ? 'bg-teal-500/10 text-teal-300'
+                  : 'bg-teal-50 text-teal-600',
               ].join(' ')}
             >
-              <Clock className="h-5 w-5" />
+              <Headphones className="h-5 w-5" />
             </div>
 
             <div>
@@ -196,7 +233,7 @@ export default function TechMyAttendance({
                   isDark ? 'text-white' : 'text-slate-900',
                 ].join(' ')}
               >
-                Meus atendimentos
+                Meus Atendimentos
               </h1>
 
               <p
@@ -205,140 +242,291 @@ export default function TechMyAttendance({
                   isDark ? 'text-slate-400' : 'text-slate-600',
                 ].join(' ')}
               >
-                Acompanhe os chamados atribuídos a você.
+                Acompanhe e gerencie os chamados atribuídos a você.
               </p>
             </div>
           </div>
         </section>
 
-        {/* Resumo */}
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {/* Total */}
-          <div
+        {/* INDICADORES */}
+
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
+
+          {/* TOTAL */}
+
+          <button
+            type="button"
+            onClick={() => setStatusFilter('todos')}
             className={[
-              'flex min-h-[110px] items-center gap-4 rounded-2xl border p-5 shadow-sm',
-              isDark
-                ? 'border-white/10 bg-[#0b1624]'
-                : 'border-slate-200 bg-white',
+              'group rounded-2xl border p-5 text-left shadow-sm',
+              'transition-all duration-300 hover:-translate-y-1 hover:shadow-lg',
+              statusFilter === 'todos'
+                ? isDark
+                  ? 'border-teal-500/40 bg-teal-500/[0.08]'
+                  : 'border-teal-300 bg-teal-50/70'
+                : isDark
+                  ? 'border-white/10 bg-[#0b1624] hover:border-teal-500/30'
+                  : 'border-slate-200 bg-white hover:border-teal-200',
             ].join(' ')}
           >
-            <div
-              className={[
-                'flex h-12 w-12 shrink-0 items-center justify-center rounded-xl',
-                isDark
-                  ? 'bg-teal-500/10 text-teal-300'
-                  : 'bg-teal-50 text-teal-600',
-              ].join(' ')}
-            >
-              <Inbox className="h-6 w-6" />
-            </div>
-
-            <div>
+            <div className="flex items-center justify-between">
               <span
                 className={[
-                  'block text-3xl font-bold leading-none',
-                  isDark ? 'text-white' : 'text-slate-900',
+                  'text-xs font-medium',
+                  isDark ? 'text-slate-400' : 'text-slate-500',
                 ].join(' ')}
               >
-                {myTickets.length}
+                Total de chamados
               </span>
 
-              <p
-                className={[
-                  'mt-2 text-sm font-medium',
-                  isDark ? 'text-slate-400' : 'text-slate-600',
-                ].join(' ')}
-              >
-                Chamado{myTickets.length === 1 ? '' : 's'} atribuído
-                {myTickets.length === 1 ? '' : 's'}
-              </p>
+              <ClipboardList className="h-5 w-5 text-teal-500 transition-transform duration-300 group-hover:scale-110" />
             </div>
-          </div>
 
-          {/* Em atendimento */}
-          <div
+            <p
+              className={[
+                'mt-3 text-3xl font-bold tabular-nums',
+                isDark ? 'text-white' : 'text-slate-900',
+              ].join(' ')}
+            >
+              {myTickets.length}
+            </p>
+
+            <span className="mt-1 block text-[11px] text-teal-600">
+              Visualizar todos
+            </span>
+          </button>
+
+          {/* EM ATENDIMENTO */}
+
+          <button
+            type="button"
+            onClick={() => setStatusFilter('em_andamento')}
             className={[
-              'flex min-h-[110px] items-center gap-4 rounded-2xl border p-5 shadow-sm',
-              isDark
-                ? 'border-white/10 bg-[#0b1624]'
-                : 'border-slate-200 bg-white',
+              'group rounded-2xl border p-5 text-left shadow-sm',
+              'transition-all duration-300 hover:-translate-y-1 hover:shadow-lg',
+              statusFilter === 'em_andamento'
+                ? isDark
+                  ? 'border-blue-400/50 bg-blue-500/[0.08]'
+                  : 'border-blue-300 bg-blue-50/70'
+                : isDark
+                  ? 'border-white/10 bg-[#0b1624] hover:border-blue-500/30'
+                  : 'border-slate-200 bg-white hover:border-blue-200',
             ].join(' ')}
           >
-            <div
-              className={[
-                'flex h-12 w-12 shrink-0 items-center justify-center rounded-xl',
-                isDark
-                  ? 'bg-blue-500/10 text-blue-300'
-                  : 'bg-blue-50 text-blue-600',
-              ].join(' ')}
-            >
-              <Headphones className="h-6 w-6" />
-            </div>
-
-            <div>
+            <div className="flex items-center justify-between">
               <span
                 className={[
-                  'block text-3xl font-bold leading-none',
-                  isDark ? 'text-white' : 'text-slate-900',
-                ].join(' ')}
-              >
-                {inProgressCount}
-              </span>
-
-              <p
-                className={[
-                  'mt-2 text-sm font-medium',
-                  isDark ? 'text-slate-400' : 'text-slate-600',
+                  'text-xs font-medium',
+                  isDark ? 'text-slate-400' : 'text-slate-500',
                 ].join(' ')}
               >
                 Em atendimento
-              </p>
-            </div>
-          </div>
+              </span>
 
-          {/* Resolvidos */}
-          <div
-            className={[
-              'flex min-h-[110px] items-center gap-4 rounded-2xl border p-5 shadow-sm',
-              isDark
-                ? 'border-white/10 bg-[#0b1624]'
-                : 'border-slate-200 bg-white',
-            ].join(' ')}
-          >
-            <div
+              <Headphones className="h-5 w-5 text-blue-500 transition-transform duration-300 group-hover:scale-110" />
+            </div>
+
+            <p
               className={[
-                'flex h-12 w-12 shrink-0 items-center justify-center rounded-xl',
-                isDark
-                  ? 'bg-emerald-500/10 text-emerald-300'
-                  : 'bg-emerald-50 text-emerald-600',
+                'mt-3 text-3xl font-bold tabular-nums',
+                isDark ? 'text-white' : 'text-slate-900',
               ].join(' ')}
             >
-              <CheckCircle2 className="h-6 w-6" />
-            </div>
+              {inProgressCount}
+            </p>
 
-            <div>
+            <span className="mt-1 block text-[11px] text-blue-600">
+              Chamados em execução
+            </span>
+          </button>
+
+          {/* RESOLVIDOS */}
+
+          <button
+            type="button"
+            onClick={() => setStatusFilter('resolvido')}
+            className={[
+              'group rounded-2xl border p-5 text-left shadow-sm',
+              'transition-all duration-300 hover:-translate-y-1 hover:shadow-lg',
+              statusFilter === 'resolvido'
+                ? isDark
+                  ? 'border-emerald-400/50 bg-emerald-500/[0.08]'
+                  : 'border-emerald-300 bg-emerald-50/70'
+                : isDark
+                  ? 'border-white/10 bg-[#0b1624] hover:border-emerald-500/30'
+                  : 'border-slate-200 bg-white hover:border-emerald-200',
+            ].join(' ')}
+          >
+            <div className="flex items-center justify-between">
               <span
                 className={[
-                  'block text-3xl font-bold leading-none',
-                  isDark ? 'text-white' : 'text-slate-900',
+                  'text-xs font-medium',
+                  isDark ? 'text-slate-400' : 'text-slate-500',
                 ].join(' ')}
               >
-                {resolvedCount}
+                Resolvidos
               </span>
+
+              <CheckCircle2 className="h-5 w-5 text-emerald-500 transition-transform duration-300 group-hover:scale-110" />
+            </div>
+
+            <p
+              className={[
+                'mt-3 text-3xl font-bold tabular-nums',
+                isDark ? 'text-white' : 'text-slate-900',
+              ].join(' ')}
+            >
+              {resolvedCount}
+            </p>
+
+            <span className="mt-1 block text-[11px] text-emerald-600">
+              Atendimentos concluídos
+            </span>
+          </button>
+        </div>
+
+        {/* PESQUISA E FILTROS */}
+
+        <section
+          className={[
+            'rounded-2xl border p-4 shadow-sm',
+            isDark
+              ? 'border-white/10 bg-[#0b1624]'
+              : 'border-slate-200 bg-white',
+          ].join(' ')}
+        >
+          <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+            <div>
+              <h2
+                className={[
+                  'text-sm font-semibold',
+                  isDark ? 'text-white' : 'text-slate-800',
+                ].join(' ')}
+              >
+                Localizar atendimentos
+              </h2>
 
               <p
                 className={[
-                  'mt-2 text-sm font-medium',
-                  isDark ? 'text-slate-400' : 'text-slate-600',
+                  'mt-0.5 text-xs',
+                  isDark ? 'text-slate-500' : 'text-slate-500',
                 ].join(' ')}
               >
-                Resolvido{resolvedCount === 1 ? '' : 's'}
+                Pesquise por protocolo, assunto, solicitante ou setor.
               </p>
             </div>
-          </div>
-        </div>
 
-        {/* Tabela */}
+            <span
+              className={[
+                'text-xs font-medium',
+                isDark ? 'text-slate-400' : 'text-slate-500',
+              ].join(' ')}
+            >
+              {filteredTickets.length} resultado(s)
+            </span>
+          </div>
+
+          <div className="relative">
+            <Search
+              className={[
+                'pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2',
+                isDark ? 'text-slate-500' : 'text-slate-400',
+              ].join(' ')}
+            />
+
+            <input
+              type="text"
+              value={search}
+              onChange={(event) => setSearch(event.target.value)}
+              placeholder="Digite o protocolo, assunto ou nome..."
+              aria-label="Pesquisar meus atendimentos"
+              className={[
+                'h-12 w-full rounded-xl border py-3 pl-11 pr-11 text-sm outline-none',
+                'transition-all duration-200 focus:border-teal-500 focus:ring-4 focus:ring-teal-500/10',
+                isDark
+                  ? 'border-white/10 bg-white/[0.03] text-white placeholder:text-slate-500'
+                  : 'border-slate-200 bg-slate-50 text-slate-800 placeholder:text-slate-400',
+              ].join(' ')}
+            />
+
+            {search && (
+              <button
+                type="button"
+                onClick={() => setSearch('')}
+                aria-label="Limpar pesquisa"
+                className={[
+                  'absolute right-3 top-1/2 -translate-y-1/2 rounded-lg p-1.5',
+                  'transition-colors duration-200',
+                  isDark
+                    ? 'text-slate-400 hover:bg-white/10 hover:text-white'
+                    : 'text-slate-400 hover:bg-slate-200 hover:text-slate-700',
+                ].join(' ')}
+              >
+                <X className="h-4 w-4" />
+              </button>
+            )}
+          </div>
+
+          {/* FILTROS DE STATUS */}
+
+          <div className="mt-4 flex flex-wrap items-center gap-2">
+            <span
+              className={[
+                'mr-1 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider',
+                isDark ? 'text-slate-400' : 'text-slate-500',
+              ].join(' ')}
+            >
+              <Filter className="h-3.5 w-3.5" />
+              Status:
+            </span>
+
+            {statusFilters.map((filter) => {
+              const active = statusFilter === filter.id;
+
+              const count =
+                filter.id === 'todos'
+                  ? myTickets.length
+                  : myTickets.filter(
+                      (ticket) => ticket.status === filter.id
+                    ).length;
+
+              return (
+                <button
+                  type="button"
+                  key={filter.id}
+                  onClick={() => setStatusFilter(filter.id)}
+                  className={[
+                    'inline-flex items-center gap-2 rounded-lg border px-3 py-1.5 text-xs font-medium',
+                    'transition-all duration-200 ease-out active:scale-[0.97]',
+                    active
+                      ? 'border-[#00A896] bg-[#00A896] text-white shadow-sm'
+                      : isDark
+                        ? 'border-white/10 bg-[#0b1624] text-slate-300 hover:border-teal-500/40 hover:bg-white/5'
+                        : 'border-slate-200 bg-white text-slate-600 hover:border-teal-300 hover:bg-teal-50',
+                  ].join(' ')}
+                >
+                  {filter.label}
+
+                  <span
+                    className={[
+                      'rounded-full px-1.5 py-0.5 text-[10px]',
+                      active
+                        ? 'bg-white/20 text-white'
+                        : isDark
+                          ? 'bg-white/10 text-slate-400'
+                          : 'bg-slate-100 text-slate-500',
+                    ].join(' ')}
+                  >
+                    {count}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </section>
+
+        {/* TABELA */}
+
         <section
           className={[
             'overflow-hidden rounded-2xl border shadow-sm',
@@ -347,11 +535,11 @@ export default function TechMyAttendance({
               : 'border-slate-200 bg-white',
           ].join(' ')}
         >
-          {/* Cabeçalho da tabela */}
+          {/* CABEÇALHO DA TABELA */}
+
           <div
             className={[
-              'flex flex-col gap-4 border-b p-5',
-              'sm:flex-row sm:items-center sm:justify-between',
+              'flex flex-col gap-3 border-b p-5 sm:flex-row sm:items-center sm:justify-between',
               isDark ? 'border-white/10' : 'border-slate-200',
             ].join(' ')}
           >
@@ -360,8 +548,8 @@ export default function TechMyAttendance({
                 className={[
                   'flex h-10 w-10 items-center justify-center rounded-xl',
                   isDark
-                    ? 'bg-blue-500/10 text-blue-300'
-                    : 'bg-blue-50 text-blue-600',
+                    ? 'bg-teal-500/10 text-teal-300'
+                    : 'bg-teal-50 text-teal-600',
                 ].join(' ')}
               >
                 <Clock className="h-5 w-5" />
@@ -374,7 +562,7 @@ export default function TechMyAttendance({
                     isDark ? 'text-white' : 'text-slate-900',
                   ].join(' ')}
                 >
-                  Chamados em atendimento
+                  Chamados sob minha responsabilidade
                 </h2>
 
                 <p
@@ -383,83 +571,94 @@ export default function TechMyAttendance({
                     isDark ? 'text-slate-500' : 'text-slate-500',
                   ].join(' ')}
                 >
-                  {myTickets.length}{' '}
-                  {myTickets.length === 1 ? 'chamado' : 'chamados'}
+                  Exibindo {filteredTickets.length} de {myTickets.length} chamado(s)
                 </p>
               </div>
             </div>
 
-            {/* Busca sem transição */}
-            <div className="relative w-full sm:w-[320px]">
-              <Search
+            {statusFilter !== 'todos' && (
+              <button
+                type="button"
+                onClick={() => setStatusFilter('todos')}
                 className={[
-                  'pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2',
-                  isDark ? 'text-slate-500' : 'text-slate-400',
-                ].join(' ')}
-              />
-
-              <input
-                type="text"
-                value={search}
-                onChange={(event) => setSearch(event.target.value)}
-                placeholder="Buscar chamado..."
-                className={[
-                  'h-10 w-full rounded-xl border pl-9 pr-3 text-sm outline-none',
-                  'focus:ring-2 focus:ring-teal-500/30',
+                  'self-start rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors',
                   isDark
-                    ? 'border-white/10 bg-white/[0.03] text-slate-200 placeholder:text-slate-600 focus:border-teal-500/40'
-                    : 'border-slate-200 bg-slate-50 text-slate-800 placeholder:text-slate-400 focus:border-teal-400',
+                    ? 'text-teal-300 hover:bg-teal-500/10'
+                    : 'text-teal-700 hover:bg-teal-50',
                 ].join(' ')}
-              />
-            </div>
+              >
+                Limpar filtro
+              </button>
+            )}
           </div>
 
-          {/* Conteúdo da tabela */}
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[1050px] text-left">
+          <div className="overflow-x-auto scrollbar-thin">
+            <table className="w-full min-w-[1050px] text-left text-sm">
               <thead>
                 <tr
-                  className={[
-                    'border-b text-xs font-bold uppercase tracking-wider',
+                  className={
                     isDark
-                      ? 'border-white/10 bg-white/[0.02] text-slate-400'
-                      : 'border-slate-200 bg-slate-50 text-slate-500',
-                  ].join(' ')}
+                      ? 'border-b border-white/10 bg-white/[0.03] text-slate-400'
+                      : 'border-b border-slate-200 bg-slate-50 text-slate-600'
+                  }
                 >
-                  <th className="px-5 py-4">Protocolo</th>
-                  <th className="px-5 py-4">Assunto</th>
-                  <th className="px-5 py-4">Solicitante</th>
-                  <th className="px-5 py-4">Setor</th>
-                  <th className="px-5 py-4">Status</th>
-                  <th className="px-5 py-4">Abertura</th>
-                  <th className="px-5 py-4 text-right">Ação</th>
+                  <th className="px-5 py-4 text-xs font-semibold uppercase tracking-wider">
+                    Protocolo
+                  </th>
+                  <th className="px-5 py-4 text-xs font-semibold uppercase tracking-wider">
+                    Assunto
+                  </th>
+                  <th className="px-5 py-4 text-xs font-semibold uppercase tracking-wider">
+                    Solicitante
+                  </th>
+                  <th className="px-5 py-4 text-xs font-semibold uppercase tracking-wider">
+                    Setor
+                  </th>
+                  <th className="px-5 py-4 text-xs font-semibold uppercase tracking-wider">
+                    Status
+                  </th>
+                  <th className="px-5 py-4 text-xs font-semibold uppercase tracking-wider">
+                    Abertura
+                  </th>
+                  <th className="px-5 py-4 text-right text-xs font-semibold uppercase tracking-wider">
+                    Ação
+                  </th>
                 </tr>
               </thead>
 
-              <tbody>
+              <tbody
+                className={
+                  isDark
+                    ? 'divide-y divide-white/[0.06]'
+                    : 'divide-y divide-slate-100'
+                }
+              >
                 {filteredTickets.length === 0 ? (
                   <tr>
                     <td colSpan={7} className="px-5 py-16">
                       <div className="flex flex-col items-center justify-center gap-3">
                         <div
                           className={[
-                            'flex h-12 w-12 items-center justify-center rounded-full',
-                            isDark
-                              ? 'bg-slate-500/10 text-slate-500'
-                              : 'bg-slate-100 text-slate-400',
+                            'flex h-14 w-14 items-center justify-center rounded-full',
+                            isDark ? 'bg-white/5' : 'bg-slate-100',
                           ].join(' ')}
                         >
-                          <Inbox className="h-6 w-6" />
+                          <Inbox
+                            className={[
+                              'h-7 w-7',
+                              isDark ? 'text-slate-500' : 'text-slate-400',
+                            ].join(' ')}
+                          />
                         </div>
 
                         <div className="text-center">
                           <p
                             className={[
                               'font-semibold',
-                              isDark ? 'text-slate-300' : 'text-slate-700',
+                              isDark ? 'text-slate-200' : 'text-slate-800',
                             ].join(' ')}
                           >
-                            {search
+                            {search || statusFilter !== 'todos'
                               ? 'Nenhum chamado encontrado'
                               : 'Nenhum chamado atribuído'}
                           </p>
@@ -470,10 +669,23 @@ export default function TechMyAttendance({
                               isDark ? 'text-slate-500' : 'text-slate-500',
                             ].join(' ')}
                           >
-                            {search
-                              ? 'Tente pesquisar por outro termo.'
+                            {search || statusFilter !== 'todos'
+                              ? 'Tente alterar a pesquisa ou selecionar outro status.'
                               : 'Os chamados atribuídos a você aparecerão aqui.'}
                           </p>
+
+                          {(search || statusFilter !== 'todos') && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setSearch('');
+                                setStatusFilter('todos');
+                              }}
+                              className="mt-3 rounded-lg px-3 py-2 text-xs font-semibold text-teal-600 transition-colors hover:bg-teal-50"
+                            >
+                              Limpar pesquisa e filtros
+                            </button>
+                          )}
                         </div>
                       </div>
                     </td>
@@ -483,22 +695,22 @@ export default function TechMyAttendance({
                     <tr
                       key={ticket.id}
                       className={[
-                        'group border-b last:border-b-0',
+                        'group transition-all duration-200 ease-out',
                         isDark
-                          ? 'border-white/[0.06] hover:bg-teal-500/[0.04]'
-                          : 'border-slate-100 hover:bg-teal-50/50',
+                          ? 'hover:bg-teal-500/[0.06]'
+                          : 'hover:bg-teal-50/70',
                       ].join(' ')}
                     >
                       <td className="px-5 py-4">
                         <span
                           className={[
-                            'font-mono text-sm font-bold',
+                            'font-mono text-xs font-semibold transition-colors',
                             isDark
-                              ? 'text-slate-200 group-hover:text-teal-300'
-                              : 'text-slate-800 group-hover:text-teal-600',
+                              ? 'text-slate-300 group-hover:text-teal-300'
+                              : 'text-slate-700 group-hover:text-teal-700',
                           ].join(' ')}
                         >
-                          {ticket.id}
+                          {getProtocol(ticket)}
                         </span>
                       </td>
 
@@ -506,9 +718,7 @@ export default function TechMyAttendance({
                         <span
                           className={[
                             'block truncate text-sm font-semibold',
-                            isDark
-                              ? 'text-slate-200 group-hover:text-white'
-                              : 'text-slate-800 group-hover:text-slate-900',
+                            isDark ? 'text-slate-100' : 'text-slate-800',
                           ].join(' ')}
                           title={ticket.title}
                         >
@@ -559,7 +769,7 @@ export default function TechMyAttendance({
                       <td className="px-5 py-4">
                         <span
                           className={[
-                            'text-sm',
+                            'text-sm tabular-nums',
                             isDark ? 'text-slate-400' : 'text-slate-600',
                           ].join(' ')}
                         >
@@ -573,14 +783,16 @@ export default function TechMyAttendance({
                           onClick={() => onOpenTicket(ticket.id)}
                           className={[
                             'inline-flex items-center gap-2 rounded-lg px-3 py-2',
-                            'text-sm font-bold focus:outline-none focus:ring-2 focus:ring-teal-500/40',
+                            'text-xs font-semibold shadow-sm transition-all duration-200 ease-out',
+                            'active:scale-[0.97] focus:outline-none focus:ring-2 focus:ring-teal-500/40',
                             isDark
-                              ? 'text-teal-300 hover:bg-teal-500/10'
-                              : 'text-teal-600 hover:bg-teal-50',
+                              ? 'bg-teal-500/10 text-teal-300 hover:bg-teal-500/20'
+                              : 'bg-teal-50 text-teal-700 hover:bg-teal-100',
                           ].join(' ')}
+                          title="Abrir atendimento"
                         >
                           Atender
-                          <ArrowRight className="h-4 w-4" />
+                          <ArrowRight className="h-4 w-4 transition-transform duration-200 group-hover:translate-x-0.5" />
                         </button>
                       </td>
                     </tr>

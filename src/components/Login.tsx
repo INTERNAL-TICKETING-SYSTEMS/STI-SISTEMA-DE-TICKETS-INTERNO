@@ -638,8 +638,8 @@ export default function Login({
                 <div
                   role="alert"
                   className={`flex items-start gap-3 rounded-xl border p-4 ${isDark
-                      ? 'border-red-500/30 bg-red-500/10 text-red-300'
-                      : 'border-red-200 bg-red-50 text-red-700'
+                    ? 'border-red-500/30 bg-red-500/10 text-red-300'
+                    : 'border-red-200 bg-red-50 text-red-700'
                     }`}
                 >
                   <AlertCircle className="mt-0.5 h-5 w-5 shrink-0" />
@@ -756,11 +756,7 @@ export default function Login({
             </div>
 
             <div className="mt-6 space-y-5">
-              {forgotSuccessMessage ? (
-                <div className="rounded-2xl border border-emerald-500/30 bg-emerald-500/10 p-5 text-center text-sm font-semibold text-emerald-600">
-                  {forgotSuccessMessage}
-                </div>
-              ) : forgotStep === 'IDENTIFY' ? (
+              {forgotStep === 'IDENTIFY' ? (
                 <div className="space-y-5">
                   <p className={`text-sm leading-relaxed ${bodyColor}`}>
                     Informe seu e-mail institucional e o seu e-mail pessoal para receber o código de segurança.
