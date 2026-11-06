@@ -28,6 +28,11 @@ export interface ChamadoAPI {
   solucao?: string;
   criadoEm: string;
   atualizadoEm: string;
+
+  // Campos efetivamente retornados pela API
+  solicitante_email?: string;
+  criado_em?: string;
+  atualizado_em?: string;
 }
 
 export async function criarChamado(

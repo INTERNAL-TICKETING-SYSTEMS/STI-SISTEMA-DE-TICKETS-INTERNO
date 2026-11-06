@@ -87,11 +87,10 @@ export default function GestorRelatorios({
     <div className="space-y-5">
       <div className="flex items-center gap-3">
         <div
-          className={`flex h-11 w-11 items-center justify-center rounded-xl ${
-            isDark
+          className={`flex h-11 w-11 items-center justify-center rounded-xl ${isDark
               ? 'bg-cyan-500/10 text-cyan-400'
               : 'bg-cyan-100 text-cyan-700'
-          }`}
+            }`}
         >
           <FileText className="h-5 w-5" />
         </div>
@@ -117,11 +116,10 @@ export default function GestorRelatorios({
               className={`flex flex-col rounded-2xl border p-5 ${panelClass}`}
             >
               <div
-                className={`mb-4 flex h-10 w-10 items-center justify-center rounded-xl ${
-                  isDark
+                className={`mb-4 flex h-10 w-10 items-center justify-center rounded-xl ${isDark
                     ? 'bg-white/5 text-cyan-300'
                     : 'bg-slate-100 text-cyan-700'
-                }`}
+                  }`}
               >
                 <Icon className="h-5 w-5" />
               </div>
@@ -151,7 +149,7 @@ export default function GestorRelatorios({
       <OfficialReportModal
         isOpen={reportModalOpen}
         onClose={() => onReportModalOpenChange(false)}
-        tipoRelatorio={selectedReportType}
+        type={selectedReportType}
         tickets={tickets}
         gestorName={gestorName}
       />

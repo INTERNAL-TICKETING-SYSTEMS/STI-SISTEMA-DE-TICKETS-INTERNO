@@ -3,6 +3,7 @@ import { useMemo, useState } from 'react';
 import { Ticket, TicketStatus, User } from '@/types';
 import StatusBadge from '@/components/ui/StatusBadge';
 import { formatRelative } from '@/data';
+import { belongsToUser } from '@/utils/ticketOwnership';
 import Button from '@/components/ui/Button';
 import { Page } from '@/components/Sidebar';
 import {
@@ -44,6 +45,11 @@ export default function MyTickets({
   const [filter, setFilter] = useState<TicketStatus | 'todos'>('todos');
   const [search, setSearch] = useState('');
   const { isDark } = useTechTheme();
+  const myTickets = useMemo(
+    () => tickets.filter((ticket) => belongsToUser(ticket, activeUser)),
+    [tickets, activeUser],
+
+  );
 
   const colors = {
     heading: isDark ? 'text-slate-100' : 'text-sti-navy-800',
@@ -67,19 +73,19 @@ export default function MyTickets({
 
   const counts = useMemo(() => {
     return {
-      total: tickets.length,
-      aberto: tickets.filter((ticket) => ticket.status === 'aberto').length,
-      andamento: tickets.filter((ticket) => ticket.status === 'em_andamento').length,
-      aguardando: tickets.filter((ticket) => ticket.status === 'aguardando').length,
-      resolvido: tickets.filter((ticket) => ticket.status === 'resolvido').length,
-      fechado: tickets.filter((ticket) => ticket.status === 'fechado').length,
+      total: myTickets.length,
+      aberto: myTickets.filter((ticket) => ticket.status === 'aberto').length,
+      andamento: myTickets.filter((ticket) => ticket.status === 'em_andamento').length,
+      aguardando: myTickets.filter((ticket) => ticket.status === 'aguardando').length,
+      resolvido: myTickets.filter((ticket) => ticket.status === 'resolvido').length,
+      fechado: myTickets.filter((ticket) => ticket.status === 'fechado').length,
     };
-  }, [tickets]);
+  }, [myTickets]);
 
   const filtered = useMemo(() => {
     const query = search.trim().toLowerCase();
 
-    return tickets.filter((ticket) => {
+    return myTickets.filter((ticket) => {
       if (filter !== 'todos' && ticket.status !== filter) {
         return false;
       }
@@ -92,7 +98,7 @@ export default function MyTickets({
         ticket.category.toLowerCase().includes(query)
       );
     });
-  }, [tickets, filter, search]);
+  }, [myTickets, filter, search]);
 
   const cards = [
     {

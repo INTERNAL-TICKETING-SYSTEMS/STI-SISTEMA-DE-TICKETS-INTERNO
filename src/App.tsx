@@ -405,7 +405,20 @@ export default function App() {
                 ? 'baixa'
                 : 'media';
 
-          const criadoEm = chamado.criadoEm || new Date().toISOString();
+          const criadoEm =
+            chamado.criado_em ||
+            chamado.criadoEm ||
+            new Date().toISOString();
+
+          const atualizadoEm =
+            chamado.atualizado_em ||
+            chamado.atualizadoEm ||
+            criadoEm;
+
+          const emailSolicitante =
+            chamado.solicitante_email ||
+            chamado.solicitanteEmail ||
+            '';
 
           return {
             id: String(chamado.id),
@@ -416,14 +429,14 @@ export default function App() {
             status,
             priority,
             createdAt: criadoEm,
-            updatedAt: chamado.atualizadoEm || criadoEm,
+            updatedAt: atualizadoEm,
             updates: [],
             requesterName: chamado.solicitanteNome || 'Não informado',
-            requesterEmail: chamado.solicitanteEmail || '',
+            requesterEmail: emailSolicitante,
             requesterDepartment:
               chamado.solicitanteDepartamento || 'Não informado',
             requesterLocation: 'A definir',
-            requesterContact: chamado.solicitanteEmail || '',
+            requesterContact: emailSolicitante || '',
             equipmentOrSystem: chamado.categoria || 'A identificar',
             approximateDate: criadoEm.slice(0, 10),
             impact: 'Não informado',

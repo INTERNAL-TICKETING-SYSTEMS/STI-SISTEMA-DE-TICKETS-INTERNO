@@ -20,6 +20,7 @@ import {
 import { registrarAuditoria } from '../services/auditService';
 import Logo from '@/components/Logo';
 import HelpCenterModal from './HelpCenterModal';
+import { belongsToUser } from '@/utils/ticketOwnership';
 import { Ticket, User as UserType, UserRole } from '@/types';
 import { useTechTheme } from '@/components/tech/techTheme';
 
@@ -80,11 +81,8 @@ export default function Sidebar({
     displayName.includes('Roberto') ||
     displayName.includes('Wanderson');
 
-  const myTickets = tickets.filter(
-    (ticket) =>
-      ticket.requesterName === userName ||
-      ticket.requesterName === activeUser?.name ||
-      (ticket as any).requesterEmail === activeUser?.email,
+  const myTickets = tickets.filter((ticket) =>
+    belongsToUser(ticket, activeUser, userName),
   );
 
   const myOpenCount = myTickets.filter((ticket) =>

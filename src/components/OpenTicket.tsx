@@ -466,7 +466,6 @@ ${nome}`;
         novoTitulo = 'Criar acesso ao e-mail Zimbra do DETRAN';
 
         novaDescricao = `Bom dia,
-
 Solicito a criação e configuração de acesso ao e-mail institucional Zimbra do DETRAN.
 
 DADOS DO SOLICITANTE
@@ -474,8 +473,6 @@ Nome: ${nome}
 CPF: ${cpf}
 E-mail: ${email}
 Setor/Lotação: ${setor}
-
-
 
 Atenciosamente,
 ${nome}`;
