@@ -5,6 +5,7 @@ import {
 } from '../../services/dataAuditService';
 import { CloseTicketModal } from './CloseTicketModal';
 import React, { useEffect, useRef, useState } from 'react';
+import DOMPurify from 'dompurify';
 import {
   Ticket,
   TicketStatus,
@@ -395,52 +396,68 @@ export default function TechTicketDetail({
           Voltar para chamados
         </button>
 
+
         {/* Header */}
         <div
-          className={`mb-6 rounded-2xl border p-6 shadow-sti ${colors.card}`}
+          className={`relative isolate mb-6 overflow-hidden rounded-2xl border shadow-sti ${colors.card}`}
         >
-          <div className="flex items-start justify-between gap-4">
-            <div className="min-w-0 flex-1">
-              <p
-                className={`text-xs font-medium ${colors.textFaint}`}
-              >
-                {ticket.protocol}
-              </p>
+          <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-teal-500 via-cyan-500 to-sti-navy-800" />
 
-              <h1
-                className={`mt-1 text-xl font-bold ${colors.textPrimary}`}
-              >
-                {ticket.title}
-              </h1>
+          <div className="pointer-events-none absolute -right-16 -top-20 h-56 w-56 rounded-full bg-teal-500/5 blur-3xl" />
 
-              <div
-                className={`mt-3 flex flex-wrap items-center gap-4 text-xs ${colors.textMuted}`}
-              >
-                <span className="inline-flex items-center gap-1.5">
-                  <Clock className="h-3.5 w-3.5" />
-                  Aberto em {formatDate(ticket.createdAt)}
-                </span>
+          <div className="relative flex flex-col gap-5 p-5 sm:p-6 lg:flex-row lg:items-center lg:justify-between">
+            <div className="flex min-w-0 items-start gap-4">
+              <div className="hidden h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-sti-navy-800 to-teal-700 text-white shadow-lg sm:flex">
+                <FileText className="h-7 w-7" />
+              </div>
 
-                {ticket.attendanceStartedAt && (
-                  <span className="inline-flex items-center gap-1.5">
-                    <Headphones className="h-3.5 w-3.5" />
-                    Atendimento iniciado em{' '}
-                    {formatDate(ticket.attendanceStartedAt)}
+              <div className="min-w-0 flex-1">
+                <div className="mb-2 flex flex-wrap items-center gap-2">
+                  <span className="rounded-lg border border-teal-500/20 bg-teal-500/10 px-2.5 py-1 font-mono text-xs font-bold tracking-wide text-teal-700 dark:text-teal-300">
+                    {ticket.protocol || ticket.id}
                   </span>
-                )}
+
+                  <span className={`text-xs font-medium ${colors.textFaint}`}>
+                    Atendimento técnico
+                  </span>
+                </div>
+
+                <h1 className={`break-words text-xl font-bold tracking-tight sm:text-2xl ${colors.textPrimary}`}>
+                  {ticket.title}
+                </h1>
+
+                <div className={`mt-4 flex flex-wrap gap-x-5 gap-y-2 text-xs ${colors.textMuted}`}>
+                  <span className="inline-flex items-center gap-1.5">
+                    <Clock className="h-3.5 w-3.5 text-teal-600 dark:text-teal-400" />
+                    Aberto em {formatDate(ticket.createdAt)}
+                  </span>
+
+                  {ticket.attendanceStartedAt && (
+                    <span className="inline-flex items-center gap-1.5">
+                      <Headphones className="h-3.5 w-3.5 text-teal-600 dark:text-teal-400" />
+                      Atendimento iniciado em {formatDate(ticket.attendanceStartedAt)}
+                    </span>
+                  )}
+                </div>
               </div>
             </div>
 
-            <StatusBadge status={ticket.status} />
+            <div className={`flex shrink-0 items-center justify-between gap-3 rounded-xl border px-4 py-3 lg:min-w-[170px] lg:flex-col lg:items-start ${colors.cardSecondary}`}>
+              <span className={`text-[10px] font-bold uppercase tracking-widest ${colors.textFaint}`}>
+                Situação atual
+              </span>
+              <StatusBadge status={ticket.status} />
+            </div>
           </div>
         </div>
+
 
         <div className="grid gap-6 lg:grid-cols-3">
           {/* Conteúdo principal */}
           <div className="lg:col-span-2">
             {/* Tabs */}
             <div
-              className={`mb-4 flex gap-1 rounded-xl border p-1 shadow-sti ${colors.card}`}
+              className={`mb-5 flex flex-wrap gap-2 rounded-2xl border p-2 shadow-sm ${colors.card}`}
             >
               <TabButton
                 active={tab === 'interactions'}
@@ -471,12 +488,12 @@ export default function TechTicketDetail({
             {/* CONVERSA — visual inspirado no WhatsApp */}
             {tab === 'interactions' && (
               <div
-                className={`overflow-hidden rounded-xl border shadow-sm ${isDark
+                className={`overflow-hidden rounded-2xl border shadow-md ${isDark
                   ? 'border-slate-700 bg-[#0b141a]'
                   : 'border-[#d5ddd7] bg-[#efeae2]'
                   }`}
               >
-                <div className="flex min-h-[76px] items-center gap-3 bg-[#075e54] px-4 py-3 text-white">
+                <div className="relative flex min-h-[84px] items-center gap-3 border-b border-white/10 bg-gradient-to-r from-[#064e46] via-[#075e54] to-[#087f70] px-5 py-4 text-white shadow-sm">
                   <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-white/15 font-bold">
                     {ticket.requesterName?.charAt(0)?.toUpperCase() || 'U'}
                   </div>
@@ -503,7 +520,7 @@ export default function TechTicketDetail({
 
                 <div
                   ref={chatScrollRef}
-                  className={`h-[420px] space-y-4 overflow-y-auto px-3 py-5 sm:h-[500px] sm:px-6 ${isDark ? 'bg-[#0b141a]' : 'bg-[#efeae2]'
+                  className={`h-[420px] space-y-5 overflow-y-auto px-4 py-6 sm:h-[500px] sm:px-7 ${isDark ? 'bg-[#101a20]' : 'bg-[#f3f5f2]'
                     }`}
                   style={{
                     backgroundImage: isDark
@@ -525,7 +542,7 @@ export default function TechTicketDetail({
 
                   <div className="flex justify-start">
                     <div
-                      className={`max-w-[88%] rounded-lg rounded-tl-none px-3 py-2 shadow-sm sm:max-w-[78%] ${isDark
+                      className={`max-w-[88%] rounded-2xl rounded-tl-md px-4 py-3 shadow-md sm:max-w-[78%] ${isDark
                         ? 'bg-[#202c33] text-slate-100'
                         : 'bg-white text-slate-800'
                         }`}
@@ -533,9 +550,22 @@ export default function TechTicketDetail({
                       <p className="mb-1 text-[11px] font-semibold text-emerald-700 dark:text-emerald-300">
                         {ticket.requesterName}
                       </p>
-                      <p className="whitespace-pre-wrap break-words text-sm leading-relaxed">
-                        {ticket.description}
-                      </p>
+                      {/<\/?(?:div|p|strong|b|em|i|u|ul|ol|li|span|br)\b/i.test(
+                        ticket.description ?? '',
+                      ) ? (
+                        <div
+                          className="ticket-description-content break-words text-sm leading-relaxed"
+                          dangerouslySetInnerHTML={{
+                            __html: DOMPurify.sanitize(ticket.description ?? '', {
+                              USE_PROFILES: { html: true },
+                            }),
+                          }}
+                        />
+                      ) : (
+                        <p className="whitespace-pre-wrap break-words text-sm leading-relaxed">
+                          {ticket.description}
+                        </p>
+                      )}
                       <p className="mt-1.5 text-right text-[10px] opacity-60">
                         {formatMessageTime(ticket.createdAt)}
                       </p>
@@ -557,7 +587,7 @@ export default function TechTicketDetail({
                           }`}
                       >
                         <div
-                          className={`max-w-[88%] rounded-lg px-3 py-2 shadow-sm sm:max-w-[78%] ${isTech
+                          className={`max-w-[88%] rounded-2xl px-4 py-3 shadow-md sm:max-w-[78%] ${isTech
                             ? 'rounded-tr-none bg-[#d9fdd3] text-[#172b20] dark:bg-[#005c4b] dark:text-slate-100'
                             : isDark
                               ? 'rounded-tl-none bg-[#202c33] text-slate-100'
@@ -835,17 +865,27 @@ export default function TechTicketDetail({
               <div
                 className={`rounded-2xl border p-6 shadow-sti animate-fade-in ${colors.card}`}
               >
-                <h2
-                  className={`mb-2 text-sm font-semibold ${colors.textPrimary}`}
-                >
-                  Registrar solução
-                </h2>
+                <div className={`mb-6 flex items-center gap-3 rounded-xl border p-4 ${isDark
+                  ? 'border-teal-500/20 bg-teal-500/10'
+                  : 'border-teal-100 bg-teal-50/70'
+                  }`}>
+                  <div className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-xl ${isDark
+                    ? 'bg-teal-500/20 text-teal-300'
+                    : 'bg-white text-teal-700 shadow-sm'
+                    }`}>
+                    <FileText className="h-6 w-6" />
+                  </div>
 
-                <p
-                  className={`mb-5 text-sm ${colors.textMuted}`}
-                >
-                  Descreva como o problema foi solucionado.
-                </p>
+                  <div>
+                    <h2 className={`text-base font-bold ${colors.textPrimary}`}>
+                      Registrar solução
+                    </h2>
+
+                    <p className={`mt-1 text-sm ${colors.textMuted}`}>
+                      Descreva o procedimento técnico realizado para resolver o chamado.
+                    </p>
+                  </div>
+                </div>
 
                 {ticket.solution ? (
                   <div className="mb-5 space-y-4">
@@ -949,62 +989,98 @@ export default function TechTicketDetail({
                     )}
                   </div>
                 ) : (
-                  <div className="mb-5 space-y-4">
-                    <div>
-                      <label
-                        className={`mb-2 block text-xs font-semibold uppercase tracking-wider ${colors.textMuted}`}
-                      >
-                        Descrição Técnica da Solução *
-                      </label>
 
-                      <Textarea
-                        value={solution}
-                        onChange={(e) => setSolution(e.target.value)}
-                        placeholder="Registre: diagnóstico técnico realizado, procedimento aplicado e validação funcional..."
-                        rows={5}
-                      />
-                    </div>
-
-                    <div className="grid gap-4 sm:grid-cols-2">
-                      <div>
-                        <label
-                          className={`mb-1.5 flex items-center gap-1.5 text-xs font-semibold ${colors.textSecondary}`}
-                        >
-                          <Tag
-                            className={`h-3.5 w-3.5 ${colors.textFaint}`}
-                          />
-                          Nº do Patrimônio / Tombamento (Opcional)
+                  <div className="mb-6 space-y-5">
+                    {/* Descrição técnica */}
+                    <div className={`overflow-hidden rounded-xl border ${isDark
+                        ? 'border-slate-700 bg-slate-800/40'
+                        : 'border-slate-200 bg-white'
+                      }`}>
+                      <div className={`flex items-center gap-2 border-b px-4 py-3 ${isDark
+                          ? 'border-slate-700 bg-slate-800/70'
+                          : 'border-slate-100 bg-slate-50'
+                        }`}>
+                        <FileText className="h-4 w-4 text-teal-600" />
+                        <label className={`text-xs font-bold uppercase tracking-wider ${colors.textPrimary}`}>
+                          Descrição técnica da solução *
                         </label>
-
-                        <input
-                          type="text"
-                          value={assetTag}
-                          onChange={(e) => setAssetTag(e.target.value)}
-                          placeholder="Ex: PAT-2024-0891 ou Placa 10423"
-                          className={`w-full rounded-xl border px-3 py-2 text-sm focus:border-sti-teal-500 focus:outline-none focus:ring-1 focus:ring-sti-teal-500 ${colors.input}`}
-                        />
                       </div>
 
-                      <div>
-                        <label
-                          className={`mb-1.5 flex items-center gap-1.5 text-xs font-semibold ${colors.textSecondary}`}
-                        >
-                          <Wrench
-                            className={`h-3.5 w-3.5 ${colors.textFaint}`}
-                          />
-                          Peças ou Insumos Trocados (Opcional)
-                        </label>
-
-                        <input
-                          type="text"
-                          value={replacedParts}
-                          onChange={(e) => setReplacedParts(e.target.value)}
-                          placeholder="Ex: Cabo de rede Cat6 2m, SSD 256GB, Fonte ATX"
-                          className={`w-full rounded-xl border px-3 py-2 text-sm focus:border-sti-teal-500 focus:outline-none focus:ring-1 focus:ring-sti-teal-500 ${colors.input}`}
+                      <div className="p-4">
+                        <Textarea
+                          value={solution}
+                          onChange={(e) => setSolution(e.target.value)}
+                          placeholder="Registre o diagnóstico técnico realizado, o procedimento aplicado e os testes de validação funcional..."
+                          rows={5}
                         />
+
+                        <p className={`mt-3 text-xs leading-relaxed ${colors.textMuted}`}>
+                          Descreva as ações executadas e os resultados obtidos durante o atendimento.
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Informações complementares */}
+                    <div className="space-y-3">
+                      <div>
+                        <h3 className={`text-sm font-bold ${colors.textPrimary}`}>
+                          Informações complementares
+                        </h3>
+                        <p className={`mt-1 text-xs ${colors.textMuted}`}>
+                          Preencha estes campos quando houver patrimônio ou materiais envolvidos.
+                        </p>
+                      </div>
+
+                      <div className="grid gap-4 sm:grid-cols-2">
+                        {/* Patrimônio */}
+                        <div className={`rounded-xl border p-4 ${isDark
+                            ? 'border-slate-700 bg-slate-800/40'
+                            : 'border-slate-200 bg-slate-50/70'
+                          }`}>
+                          <label className={`mb-3 flex items-center gap-2 text-xs font-bold ${colors.textSecondary}`}>
+                            <Tag className="h-4 w-4 text-teal-600" />
+                            Patrimônio / Tombamento
+                          </label>
+
+                          <input
+                            type="text"
+                            value={assetTag}
+                            onChange={(e) => setAssetTag(e.target.value)}
+                            placeholder="Ex: PAT-2024-0891 ou Placa 10423"
+                            className={`w-full rounded-xl border px-3 py-2.5 text-sm focus:border-sti-teal-500 focus:outline-none focus:ring-1 focus:ring-sti-teal-500 ${colors.input}`}
+                          />
+
+                          <p className={`mt-2 text-xs ${colors.textMuted}`}>
+                            Campo opcional.
+                          </p>
+                        </div>
+
+                        {/* Peças e insumos */}
+                        <div className={`rounded-xl border p-4 ${isDark
+                            ? 'border-slate-700 bg-slate-800/40'
+                            : 'border-slate-200 bg-slate-50/70'
+                          }`}>
+                          <label className={`mb-3 flex items-center gap-2 text-xs font-bold ${colors.textSecondary}`}>
+                            <Wrench className="h-4 w-4 text-amber-600" />
+                            Peças ou insumos utilizados
+                          </label>
+
+                          <input
+                            type="text"
+                            value={replacedParts}
+                            onChange={(e) => setReplacedParts(e.target.value)}
+                            placeholder="Ex: Cabo de rede Cat6, SSD 256GB..."
+                            className={`w-full rounded-xl border px-3 py-2.5 text-sm focus:border-sti-teal-500 focus:outline-none focus:ring-1 focus:ring-sti-teal-500 ${colors.input}`}
+                          />
+
+                          <p className={`mt-2 text-xs ${colors.textMuted}`}>
+                            Campo opcional.
+                          </p>
+                        </div>
                       </div>
                     </div>
                   </div>
+
                 )}
 
                 {/* Concluir chamado */}
@@ -1139,99 +1215,108 @@ export default function TechTicketDetail({
               </div>
             )}
 
+
             {/* NOTAS INTERNAS */}
             {tab === 'notes' && (
               <div
-                className={`rounded-2xl border p-6 shadow-sti animate-fade-in ${colors.card}`}
+                className={`overflow-hidden rounded-2xl border shadow-sm animate-fade-in ${colors.card}`}
               >
-                <h2
-                  className={`mb-2 text-sm font-semibold ${colors.textPrimary}`}
-                >
-                  Observações internas
-                </h2>
+                {/* Cabeçalho */}
+                <div className={`flex flex-col gap-3 border-b p-5 sm:flex-row sm:items-center sm:justify-between ${colors.borderSoft}`}>
+                  <div className="flex items-center gap-3">
+                    <div className={`flex h-11 w-11 items-center justify-center rounded-xl ${isDark ? 'bg-teal-500/15 text-teal-300' : 'bg-teal-50 text-teal-700'}`}>
+                      <StickyNote className="h-5 w-5" />
+                    </div>
 
-                <p
-                  className={`mb-5 text-sm ${colors.textMuted}`}
-                >
-                  Anotações visíveis apenas para a equipe de TI.
-                </p>
+                    <div>
+                      <h2 className={`text-base font-bold ${colors.textPrimary}`}>
+                        Observações internas
+                      </h2>
+                      <p className={`mt-1 text-xs ${colors.textMuted}`}>
+                        Registros privados da equipe de TI.
+                      </p>
+                    </div>
+                  </div>
 
-                <div className="flex flex-col gap-3">
+                  <span className={`w-fit rounded-full px-3 py-1.5 text-xs font-semibold ${isDark ? 'bg-slate-800 text-teal-300' : 'bg-teal-50 text-teal-700'}`}>
+                    {ticket.internalNotes.length} registro(s)
+                  </span>
+                </div>
+
+                {/* Lista de observações */}
+                <div className="space-y-3 p-5">
                   {ticket.internalNotes.length === 0 && (
-                    <p
-                      className={`py-6 text-center text-sm ${colors.textFaint}`}
-                    >
-                      Nenhuma observação registrada.
-                    </p>
+                    <div className={`rounded-xl border border-dashed px-4 py-8 text-center ${colors.borderSoft}`}>
+                      <StickyNote className={`mx-auto mb-3 h-8 w-8 ${colors.textFaint}`} />
+                      <p className={`text-sm font-semibold ${colors.textSecondary}`}>
+                        Nenhuma observação registrada
+                      </p>
+                      <p className={`mt-1 text-xs ${colors.textMuted}`}>
+                        As anotações adicionadas pela equipe aparecerão aqui.
+                      </p>
+                    </div>
                   )}
 
                   {ticket.internalNotes.map((n) => (
                     <div
                       key={n.id}
-                      className={`rounded-xl border px-4 py-3 ${isDark
-                        ? 'border-slate-700/60 bg-slate-800/50'
-                        : 'border-slate-100 bg-slate-50/80'
-                        }`}
+                      className={`rounded-xl border p-4 ${isDark ? 'border-slate-700/70 bg-slate-800/40' : 'border-slate-200 bg-slate-50/80'}`}
                     >
-                      <div className="mb-1 flex items-center gap-2">
-                        <StickyNote
-                          className={`h-3.5 w-3.5 ${colors.textFaint}`}
-                        />
+                      <div className="mb-2 flex flex-wrap items-center gap-2">
+                        <div className={`flex h-8 w-8 items-center justify-center rounded-full ${isDark ? 'bg-teal-500/15 text-teal-300' : 'bg-teal-100 text-teal-700'}`}>
+                          <StickyNote className="h-4 w-4" />
+                        </div>
 
-                        <span
-                          className={`text-xs font-medium ${colors.textMuted}`}
-                        >
+                        <span className={`text-sm font-semibold ${colors.textPrimary}`}>
                           {n.authorName}
                         </span>
 
-                        <span
-                          className={`text-xs ${colors.textFaint}`}
-                        >
-                          · {formatDate(n.createdAt)}
+                        <span className={`text-xs ${colors.textFaint}`}>
+                          {formatDate(n.createdAt)}
                         </span>
                       </div>
 
-                      <p
-                        className={`text-sm leading-relaxed ${colors.textSecondary}`}
-                      >
+                      <p className={`whitespace-pre-wrap break-words pl-10 text-sm leading-relaxed ${colors.textSecondary}`}>
                         {n.message}
                       </p>
                     </div>
                   ))}
                 </div>
 
+                {/* Campo para nova observação */}
                 {ticket.status !== 'fechado' && (
-                  <div
-                    className={`mt-5 border-t pt-5 ${colors.borderSoft}`}
-                  >
-                    <label
-                      className={`mb-2 block text-sm font-medium ${colors.textPrimary}`}
-                    >
+                  <div className={`border-t p-5 ${colors.borderSoft}`}>
+                    <label className={`mb-3 block text-sm font-semibold ${colors.textPrimary}`}>
                       Adicionar observação
                     </label>
 
                     <Textarea
                       value={note}
                       onChange={(e) => setNote(e.target.value)}
-                      placeholder="Anote algo relevante para a equipe de TI…"
-                      rows={2}
+                      placeholder="Descreva uma informação importante para a equipe de TI..."
+                      rows={3}
                     />
 
-                    <div className="mt-3 flex justify-end">
+                    <div className="mt-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                      <span className={`text-xs ${colors.textFaint}`}>
+                        Visível somente para a equipe técnica.
+                      </span>
+
                       <Button
                         variant="secondary"
                         size="sm"
                         onClick={handleNote}
                         disabled={!note.trim()}
                       >
-                        <StickyNote className="h-3.5 w-3.5" />
-                        Adicionar
+                        <StickyNote className="h-4 w-4" />
+                        Adicionar observação
                       </Button>
                     </div>
                   </div>
                 )}
               </div>
             )}
+
           </div>
 
           {/* Sidebar direita */}
