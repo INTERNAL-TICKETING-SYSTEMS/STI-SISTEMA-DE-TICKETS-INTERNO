@@ -2,7 +2,7 @@
  * Serviço de Integração com o Subsistema DATA-AUDIT (Spring Boot / Render)
  */
 
-const BASE_URL = import.meta.env.VITE_DATA_AUDIT_URL || 'https://data-audit-f72h.onrender.com/api/v1/audit';
+const BASE_URL = import.meta.env.VITE_DATA_AUDIT_URL || 'https://data-audit-production.up.railway.app/api/v1/audit';
 
 export interface AuditEventResponse {
   id: number;

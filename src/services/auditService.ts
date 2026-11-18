@@ -19,7 +19,7 @@
   metadados?: Record<string, any>;
 }
 
-const API_BASE = (import.meta.env.VITE_API_URL || 'https://data-audit-f72h.onrender.com').replace(/\/$/, "");
+const API_BASE = (import.meta.env.VITE_API_URL || 'https://data-audit-production.up.railway.app').replace(/\/$/, "");
 const AUDIT_API_URL = `${API_BASE}/api/v1/audit/events`;
 
 export async function registrarAuditoria(payload: AuditPayload): Promise<boolean> {

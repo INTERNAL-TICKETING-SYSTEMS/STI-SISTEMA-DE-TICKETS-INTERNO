@@ -1,7 +1,7 @@
 ﻿export const smtpEmailService = {
   async enviarEmailOtp(destinatario: string, nomeUsuario: string, otpCode: string): Promise<boolean> {
     try {
-      const baseUrl = import.meta.env.VITE_API_URL || 'https://data-audit-f72h.onrender.com';
+      const baseUrl = import.meta.env.VITE_API_URL || 'https://data-audit-production.up.railway.app';
       const endpoint = `${baseUrl}/api/v1/notifications/email`;
 
       console.log(`[SMTP] A enviar pedido para o backend em ${endpoint}...`);

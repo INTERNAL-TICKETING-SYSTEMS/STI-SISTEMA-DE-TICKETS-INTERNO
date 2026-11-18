@@ -12,7 +12,7 @@
 }
 
 // Já inclui o /api/v1 para alinhar com os RequestMapping do Spring Boot
-const API_BASE_URL = 'https://data-audit-f72h.onrender.com/api/v1';
+const API_BASE_URL = 'https://data-audit-production.up.railway.app/api/v1';
 
 export const dbRepository = {
   async buscarUsuarios(): Promise<UsuarioDB[]> {

@@ -22,7 +22,7 @@ interface AuditEvent {
   hashAnterior?: string | null;
 }
 
-const API_BASE = (import.meta.env.VITE_API_URL || 'https://data-audit-f72h.onrender.com').replace(/\/$/, "");
+const API_BASE = (import.meta.env.VITE_API_URL || 'https://data-audit-production.up.railway.app').replace(/\/$/, "");
 
 export default function GestorAuditTable() {
   const { isDark } = useGestorTheme();

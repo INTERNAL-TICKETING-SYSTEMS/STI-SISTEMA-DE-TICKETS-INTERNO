@@ -15,7 +15,7 @@ interface Departamento {
   sigla: string;
 }
 
-const API_BASE = (import.meta.env.VITE_API_URL || 'https://data-audit-f72h.onrender.com').replace(/\/$/, "");
+const API_BASE = (import.meta.env.VITE_API_URL || 'https://data-audit-production.up.railway.app').replace(/\/$/, "");
 
 const GENEROS_OPCOES = [
   { valor: 'MASCULINO', rotulo: 'Masculino' },
