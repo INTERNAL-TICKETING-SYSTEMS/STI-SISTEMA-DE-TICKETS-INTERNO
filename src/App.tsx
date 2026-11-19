@@ -330,7 +330,6 @@ export default function App() {
     }
   }, [authed, activeUser, role, userView, techView, gestorView]);
 
-
   const handleLogin = (email: string, selectedRole?: UserRole) => {
     const account = detectRoleFromEmail(email);
     const nextRole = selectedRole ?? account.role;
@@ -356,7 +355,6 @@ export default function App() {
     }
   };
 
-
   const handleTechFilterSelect = (status: TicketStatus) => {
     setTechInitialStatus(status);
     setTechView({ page: 'tech-chamados' });
@@ -369,6 +367,7 @@ export default function App() {
     if (newRole === 'tecnico') setTechView({ page: 'tech-inicio' });
     if (newRole === 'gestor') setGestorView('gestor-dashboard');
   };
+
   const [tickets, setTickets] = useState<Ticket[]>(mockTickets);
   const [inspectedTicket, setInspectedTicket] = useState<Ticket | null>(null);
 
@@ -381,8 +380,8 @@ export default function App() {
 
         if (!ativo) return;
 
-        const ticketsDoBackend: Ticket[] = chamados.map((chamado) => {
-          const statusRecebido = chamado.status?.toLowerCase();
+        const ticketsDoBackend: Ticket[] = chamados.map((chamado: any) => {
+          const statusRecebido = String(chamado.status || '').toLowerCase();
 
           const status: TicketStatus =
             statusRecebido === 'em_andamento' ||
@@ -396,7 +395,7 @@ export default function App() {
                     ? 'aguardando'
                     : 'aberto';
 
-          const prioridadeRecebida = chamado.prioridade?.toLowerCase();
+          const prioridadeRecebida = String(chamado.prioridade || '').toLowerCase();
 
           const priority: Ticket['priority'] =
             prioridadeRecebida === 'alta'
@@ -420,29 +419,37 @@ export default function App() {
             chamado.solicitanteEmail ||
             '';
 
+          const categoria = chamado.categoria || 'Geral';
+
           return {
             id: String(chamado.id),
-            protocol: chamado.protocolo,
-            title: chamado.titulo,
-            description: chamado.descricao,
-            category: chamado.categoria,
+            protocol: chamado.protocolo || `STI-${chamado.id}`,
+            title: chamado.titulo || 'Sem título',
+            description: chamado.descricao || '',
+            category: categoria,
             status,
             priority,
             createdAt: criadoEm,
             updatedAt: atualizadoEm,
             updates: [],
-            requesterName: chamado.solicitanteNome || 'Não informado',
+            requesterName:
+              chamado.solicitanteNome ||
+              emailSolicitante ||
+              'Não informado',
             requesterEmail: emailSolicitante,
             requesterDepartment:
               chamado.solicitanteDepartamento || 'Não informado',
             requesterLocation: 'A definir',
             requesterContact: emailSolicitante || '',
-            equipmentOrSystem: chamado.categoria || 'A identificar',
-            approximateDate: criadoEm.slice(0, 10),
+            equipmentOrSystem: categoria || 'A identificar',
+            approximateDate: String(criadoEm).slice(0, 10),
             impact: 'Não informado',
             errorMessage: 'Nenhuma',
             attachments: [],
-            assignee: chamado.responsavel || null,
+            assignee:
+              chamado.responsavel ||
+              chamado.tecnico_atribuido_email ||
+              null,
             attendanceStartedAt: null,
             solution: chamado.solucao || null,
             internalNotes: [],
@@ -535,6 +542,7 @@ export default function App() {
       console.error('[Auditoria] Falha ao registrar atualização:', error)
     );
   };
+
   const handleLogout = () => {
     sessionStorage.removeItem('sti_authed');
     sessionStorage.removeItem('sti_activeUser');
@@ -595,17 +603,20 @@ export default function App() {
 
     const newTicket: Ticket = {
       id: String(chamadoSalvo.id),
-      protocol: chamadoSalvo.protocolo,
+      protocol: chamadoSalvo.protocolo || generatedProtocol,
       title: chamadoSalvo.titulo,
       description: chamadoSalvo.descricao,
-      category: chamadoSalvo.categoria,
+      category: chamadoSalvo.categoria || data.category,
       status: 'aberto',
-      priority: chamadoSalvo.prioridade as Ticket['priority'],
-      createdAt: chamadoSalvo.criadoEm || now,
-      updatedAt: chamadoSalvo.atualizadoEm || now,
+      priority: (chamadoSalvo.prioridade || data.urgency) as Ticket['priority'],
+      createdAt: chamadoSalvo.criadoEm || chamadoSalvo.criado_em || now,
+      updatedAt: chamadoSalvo.atualizadoEm || chamadoSalvo.atualizado_em || now,
       updates: [],
-      requesterName: chamadoSalvo.solicitanteNome,
-      requesterEmail: activeUser.email,
+      requesterName: chamadoSalvo.solicitanteNome || activeUser.name,
+      requesterEmail:
+        chamadoSalvo.solicitanteEmail ||
+        chamadoSalvo.solicitante_email ||
+        activeUser.email,
       requesterDepartment:
         chamadoSalvo.solicitanteDepartamento ||
         activeUser.department,
@@ -636,15 +647,15 @@ export default function App() {
         'solicitante@sti.chamados.com',
       estadoAtual: {
         assunto: chamadoSalvo.titulo,
-        categoria: chamadoSalvo.categoria,
-        prioridade: chamadoSalvo.prioridade,
-        status: chamadoSalvo.status,
+        categoria: chamadoSalvo.categoria || data.category,
+        prioridade: chamadoSalvo.prioridade || data.urgency,
+        status: chamadoSalvo.status || 'ABERTO',
         setor:
           chamadoSalvo.solicitanteDepartamento || 'Geral',
       },
       metadados: {
         origem: 'Abertura de Chamado STI',
-        protocolo: chamadoSalvo.protocolo,
+        protocolo: chamadoSalvo.protocolo || generatedProtocol,
       },
     }).catch((error) => {
       console.error(
@@ -654,9 +665,10 @@ export default function App() {
     });
 
     return {
-      protocolo: chamadoSalvo.protocolo,
+      protocolo: chamadoSalvo.protocolo || generatedProtocol,
     };
   };
+
   const handleUserReply = (
     id: string,
     message: string,
@@ -826,8 +838,6 @@ export default function App() {
     window.print();
   };
 
-
-
   const handleTechMessage = (
     id: string,
     message: string,
@@ -930,7 +940,6 @@ export default function App() {
       )
     );
   };
-
 
   const handleChangeStatus = (id: string, status: TicketStatus) => {
     const now = new Date().toISOString();
@@ -1040,7 +1049,6 @@ export default function App() {
     );
   };
 
-
   const handleRateTicket = (id: string, rating: number, comment?: string) => {
     const now = new Date().toISOString();
     setTickets((prev) =>
@@ -1080,6 +1088,7 @@ export default function App() {
       metadados: { acao: 'Encerramento formal com avaliação de satisfação' }
     }).catch(err => console.error('[Auditoria] Falha ao registrar avaliação:', err));
   };
+
   const handleAddNote = (id: string, note: string) => {
     const now = new Date().toISOString();
 
@@ -1159,15 +1168,18 @@ export default function App() {
             />
           )}
 
-          {userView.page === 'meus-chamados' && (<MyTickets
-            tickets={tickets}
-            onNavigate={navigate}
-            onOpenTicket={openTicket}
-            activeUser={activeUser}
-          />
+          {userView.page === 'meus-chamados' && (
+            <MyTickets
+              tickets={tickets}
+              onNavigate={navigate}
+              onOpenTicket={openTicket}
+              activeUser={activeUser}
+            />
           )}
 
-          {userView.page === 'perfil' && <Profile user={activeUser} onSave={handleSaveProfile} />}
+          {userView.page === 'perfil' && (
+            <Profile user={activeUser} onSave={handleSaveProfile} />
+          )}
 
           {userView.page === 'ticket-detail' && currentTicket && (
             <TicketDetail
@@ -1178,8 +1190,8 @@ export default function App() {
               onNavigate={navigate}
               onRateTicket={handleRateTicket}
             />
-          )} </PageContainer>
-
+          )}
+        </PageContainer>
       </div>
     );
   }
@@ -1245,7 +1257,6 @@ export default function App() {
               techName={activeUser.name}
             />
           )}
-
 
           {techView.page === ('tech-feedbacks' as any) && (
             <FeedbackCenter
@@ -1342,7 +1353,6 @@ export default function App() {
       </div>
     );
   }
-
 
   return null;
 }
