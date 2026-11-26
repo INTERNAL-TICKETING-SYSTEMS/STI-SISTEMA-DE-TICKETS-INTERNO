@@ -44,7 +44,11 @@ const TECH_DEFAULT_PASSWORD = '.\\ati@!#$%2020';
 const knownAccounts: Record<string, { role: UserRole; user: User; defaultPassword?: string; requireStrictPassword?: boolean }> = {
   'servidor@sti.chamados.com': {
     role: 'usuario',
-    user: currentUser,
+    user: {
+      ...currentUser,
+      role: 'Servidor / Colaborador',
+      department: 'Não informado',
+    },
     requireStrictPassword: false
   },
   'carlos.daniel@sti.chamados.com': {
@@ -131,11 +135,23 @@ const knownAccounts: Record<string, { role: UserRole; user: User; defaultPasswor
   }
 };
 
-function detectRoleFromEmail(email: string): { role: UserRole; user: User } {
+function detectRoleFromEmail(email: string, backendUser?: Partial<User>): { role: UserRole; user: User } {
   const normalizedEmail = email.toLowerCase().trim();
   const account = knownAccounts[normalizedEmail];
 
-  if (account) return account;
+  if (account) {
+    return {
+      role: account.role,
+      user: {
+        ...account.user,
+        ...(backendUser || {}),
+        name: backendUser?.name || account.user.name,
+        email: normalizedEmail,
+        department: backendUser?.department || account.user.department,
+        role: backendUser?.role || account.user.role,
+      },
+    };
+  }
 
   try {
     const customUsers = JSON.parse(
@@ -150,40 +166,52 @@ function detectRoleFromEmail(email: string): { role: UserRole; user: User } {
       localStorage.getItem(`sti_profile_${normalizedEmail}`) || 'null'
     );
 
-    if (found || savedProfile) {
-      const userData = {
-        ...currentUser,
-        ...(found || {}),
-        ...(savedProfile || {}),
-        name:
-          savedProfile?.name ||
-          found?.name ||
-          found?.nome ||
-          '',
-        email: normalizedEmail,
-        cpf:
-          savedProfile?.cpf ||
-          found?.cpf ||
-          '',
-        department:
-          savedProfile?.department ||
-          found?.department ||
-          found?.departamento ||
-          '',
-        phone:
-          savedProfile?.phone ||
-          found?.phone ||
-          found?.telefoneWhatsapp ||
-          '',
-        userRole: 'usuario' as UserRole,
-        roles: ['usuario'] as UserRole[],
-      };
+    const mergedDepartment =
+      backendUser?.department ||
+      savedProfile?.department ||
+      found?.department ||
+      found?.departamento ||
+      'Não informado';
 
-      return {
-        role: 'usuario',
-        user: userData,
-      };
-    }
+    const mergedRoleCargo =
+      backendUser?.role ||
+      savedProfile?.role ||
+      found?.role ||
+      'Servidor / Colaborador';
+
+    const userData: User = {
+      ...currentUser,
+      ...(found || {}),
+      ...(savedProfile || {}),
+      ...(backendUser || {}),
+      name:
+        backendUser?.name ||
+        savedProfile?.name ||
+        found?.name ||
+        found?.nome ||
+        normalizedEmail.split('@')[0],
+      email: normalizedEmail,
+      cpf:
+        backendUser?.cpf ||
+        savedProfile?.cpf ||
+        found?.cpf ||
+        '',
+      department: mergedDepartment,
+      role: mergedRoleCargo,
+      phone:
+        backendUser?.phone ||
+        savedProfile?.phone ||
+        found?.phone ||
+        found?.telefoneWhatsapp ||
+        '',
+      userRole: 'usuario' as UserRole,
+      roles: ['usuario'] as UserRole[],
+    };
+
+    return {
+      role: 'usuario',
+      user: userData,
+    };
   } catch (err) {
     console.error('[STI] Erro ao recuperar dados do usuário:', err);
   }
@@ -192,11 +220,13 @@ function detectRoleFromEmail(email: string): { role: UserRole; user: User } {
     role: 'usuario',
     user: {
       ...currentUser,
-      name: '',
+      ...(backendUser || {}),
+      name: backendUser?.name || normalizedEmail.split('@')[0],
       email: normalizedEmail,
-      cpf: '',
-      department: '',
-      phone: '',
+      cpf: backendUser?.cpf || '',
+      department: backendUser?.department || 'Não informado',
+      role: backendUser?.role || 'Servidor / Colaborador',
+      phone: backendUser?.phone || '',
       userRole: 'usuario',
       roles: ['usuario'],
     },
@@ -324,8 +354,8 @@ export default function App() {
     }
   }, [authed, activeUser, role, userView, techView, gestorView]);
 
-  const handleLogin = (email: string, selectedRole?: UserRole) => {
-    const account = detectRoleFromEmail(email);
+  const handleLogin = (email: string, selectedRole?: UserRole, backendUser?: Partial<User>) => {
+    const account = detectRoleFromEmail(email, backendUser);
     const nextRole = selectedRole ?? account.role;
 
     const userWithRole: User = {
@@ -1373,8 +1403,8 @@ export default function App() {
                 void handleUserReply(currentTicket.id, msg, replyToId, files)
               }
               onNavigate={navigate}
-              onRateTicket={(rating, comment) =>
-                void handleRateTicket(currentTicket.id, rating, comment)
+              onRateTicket={(id: string, rating: number, comment?: string) =>
+                void handleRateTicket(id, rating, comment)
               }
             />
           )}

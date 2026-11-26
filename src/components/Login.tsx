@@ -1,5 +1,4 @@
-﻿
-import { dbRepository } from '../services/dbRepository';
+﻿import { dbRepository } from '../services/dbRepository';
 import { useTechTheme } from '@/components/tech/techTheme';
 import React, { useState } from 'react';
 import {
@@ -9,23 +8,25 @@ import {
   UserCheck,
   UserPlus,
   ArrowRight,
-  MessagesSquare,
   AlertCircle,
-  Shield,
   Activity,
   BarChart3,
-  CheckCircle2,
   Moon,
   Sun,
   X,
   Eye,
   EyeOff,
+  Shield,
 } from 'lucide-react';
 
 import Button from '@/components/ui/Button';
 import { Field, Input } from '@/components/ui/Field';
 import Logo from '@/components/Logo';
-import { UserRole } from '@/types';
+import { User, UserRole } from '@/types';
+
+const API_BASE = (
+  import.meta.env.VITE_API_URL || 'https://data-audit-production.up.railway.app'
+).replace(/\/$/, '');
 
 const multiRoleAccountsConfig: Record<
   string,
@@ -93,7 +94,7 @@ const multiRoleAccountsConfig: Record<
 };
 
 interface LoginProps {
-  onLogin: (email: string, role?: UserRole) => void;
+  onLogin: (email: string, role?: UserRole, backendUser?: Partial<User>) => void;
   onGoToRegister: () => void;
 }
 
@@ -101,16 +102,12 @@ export default function Login({
   onLogin,
   onGoToRegister,
 }: LoginProps) {
-  const {
-    isDark,
-    toggleTheme,
-  } = useTechTheme();
+  const { isDark, toggleTheme } = useTechTheme();
 
   const [isForgotOpen, setIsForgotOpen] = useState(false);
   const [forgotInput, setForgotInput] = useState('');
   const [forgotPhone, setForgotPhone] = useState('');
-  const [forgotStep, setForgotStep] =
-    useState<'IDENTIFY' | 'VERIFY'>('IDENTIFY');
+  const [forgotStep, setForgotStep] = useState<'IDENTIFY' | 'VERIFY'>('IDENTIFY');
 
   const [generatedOtp, setGeneratedOtp] = useState('');
   const [userOtpInput, setUserOtpInput] = useState('');
@@ -126,6 +123,7 @@ export default function Login({
   const [isLoggingIn, setIsLoggingIn] = useState(false);
   const [loginErrorMessage, setLoginErrorMessage] = useState('');
 
+  const [pendingBackendUser, setPendingBackendUser] = useState<Partial<User> | undefined>(undefined);
   const [multiRoleData, setMultiRoleData] = useState<{
     email: string;
     name: string;
@@ -175,9 +173,7 @@ export default function Login({
     }
 
     if (!emailPessoal || !emailPessoal.includes('@')) {
-      setForgotErrorMessage(
-        'Informe um e-mail pessoal válido para o envio do OTP.',
-      );
+      setForgotErrorMessage('Informe um e-mail pessoal válido para o envio do OTP.');
       return;
     }
 
@@ -196,11 +192,7 @@ export default function Login({
       setGeneratedOtp(code);
       setForgotTargetAccount(user.email);
 
-      await dbRepository.salvarRecuperacaoOtp(
-        user.id,
-        code,
-        emailPessoal,
-      );
+      await dbRepository.salvarRecuperacaoOtp(user.id, code, emailPessoal);
 
       setForgotSuccessMessage(
         'Código de segurança enviado com sucesso para o seu e-mail pessoal!',
@@ -234,34 +226,6 @@ export default function Login({
       return;
     }
 
-    const customPasswords = JSON.parse(
-      localStorage.getItem('sti_custom_passwords') || '{}',
-    );
-
-    customPasswords[forgotTargetAccount] = newPassword;
-
-    localStorage.setItem(
-      'sti_custom_passwords',
-      JSON.stringify(customPasswords),
-    );
-
-    const registeredUsers = JSON.parse(
-      localStorage.getItem('sti_registered_users') || '[]',
-    );
-
-    const updatedUsers = registeredUsers.map((u: any) => {
-      if (u.email.toLowerCase() === forgotTargetAccount.toLowerCase()) {
-        return { ...u, password: newPassword };
-      }
-
-      return u;
-    });
-
-    localStorage.setItem(
-      'sti_registered_users',
-      JSON.stringify(updatedUsers),
-    );
-
     setForgotSuccessMessage(
       'Senha redefinida com sucesso! Você já pode entrar com a nova credencial.',
     );
@@ -276,57 +240,95 @@ export default function Login({
     }, 2000);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const mapPerfilParaRole = (perfil?: string): UserRole => {
+    const p = String(perfil || '').toUpperCase();
+    if (p.includes('GESTOR') || p.includes('ADMIN')) return 'gestor';
+    if (p.includes('TECNICO')) return 'tecnico';
+    return 'usuario';
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (isLoggingIn) return;
     setLoginErrorMessage('');
 
     const cleanEmail = email.toLowerCase().trim();
-
-    if (!cleanEmail) return;
-
-    const isTechEmail = [
-      'carlos.daniel@sti.chamados.com',
-      'joao.pedro@sti.chamados.com',
-      'guilherme.ferreira@sti.chamados.com',
-      'wanderson.maior@sti.chamados.com',
-    ].includes(cleanEmail);
-
-    const customPasswords = JSON.parse(
-      localStorage.getItem('sti_custom_passwords') || '{}',
-    );
-
-    const customPass = customPasswords[cleanEmail];
-
-    if (
-      isTechEmail &&
-      senha &&
-      senha !== '.\\ati@!#$%2020' &&
-      senha !== 'ati2020' &&
-      (!customPass || customPass !== senha)
-    ) {
-      setLoginErrorMessage(
-        'Senha incorreta. Confira sua senha e tente novamente.',
-      );
-      return;
-    }
-
-    if (multiRoleAccountsConfig[cleanEmail]) {
-      setMultiRoleData({
-        email: cleanEmail,
-        ...multiRoleAccountsConfig[cleanEmail],
-      });
-      return;
-    }
+    if (!cleanEmail || !senha) return;
 
     setIsLoggingIn(true);
-    onLogin(cleanEmail);
+
+    try {
+      const res = await fetch(`${API_BASE}/api/v1/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          identificador: cleanEmail,
+          senha,
+        }),
+      });
+
+      if (!res.ok) {
+        const errText = await res.text();
+        let mensagemErro = 'Usuário não cadastrado ou senha inválida.';
+        try {
+          const parsed = JSON.parse(errText);
+          mensagemErro = parsed.erro || parsed.mensagem || mensagemErro;
+        } catch {
+          if (errText && !errText.startsWith('<!DOCTYPE')) {
+            mensagemErro = errText;
+          }
+        }
+        setLoginErrorMessage(mensagemErro);
+        setIsLoggingIn(false);
+        return;
+      }
+
+      const data = await res.json();
+      const u = data?.utilizador || {};
+      const resolvedEmail = String(u.email || cleanEmail).toLowerCase().trim();
+      const mappedRole = mapPerfilParaRole(u.perfil);
+
+      const backendUser: Partial<User> = {
+        name: u.nome || '',
+        email: resolvedEmail,
+        cpf: u.cpf || '',
+        department: u.departamento || 'Não informado',
+        role: mappedRole === 'tecnico'
+          ? 'Técnico de Suporte'
+          : mappedRole === 'gestor'
+            ? 'Gestor Administrativo'
+            : 'Servidor / Colaborador',
+        userRole: mappedRole,
+        roles: [mappedRole],
+      };
+
+      if (multiRoleAccountsConfig[resolvedEmail]) {
+        setPendingBackendUser(backendUser);
+        setMultiRoleData({
+          email: resolvedEmail,
+          ...multiRoleAccountsConfig[resolvedEmail],
+        });
+        setIsLoggingIn(false);
+        return;
+      }
+
+      onLogin(resolvedEmail, mappedRole, backendUser);
+    } catch (err) {
+      console.error('[Login API] Erro de conexão:', err);
+      setLoginErrorMessage(
+        'Não foi possível validar suas credenciais no servidor. Tente novamente.',
+      );
+      setIsLoggingIn(false);
+    }
   };
 
   const handleSelectRoleAndEnter = (role: UserRole) => {
     if (multiRoleData) {
-      onLogin(multiRoleData.email, role);
+      onLogin(multiRoleData.email, role, {
+        ...pendingBackendUser,
+        userRole: role,
+      });
     }
   };
 
@@ -348,10 +350,7 @@ export default function Login({
   `;
 
   return (
-    <div
-      className={`relative min-h-screen ${pageBackground} md:flex`}
-    >
-      {/* Modal de seleção de perfil */}
+    <div className={`relative min-h-screen ${pageBackground} md:flex`}>
       {multiRoleData && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 p-4 backdrop-blur-sm">
           <div
@@ -428,7 +427,6 @@ export default function Login({
         </div>
       )}
 
-      {/* Botão de tema */}
       <div className="absolute right-5 top-5 z-40 sm:right-7 sm:top-7">
         <button
           type="button"
@@ -454,7 +452,6 @@ export default function Login({
         </button>
       </div>
 
-      {/* Painel esquerdo */}
       <section
         className={`relative hidden overflow-hidden md:flex md:w-[42%] md:flex-col lg:w-[44%] ${isDark ? 'bg-[#081522]' : 'bg-slate-200'
           }`}
@@ -553,8 +550,6 @@ export default function Login({
                 </div>
               </div>
             </div>
-
-
           </div>
 
           <p className={`text-sm ${isDark ? 'text-slate-500' : 'text-slate-600'}`}>
@@ -563,7 +558,6 @@ export default function Login({
         </div>
       </section>
 
-      {/* Lado direito — login */}
       <section
         className={`flex min-h-screen flex-1 items-center justify-center px-5 py-16 sm:px-8 lg:px-12 xl:px-16 ${loginPanelBackground}`}
       >
@@ -579,12 +573,12 @@ export default function Login({
                 Acesse sua conta
               </h1>
               <p className={`text-base leading-relaxed sm:text-lg ${bodyColor}`}>
-                Entre com seu e-mail corporativo institucional.
+                Entre com seu e-mail cadastrado no sistema.
               </p>
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-6">
-              <Field label="E-mail corporativo" labelClassName={labelColor}>
+              <Field label="E-mail de acesso" labelClassName={labelColor}>
                 <div className="relative">
                   <Mail className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
                   <Input
@@ -634,6 +628,7 @@ export default function Login({
                   </button>
                 </div>
               </Field>
+
               {loginErrorMessage && (
                 <div
                   role="alert"
@@ -715,13 +710,10 @@ export default function Login({
                 </button>
               </div>
             </form>
-
-
           </div>
         </div>
       </section>
 
-      {/* Modal de recuperação de senha */}
       {isForgotOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-slate-950/80 p-4 backdrop-blur-sm">
           <div
@@ -759,7 +751,7 @@ export default function Login({
               {forgotStep === 'IDENTIFY' ? (
                 <div className="space-y-5">
                   <p className={`text-sm leading-relaxed ${bodyColor}`}>
-                    Informe seu e-mail institucional e o seu e-mail pessoal para receber o código de segurança.
+                    Informe seu e-mail cadastrado e o seu e-mail pessoal para receber o código de segurança.
                   </p>
 
                   <div>
@@ -770,7 +762,7 @@ export default function Login({
                       type="text"
                       value={forgotInput}
                       onChange={(e) => setForgotInput(e.target.value)}
-                      placeholder="Ex: wanderson.maior@sti.chamados.com"
+                      placeholder="Ex: seu.nome@sti.chamados.com"
                       className={modalInputClassName}
                     />
                   </div>

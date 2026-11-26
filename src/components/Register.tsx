@@ -15,17 +15,43 @@ interface Departamento {
   sigla?: string | null;
 }
 
-const API_BASE = (import.meta.env.VITE_API_URL || 'https://data-audit-production.up.railway.app').replace(/\/$/, "");
+const API_BASE = (
+  import.meta.env.VITE_API_URL || 'https://data-audit-production.up.railway.app'
+).replace(/\/$/, '');
 
 const GENEROS_OPCOES = [
   { valor: 'MASCULINO', rotulo: 'Masculino' },
   { valor: 'FEMININO', rotulo: 'Feminino' },
   { valor: 'OUTRO', rotulo: 'Outro' },
-  { valor: 'PREFIRO_NAO_DIZER', rotulo: 'Prefiro não dizer' }
+  { valor: 'PREFIRO_NAO_DIZER', rotulo: 'Prefiro não dizer' },
 ];
 
 const toLowerSafe = (value: unknown): string =>
   typeof value === 'string' ? value.toLowerCase() : '';
+
+function gerarEmailAcessoSti(nomeCompleto: string, emailDigitado: string): string {
+  const cleanEmail = emailDigitado.trim().toLowerCase();
+  if (cleanEmail.endsWith('@sti.chamados.com')) {
+    return cleanEmail;
+  }
+
+  const partes = nomeCompleto
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z\s]/g, ' ')
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean);
+
+  const primeiro = partes[0] || 'usuario';
+  const ultimo = partes.length > 1 ? partes[partes.length - 1] : '';
+  const sufixo = Math.floor(10 + Math.random() * 89);
+
+  return ultimo
+    ? `${primeiro}.${ultimo}.${sufixo}@sti.chamados.com`
+    : `${primeiro}.${sufixo}@sti.chamados.com`;
+}
 
 export default function Register({ onBackToLogin }: RegisterProps) {
   const [name, setName] = useState('');
@@ -41,6 +67,7 @@ export default function Register({ onBackToLogin }: RegisterProps) {
   const [departamentos, setDepartamentos] = useState<Departamento[]>([]);
   const [erroDepartamentos, setErroDepartamentos] = useState('');
   const [email, setEmail] = useState('');
+  const [generatedAccessEmail, setGeneratedAccessEmail] = useState('');
   const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -81,7 +108,7 @@ export default function Register({ onBackToLogin }: RegisterProps) {
             setErroDepartamentos('');
           } else {
             setErroDepartamentos(
-              'Não foi possível carregar os setores. Verifique se o servidor está ativo.'
+              'Não foi possível carregar os setores. Verifique se o servidor está ativo.',
             );
           }
         }
@@ -98,7 +125,7 @@ export default function Register({ onBackToLogin }: RegisterProps) {
   const filteredSectors = listaDepartamentos.filter(
     (s) =>
       toLowerSafe(s?.sigla).includes(searchLower) ||
-      toLowerSafe(s?.nome).includes(searchLower)
+      toLowerSafe(s?.nome).includes(searchLower),
   );
 
   const validarCPF = (cpfStr: string): boolean => {
@@ -222,38 +249,67 @@ export default function Register({ onBackToLogin }: RegisterProps) {
 
     setLoading(true);
 
-    const formattedEmail = email.includes('@')
-      ? email
-      : `${email}@sti.chamados.com`;
+    const personalEmail = email.trim().toLowerCase();
+    const accessEmail = gerarEmailAcessoSti(name, personalEmail);
+    setGeneratedAccessEmail(accessEmail);
 
     fetch(`${API_BASE}/api/v1/auth/register`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        nome: name,
-        email: formattedEmail,
-        emailPessoal: formattedEmail,
+        nome: name.trim(),
+        email: accessEmail,
+        emailPessoal: personalEmail,
         cpf: cpf.replace(/\D/g, ''),
         dataNascimento: birthDate,
         genero: gender,
         senha: password,
         telefoneWhatsapp: phone,
-        departamentoId: departamentoId
-      })
+        departamentoId: departamentoId,
+      }),
     })
       .then(async (res: Response) => {
         setLoading(false);
         if (res.ok) {
+          const setorEscolhido = sector || sectorSearch || 'Não informado';
+          try {
+            const registeredUsers = JSON.parse(
+              localStorage.getItem('sti_registered_users') || '[]',
+            );
+            const novoUsuarioLocal = {
+              name: name.trim(),
+              email: accessEmail,
+              personalEmail,
+              cpf: cpf.replace(/\D/g, ''),
+              department: setorEscolhido,
+              role: 'Servidor / Colaborador',
+              phone,
+              userRole: 'usuario',
+              roles: ['usuario'],
+            };
+            localStorage.setItem(
+              'sti_registered_users',
+              JSON.stringify([...registeredUsers, novoUsuarioLocal]),
+            );
+            localStorage.setItem(
+              `sti_profile_${accessEmail}`,
+              JSON.stringify(novoUsuarioLocal),
+            );
+          } catch {
+            // Ignora falha de localStorage
+          }
+
           setDone(true);
           registrarAuditoria({
             entidade: 'USUARIO',
-            idEntidade: cpf.replace(/\D/g, '') || formattedEmail,
+            idEntidade: cpf.replace(/\D/g, '') || accessEmail,
             tipoOperacao: 'CADASTRO_USUARIO',
-            autor: formattedEmail,
+            autor: accessEmail,
             estadoAtual: {
-              nome: name,
-              email: formattedEmail,
-              secretaria: sectorSearch || 'Administrativo',
+              nome: name.trim(),
+              email: accessEmail,
+              emailPessoal: personalEmail,
+              secretaria: setorEscolhido,
               telefone: phone,
             },
             metadados: { origem: 'Tela de Autocadastro - PostgreSQL' },
@@ -281,8 +337,17 @@ export default function Register({ onBackToLogin }: RegisterProps) {
             Primeiro acesso concluído!
           </h1>
           <p className="mt-3 text-sm leading-relaxed text-slate-600">
-            Seus dados cadastrais foram registrados com sucesso no PostgreSQL e no setor <strong>{sector}</strong>.
+            Seu cadastro foi salvo no PostgreSQL no setor <strong>{sector || sectorSearch}</strong>.
           </p>
+          <div className="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-3 text-left text-xs text-slate-700">
+            <p>
+              <strong>E-mail de acesso (Login):</strong>{' '}
+              <span className="font-mono font-semibold text-teal-700">{generatedAccessEmail}</span>
+            </p>
+            <p className="mt-1">
+              <strong>E-mail pessoal cadastrado:</strong> {email}
+            </p>
+          </div>
           <div className="mt-8">
             <Button variant="primary" className="w-full" onClick={onBackToLogin}>
               <ArrowLeft className="mr-2 h-4 w-4" />
@@ -294,7 +359,8 @@ export default function Register({ onBackToLogin }: RegisterProps) {
     );
   }
 
-  const inputClass = 'w-full rounded-xl border border-slate-300 px-4 py-3 text-sm text-slate-900 outline-none transition duration-200 focus:border-teal-600 focus:ring-2 focus:ring-teal-500/30';
+  const inputClass =
+    'w-full rounded-xl border border-slate-300 px-4 py-3 text-sm text-slate-900 outline-none transition duration-200 focus:border-teal-600 focus:ring-2 focus:ring-teal-500/30';
 
   return (
     <div className="min-h-screen bg-slate-50 md:flex">
@@ -312,6 +378,9 @@ export default function Register({ onBackToLogin }: RegisterProps) {
             <h2 className="text-xl font-bold tracking-tight text-slate-900 sm:text-2xl">
               Cadastro de Primeiro Acesso
             </h2>
+            <p className="mt-1 text-xs text-slate-500">
+              Informe seu e-mail pessoal (para recuperação/contato). O sistema criará seu e-mail de acesso institucional @sti.chamados.com para entrar.
+            </p>
           </header>
 
           {error && (
@@ -322,23 +391,51 @@ export default function Register({ onBackToLogin }: RegisterProps) {
 
           <form onSubmit={handleSubmit} className="space-y-7">
             <Field label="Nome Completo">
-              <input placeholder="Ex.: João da Silva" value={name} onChange={(e) => setName(e.target.value)} required className={inputClass} />
+              <input
+                placeholder="Ex.: João da Silva"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                required
+                className={inputClass}
+              />
             </Field>
 
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <Field label="CPF">
-                <input placeholder="000.000.000-00" value={cpf} onChange={handleCpfChange} required maxLength={14} className={inputClass} />
+                <input
+                  placeholder="000.000.000-00"
+                  value={cpf}
+                  onChange={handleCpfChange}
+                  required
+                  maxLength={14}
+                  className={inputClass}
+                />
               </Field>
               <Field label="Data de Nascimento">
-                <input type="text" placeholder="dd/mm/aaaa" value={birthDateInput} onChange={handleBirthDateChange} maxLength={10} required className={inputClass} />
+                <input
+                  type="text"
+                  placeholder="dd/mm/aaaa"
+                  value={birthDateInput}
+                  onChange={handleBirthDateChange}
+                  maxLength={10}
+                  required
+                  className={inputClass}
+                />
               </Field>
             </div>
 
             <Field label="Gênero">
-              <select value={gender} onChange={(e) => setGender(e.target.value)} required className={inputClass}>
+              <select
+                value={gender}
+                onChange={(e) => setGender(e.target.value)}
+                required
+                className={inputClass}
+              >
                 <option value="">Selecione...</option>
                 {GENEROS_OPCOES.map((g) => (
-                  <option key={g.valor} value={g.valor}>{g.rotulo}</option>
+                  <option key={g.valor} value={g.valor}>
+                    {g.rotulo}
+                  </option>
                 ))}
               </select>
             </Field>
@@ -392,20 +489,51 @@ export default function Register({ onBackToLogin }: RegisterProps) {
             </Field>
 
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              <Field label="E-mail Institucional ou Pessoal">
-                <input type="email" placeholder="seu.email@exemplo.com" value={email} onChange={(e) => setEmail(e.target.value)} required className={inputClass} />
+              <Field label="E-mail Pessoal ou Institucional">
+                <input
+                  type="email"
+                  placeholder="seu.email@exemplo.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                  className={inputClass}
+                />
               </Field>
               <Field label="Telefone / WhatsApp">
-                <input type="tel" placeholder="(63) 99999-9999" value={phone} onChange={handlePhoneChange} required maxLength={15} className={inputClass} />
+                <input
+                  type="tel"
+                  placeholder="(63) 99999-9999"
+                  value={phone}
+                  onChange={handlePhoneChange}
+                  required
+                  maxLength={15}
+                  className={inputClass}
+                />
               </Field>
             </div>
 
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <Field label="Senha de Acesso">
-                <input type="password" placeholder="Mínimo 8 caracteres" value={password} onChange={(e) => setPassword(e.target.value)} required minLength={8} className={inputClass} />
+                <input
+                  type="password"
+                  placeholder="Mínimo 8 caracteres"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  minLength={8}
+                  className={inputClass}
+                />
               </Field>
               <Field label="Confirmar Senha">
-                <input type="password" placeholder="Repita sua senha" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} required minLength={8} className={inputClass} />
+                <input
+                  type="password"
+                  placeholder="Repita sua senha"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  required
+                  minLength={8}
+                  className={inputClass}
+                />
               </Field>
             </div>
 

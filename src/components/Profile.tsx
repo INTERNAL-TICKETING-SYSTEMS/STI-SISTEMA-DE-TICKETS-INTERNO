@@ -76,14 +76,34 @@ export default function Profile({
   const [saved, setSaved] = useState(false);
 
   const [form, setForm] = useState({
-    name: user.name,
-    email: user.email,
-    phone: user.phone || '(63) 98400-0000',
-    department:
-      user.department ||
-      'DTI - Diretoria de Tecnologia da Informação',
-    role: user.role || 'Servidor / Colaborador',
+    name: user.name || '',
+    email: user.email || '',
+    phone: user.phone || '',
+    department: user.department || 'Não informado',
+    role:
+      user.role ||
+      (user.userRole === 'tecnico'
+        ? 'Técnico de Suporte'
+        : user.userRole === 'gestor'
+          ? 'Gestor Administrativo'
+          : 'Servidor / Colaborador'),
   });
+
+  useEffect(() => {
+    setForm({
+      name: user.name || '',
+      email: user.email || '',
+      phone: user.phone || '',
+      department: user.department || 'Não informado',
+      role:
+        user.role ||
+        (user.userRole === 'tecnico'
+          ? 'Técnico de Suporte'
+          : user.userRole === 'gestor'
+            ? 'Gestor Administrativo'
+            : 'Servidor / Colaborador'),
+    });
+  }, [user]);
 
   const handlePhoneChange = (
     e: React.ChangeEvent<HTMLInputElement>
@@ -133,8 +153,7 @@ export default function Profile({
       estadoAtual: {
         nome: form.name,
         telefone: form.phone,
-        departamento:
-          form.department,
+        departamento: form.department,
       },
       metadados: {
         alteradoEm: new Date().toISOString(),
@@ -151,7 +170,7 @@ export default function Profile({
     }, 2500);
   };
 
-  const initials = form.name
+  const initials = (form.name || 'U')
     .trim()
     .split(/\s+/)
     .map((name) => name[0])
@@ -163,12 +182,6 @@ export default function Profile({
     user.userRole === 'usuario'
       ? 'Colaborador / Solicitante'
       : user.userRole;
-
-  /*
-  |--------------------------------------------------------------------------
-  | CORES DO TEMA
-  |--------------------------------------------------------------------------
-  */
 
   const pageText = isDark
     ? 'text-slate-100'
@@ -194,24 +207,12 @@ export default function Profile({
     ? 'bg-[#070e17]'
     : 'bg-slate-50';
 
-  /*
-  |--------------------------------------------------------------------------
-  | LABELS DOS CAMPOS
-  |--------------------------------------------------------------------------
-  */
-
   const fieldLabelClass = [
     '[&>label]:!font-medium',
     isDark
       ? '[&>label]:!text-slate-200'
       : '[&>label]:!text-slate-700',
   ].join(' ');
-
-  /*
-  |--------------------------------------------------------------------------
-  | INPUT EDITÁVEL
-  |--------------------------------------------------------------------------
-  */
 
   const editableInputClass = [
     'focus:!border-[#14b8a6]',
@@ -230,12 +231,6 @@ export default function Profile({
         'placeholder:!text-slate-400',
       ].join(' '),
   ].join(' ');
-
-  /*
-  |--------------------------------------------------------------------------
-  | INPUT BLOQUEADO
-  |--------------------------------------------------------------------------
-  */
 
   const lockedInputClass = [
     'cursor-not-allowed',
@@ -257,12 +252,6 @@ export default function Profile({
       ].join(' '),
   ].join(' ');
 
-  /*
-  |--------------------------------------------------------------------------
-  | ÍCONES DOS CAMPOS
-  |--------------------------------------------------------------------------
-  */
-
   const lockedIconColor = isDark
     ? 'text-slate-500'
     : 'text-slate-400';
@@ -282,8 +271,6 @@ export default function Profile({
           : '[color-scheme:light]',
       ].join(' ')}
     >
-      {/* CABEÇALHO */}
-
       <div>
         <div className="flex flex-wrap items-center gap-2">
           <h1
@@ -321,8 +308,6 @@ export default function Profile({
         </p>
       </div>
 
-      {/* IDENTIDADE DO TÉCNICO */}
-
       <section
         className={[
           'overflow-hidden rounded-2xl border shadow-xl',
@@ -331,9 +316,6 @@ export default function Profile({
             : 'border-slate-200 bg-white shadow-slate-200/60',
         ].join(' ')}
       >
-
-        {/* Banner */}
-
         <div
           className={[
             'relative overflow-hidden px-6 py-7',
@@ -342,9 +324,6 @@ export default function Profile({
               : 'bg-gradient-to-br from-white via-slate-50 to-teal-50/50',
           ].join(' ')}
         >
-
-          {/* Detalhe visual STI */}
-
           <div
             className={[
               'pointer-events-none absolute right-0 top-0',
@@ -357,9 +336,6 @@ export default function Profile({
 
           <div className="relative flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-center gap-4">
-
-              {/* Avatar */}
-
               <div
                 className="
                   flex h-20 w-20 shrink-0
@@ -466,8 +442,6 @@ export default function Profile({
           </div>
         </div>
 
-        {/* RESUMO */}
-
         <div
           className={[
             'grid gap-4 border-t p-6 sm:grid-cols-3',
@@ -477,9 +451,6 @@ export default function Profile({
               : 'bg-slate-50',
           ].join(' ')}
         >
-
-          {/* Função */}
-
           <div
             className={[
               'rounded-xl border p-4',
@@ -575,8 +546,6 @@ export default function Profile({
         </div>
       </section>
 
-      {/* INFORMAÇÕES PROFISSIONAIS */}
-
       <form
         onSubmit={handleSave}
         className={[
@@ -588,9 +557,6 @@ export default function Profile({
             : 'shadow-slate-200/60',
         ].join(' ')}
       >
-
-        {/* Cabeçalho da seção */}
-
         <div
           className={[
             'border-b px-6 py-5',
@@ -648,8 +614,6 @@ export default function Profile({
         </div>
 
         <div className="space-y-6 p-6">
-          {/* IDENTIFICAÇÃO */}
-
           <div>
             <div className="mb-4 flex items-center gap-2">
               <span className="h-1.5 w-1.5 rounded-full bg-[#06b6b4]" />
@@ -667,9 +631,6 @@ export default function Profile({
             </div>
 
             <div className="grid gap-5 sm:grid-cols-2">
-
-              {/* Nome */}
-
               <Field
                 label="Nome completo"
                 className={fieldLabelClass}
@@ -798,8 +759,6 @@ export default function Profile({
             </div>
           </div>
 
-          {/* COMUNICAÇÃO */}
-
           <div
             className={[
               'border-t pt-6',
@@ -843,9 +802,6 @@ export default function Profile({
             </div>
 
             <div className="grid gap-5 sm:grid-cols-2">
-
-              {/* E-mail */}
-
               <Field
                 label="E-mail institucional"
                 className={fieldLabelClass}
@@ -907,8 +863,6 @@ export default function Profile({
           </div>
         </div>
 
-        {/* RODAPÉ */}
-
         <div
           className={[
             'flex flex-col gap-3 border-t px-6 py-4',
@@ -956,8 +910,6 @@ export default function Profile({
         </div>
       </form>
 
-      {/* SEGURANÇA E CONTA */}
-
       <section
         className={[
           'overflow-hidden rounded-2xl border shadow-xl',
@@ -967,9 +919,6 @@ export default function Profile({
             : 'shadow-slate-200/60',
         ].join(' ')}
       >
-
-        {/* Cabeçalho */}
-
         <div
           className={[
             'border-b px-6 py-5',
@@ -1020,8 +969,6 @@ export default function Profile({
             'sm:grid-cols-2',
           ].join(' ')}
         >
-          {/* Status */}
-
           <div
             className={[
               'flex items-center justify-between',
@@ -1071,8 +1018,6 @@ export default function Profile({
               <ShieldCheck className="h-5 w-5" />
             </div>
           </div>
-
-          {/* Identificação */}
 
           <div
             className={[
