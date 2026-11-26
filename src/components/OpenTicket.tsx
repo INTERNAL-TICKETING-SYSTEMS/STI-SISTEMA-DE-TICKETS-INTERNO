@@ -435,7 +435,6 @@ Setor/Lotação: ${setor}`;
 
 Solicito a redefinição da senha de acesso ao computador no domínio TOCANTINS.
 
-
 Atenciosamente,
 ${nome}`;
 
@@ -1177,7 +1176,6 @@ ${nome}`;
 
               const saudacao =
                 new Date().getHours() < 12 ? 'Bom dia,' : 'Boa tarde,';
-
               const isResetSenha = baseDescription.includes(
                 'Solicito a redefinição da senha de acesso ao computador no domínio TOCANTINS.'
               );
@@ -1571,26 +1569,11 @@ ${nome}`;
           Texto:
         </label>
 
-
-        <div>
-          <label
-            htmlFor="ticket-description"
-            className="mb-2 block text-sm font-semibold text-slate-800 dark:text-slate-100"
-          >
-            Texto:
-          </label>
-
-          <RichTextEditor
-            value={description}
-            onChange={setDescription}
-            disabled={submitting}
-          />
-
-          <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
-            Informe os detalhes necessários para que a equipe técnica possa
-            compreender e analisar sua solicitação.
-          </p>
-        </div>
+        <RichTextEditor
+          value={description}
+          onChange={setDescription}
+          disabled={submitting}
+        />
 
         <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
           Informe os detalhes necessários para que a equipe técnica possa
@@ -1598,161 +1581,165 @@ ${nome}`;
         </p>
       </div>
 
-      {attachments.length > 0 && (
-        <div className="space-y-3 rounded-xl border border-slate-200 bg-slate-50/70 p-4 dark:border-slate-700 dark:bg-slate-800/40">
-          <div className="flex items-center justify-between gap-2">
-            <div>
-              <p className="text-sm font-semibold text-slate-800 dark:text-slate-100">
-                Imagens anexadas
-              </p>
-              <p className="text-xs text-slate-500 dark:text-slate-400">
-                Revise os arquivos antes de abrir o chamado.
-              </p>
-            </div>
-
-            <span className="rounded-full bg-blue-100 px-3 py-1 text-xs font-semibold text-blue-700 dark:bg-blue-900/50 dark:text-blue-200">
-              {attachments.length} {attachments.length === 1 ? 'imagem' : 'imagens'}
-            </span>
+      {
+    attachments.length > 0 && (
+      <div className="space-y-3 rounded-xl border border-slate-200 bg-slate-50/70 p-4 dark:border-slate-700 dark:bg-slate-800/40">
+        <div className="flex items-center justify-between gap-2">
+          <div>
+            <p className="text-sm font-semibold text-slate-800 dark:text-slate-100">
+              Imagens anexadas
+            </p>
+            <p className="text-xs text-slate-500 dark:text-slate-400">
+              Revise os arquivos antes de abrir o chamado.
+            </p>
           </div>
 
-          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-            {attachments.map((arquivo, index) => (
-              <div
-                key={index}
-                className="flex min-w-0 items-center gap-3 rounded-lg border border-slate-200 bg-white p-3 dark:border-slate-700 dark:bg-slate-900"
+          <span className="rounded-full bg-blue-100 px-3 py-1 text-xs font-semibold text-blue-700 dark:bg-blue-900/50 dark:text-blue-200">
+            {attachments.length} {attachments.length === 1 ? 'imagem' : 'imagens'}
+          </span>
+        </div>
+
+        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+          {attachments.map((arquivo, index) => (
+            <div
+              key={index}
+              className="flex min-w-0 items-center gap-3 rounded-lg border border-slate-200 bg-white p-3 dark:border-slate-700 dark:bg-slate-900"
+            >
+              <button
+                type="button"
+                onClick={() => setPreviewImage(arquivo)}
+                className="h-14 w-14 shrink-0 overflow-hidden rounded-lg border border-slate-200 bg-slate-100 transition hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 dark:border-slate-700 dark:bg-slate-800"
+                aria-label={`Visualizar imagem ${index + 1}`}
+                title="Clique para ampliar"
               >
-                <button
-                  type="button"
-                  onClick={() => setPreviewImage(arquivo)}
-                  className="h-14 w-14 shrink-0 overflow-hidden rounded-lg border border-slate-200 bg-slate-100 transition hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 dark:border-slate-700 dark:bg-slate-800"
-                  aria-label={`Visualizar imagem ${index + 1}`}
-                  title="Clique para ampliar"
-                >
-                  <img
-                    src={arquivo}
-                    alt={`Pré-visualização da imagem ${index + 1}`}
-                    className="h-full w-full object-cover"
-                  />
-                </button>
+                <img
+                  src={arquivo}
+                  alt={`Pré-visualização da imagem ${index + 1}`}
+                  className="h-full w-full object-cover"
+                />
+              </button>
 
-                {previewImage && (
+              {previewImage && (
+                <div
+                  className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4"
+                  onClick={() => setPreviewImage(null)}
+                >
                   <div
-                    className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4"
-                    onClick={() => setPreviewImage(null)}
+                    role="dialog"
+                    aria-modal="true"
+                    aria-label="Visualização da imagem anexada"
+                    className="relative flex max-h-[90vh] w-full max-w-4xl flex-col items-center rounded-xl bg-white p-3 shadow-2xl dark:bg-slate-900"
+                    onClick={(event) => event.stopPropagation()}
                   >
-                    <div
-                      role="dialog"
-                      aria-modal="true"
-                      aria-label="Visualização da imagem anexada"
-                      className="relative flex max-h-[90vh] w-full max-w-4xl flex-col items-center rounded-xl bg-white p-3 shadow-2xl dark:bg-slate-900"
-                      onClick={(event) => event.stopPropagation()}
-                    >
-                      <div className="mb-3 flex w-full items-center justify-between">
-                        <p className="text-sm font-semibold text-slate-800 dark:text-slate-100">
-                          Pré-visualização do anexo
-                        </p>
-
-                        <button
-                          type="button"
-                          onClick={() => setPreviewImage(null)}
-                          className="flex h-9 w-9 items-center justify-center rounded-lg text-slate-600 transition hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800"
-                          aria-label="Fechar visualização"
-                          title="Fechar"
-                        >
-                          <X className="h-5 w-5" />
-                        </button>
-                      </div>
-
-                      <img
-                        src={previewImage}
-                        alt="Imagem anexada ao chamado em tamanho ampliado"
-                        className="max-h-[75vh] max-w-full rounded-lg object-contain"
-                      />
-
-                      <p className="mt-3 text-xs text-slate-500 dark:text-slate-400">
-                        Confira se esta é a imagem correta antes de enviar o chamado.
+                    <div className="mb-3 flex w-full items-center justify-between">
+                      <p className="text-sm font-semibold text-slate-800 dark:text-slate-100">
+                        Pré-visualização do anexo
                       </p>
+
+                      <button
+                        type="button"
+                        onClick={() => setPreviewImage(null)}
+                        className="flex h-9 w-9 items-center justify-center rounded-lg text-slate-600 transition hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800"
+                        aria-label="Fechar visualização"
+                        title="Fechar"
+                      >
+                        <X className="h-5 w-5" />
+                      </button>
                     </div>
+
+                    <img
+                      src={previewImage}
+                      alt="Imagem anexada ao chamado em tamanho ampliado"
+                      className="max-h-[75vh] max-w-full rounded-lg object-contain"
+                    />
+
+                    <p className="mt-3 text-xs text-slate-500 dark:text-slate-400">
+                      Confira se esta é a imagem correta antes de enviar o chamado.
+                    </p>
                   </div>
-                )}
-
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-medium text-slate-800 dark:text-slate-100">
-                    Imagem {index + 1}
-                  </p>
-                  <p className="text-xs text-slate-500 dark:text-slate-400">
-                    Anexo do chamado
-                  </p>
                 </div>
+              )}
 
-                <button
-                  type="button"
-                  onClick={() => removeAttachment(index)}
-                  className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-red-600 transition hover:bg-red-50 hover:text-red-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500 dark:text-red-400 dark:hover:bg-red-950/40"
-                  aria-label={`Remover imagem ${index + 1}`}
-                  title="Remover imagem"
-                >
-                  <X className="h-4 w-4" />
-                </button>
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-sm font-medium text-slate-800 dark:text-slate-100">
+                  Imagem {index + 1}
+                </p>
+                <p className="text-xs text-slate-500 dark:text-slate-400">
+                  Anexo do chamado
+                </p>
               </div>
-            ))}
-          </div>
+
+              <button
+                type="button"
+                onClick={() => removeAttachment(index)}
+                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-red-600 transition hover:bg-red-50 hover:text-red-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500 dark:text-red-400 dark:hover:bg-red-950/40"
+                aria-label={`Remover imagem ${index + 1}`}
+                title="Remover imagem"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+          ))}
         </div>
-      )}
-
-      <div>
-        <input
-          type="file"
-          ref={fileInputRef}
-          onChange={handleFileUpload}
-          accept="image/*"
-          multiple
-          className="hidden"
-        />
-
-        <Button
-          variant="secondary"
-          onClick={() => fileInputRef.current?.click()}
-        >
-          <span className="flex items-center gap-2">
-            <Paperclip className="h-4 w-4" />
-            Anexar imagens
-          </span>
-        </Button>
       </div>
+    )
+  }
 
-      {submitError && (
-        <div
-          role="alert"
-          className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700"
-        >
-          {submitError}
-        </div>
-      )}
+  <div>
+    <input
+      type="file"
+      ref={fileInputRef}
+      onChange={handleFileUpload}
+      accept="image/*"
+      multiple
+      className="hidden"
+    />
 
-      <div className="flex flex-col-reverse justify-between gap-3 border-t border-slate-200 pt-5 dark:border-slate-700 sm:flex-row">
-        <Button
-          variant="secondary"
-          onClick={() => onNavigate('inicio')}
-        >
-          Cancelar
-        </Button>
+    <Button
+      variant="secondary"
+      onClick={() => fileInputRef.current?.click()}
+    >
+      <span className="flex items-center gap-2">
+        <Paperclip className="h-4 w-4" />
+        Anexar imagens
+      </span>
+    </Button>
+  </div>
 
-        <Button
-          variant="primary"
-          disabled={
-            !title.trim() ||
-            !htmlParaTexto(description) ||
-            submitting
-          }
-          onClick={handleSubmit}
-        >
-          <span className="flex items-center gap-2">
-            <Send className="h-4 w-4" />
-            {submitting ? 'Registrando chamado...' : 'Abrir chamado'}
-          </span>
-        </Button>
+  {
+    submitError && (
+      <div
+        role="alert"
+        className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700"
+      >
+        {submitError}
       </div>
-    </div>
+    )
+  }
+
+  <div className="flex flex-col-reverse justify-between gap-3 border-t border-slate-200 pt-5 dark:border-slate-700 sm:flex-row">
+    <Button
+      variant="secondary"
+      onClick={() => onNavigate('inicio')}
+    >
+      Cancelar
+    </Button>
+
+    <Button
+      variant="primary"
+      disabled={
+        !title.trim() ||
+        !htmlParaTexto(description) ||
+        submitting
+      }
+      onClick={handleSubmit}
+    >
+      <span className="flex items-center gap-2">
+        <Send className="h-4 w-4" />
+        {submitting ? 'Registrando chamado...' : 'Abrir chamado'}
+      </span>
+    </Button>
+  </div>
+    </div >
   );
 }
