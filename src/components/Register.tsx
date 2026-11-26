@@ -12,7 +12,7 @@ interface RegisterProps {
 interface Departamento {
   id: number;
   nome: string;
-  sigla: string;
+  sigla?: string | null;
 }
 
 const API_BASE = (import.meta.env.VITE_API_URL || 'https://data-audit-production.up.railway.app').replace(/\/$/, "");
@@ -23,6 +23,9 @@ const GENEROS_OPCOES = [
   { valor: 'OUTRO', rotulo: 'Outro' },
   { valor: 'PREFIRO_NAO_DIZER', rotulo: 'Prefiro não dizer' }
 ];
+
+const toLowerSafe = (value: unknown): string =>
+  typeof value === 'string' ? value.toLowerCase() : '';
 
 export default function Register({ onBackToLogin }: RegisterProps) {
   const [name, setName] = useState('');
@@ -56,19 +59,31 @@ export default function Register({ onBackToLogin }: RegisterProps) {
 
         return res.json();
       })
-      .then((data: Departamento[]) => {
-        if (ativo) {
-          setDepartamentos(data);
+      .then((data: unknown) => {
+        if (!ativo) return;
+
+        if (Array.isArray(data) && data.length > 0) {
+          setDepartamentos(data as Departamento[]);
           setErroDepartamentos('');
+        } else if (Array.isArray(SETORES_DETRAN)) {
+          setDepartamentos(SETORES_DETRAN as Departamento[]);
+          setErroDepartamentos('');
+        } else {
+          setDepartamentos([]);
         }
       })
       .catch((err) => {
         console.error('[Departamentos API] Erro:', err);
 
         if (ativo) {
-          setErroDepartamentos(
-            'Não foi possível carregar os setores. Verifique se o servidor está ativo.'
-          );
+          if (Array.isArray(SETORES_DETRAN) && SETORES_DETRAN.length > 0) {
+            setDepartamentos(SETORES_DETRAN as Departamento[]);
+            setErroDepartamentos('');
+          } else {
+            setErroDepartamentos(
+              'Não foi possível carregar os setores. Verifique se o servidor está ativo.'
+            );
+          }
         }
       });
 
@@ -77,27 +92,26 @@ export default function Register({ onBackToLogin }: RegisterProps) {
     };
   }, []);
 
-  const filteredSectors = departamentos.filter(
-    (s) =>
-      s.sigla.toLowerCase().includes(sectorSearch.toLowerCase()) ||
-      s.nome.toLowerCase().includes(sectorSearch.toLowerCase())
-  );
+  const searchLower = toLowerSafe(sectorSearch);
+  const listaDepartamentos = Array.isArray(departamentos) ? departamentos : [];
 
+  const filteredSectors = listaDepartamentos.filter(
+    (s) =>
+      toLowerSafe(s?.sigla).includes(searchLower) ||
+      toLowerSafe(s?.nome).includes(searchLower)
+  );
 
   const validarCPF = (cpfStr: string): boolean => {
     const cleanCpf = cpfStr.replace(/\D/g, '');
 
-    // O CPF precisa ter 11 dígitos.
     if (!/^\d{11}$/.test(cleanCpf)) {
       return false;
     }
 
-    // Rejeita CPFs com todos os dígitos iguais.
     if (/^(\d)\1{10}$/.test(cleanCpf)) {
       return false;
     }
 
-    // Calcula o primeiro dígito verificador.
     let soma = 0;
 
     for (let i = 0; i < 9; i++) {
@@ -111,7 +125,6 @@ export default function Register({ onBackToLogin }: RegisterProps) {
       return false;
     }
 
-    // Calcula o segundo dígito verificador.
     soma = 0;
 
     for (let i = 0; i < 10; i++) {
@@ -142,7 +155,8 @@ export default function Register({ onBackToLogin }: RegisterProps) {
   };
 
   const handleSectorSelect = (departamento: Departamento) => {
-    const value = `${departamento.sigla} - ${departamento.nome}`;
+    const siglaTexto = departamento.sigla ? `${departamento.sigla} - ` : '';
+    const value = `${siglaTexto}${departamento.nome ?? ''}`;
 
     setDepartamentoId(departamento.id);
     setSector(value);
@@ -211,7 +225,6 @@ export default function Register({ onBackToLogin }: RegisterProps) {
     const formattedEmail = email.includes('@')
       ? email
       : `${email}@sti.chamados.com`;
-
 
     fetch(`${API_BASE}/api/v1/auth/register`, {
       method: 'POST',
@@ -364,7 +377,13 @@ export default function Register({ onBackToLogin }: RegisterProps) {
                         onClick={() => handleSectorSelect(s)}
                         className="w-full rounded-lg px-3 py-3 text-left text-sm hover:bg-teal-50"
                       >
-                        <span className="font-semibold text-slate-800">{s.sigla}</span> — <span className="text-slate-600">{s.nome}</span>
+                        {s.sigla ? (
+                          <>
+                            <span className="font-semibold text-slate-800">{s.sigla}</span>
+                            {' — '}
+                          </>
+                        ) : null}
+                        <span className="text-slate-600">{s.nome}</span>
                       </button>
                     ))}
                   </div>
