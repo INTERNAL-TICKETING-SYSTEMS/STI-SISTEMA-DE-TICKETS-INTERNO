@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 
 import { useTechTheme } from '@/components/tech/techTheme';
+import { criarFeedback, listarFeedbacks } from '@/services/chamadoService';
 
 type FeedbackType = 'falha' | 'sugestao' | 'demanda_gerencial';
 type FeedbackStatus = 'Novo' | 'Em análise' | 'Concluído' | 'Descartado';
@@ -29,49 +30,6 @@ interface FeedbackRecord {
   priority: FeedbackPriority;
   status: FeedbackStatus;
 }
-
-const initialRecords: FeedbackRecord[] = [
-  {
-    id: 'FB-001',
-    type: 'falha',
-    date: '30/09/2026, 13:53',
-    title: 'Lentidão no carregamento de anexos pesados',
-    description:
-      'Ao anexar PDFs acima de 5MB na abertura de chamado, a página congela por alguns segundos antes de confirmar o upload.',
-    requester: 'Ana Paula Rocha',
-    department: 'Recursos Humanos',
-    profile: 'Servidor',
-    priority: 'alta',
-    status: 'Em análise',
-  },
-  {
-    id: 'FB-002',
-    type: 'sugestao',
-    date: '29/09/2026, 13:53',
-    title: 'Adicionar filtro por data de abertura no painel',
-    description:
-      'Seria muito útil podermos filtrar os chamados por período de datas específico para conciliação mensal.',
-    requester: 'Carlos Eduardo',
-    department: 'Financeiro',
-    profile: 'Servidor',
-    priority: 'media',
-    status: 'Novo',
-  },
-  {
-    id: 'FB-003',
-    type: 'demanda_gerencial',
-    date: '01/10/2026, 01:53',
-    title:
-      'Relatório Executivo de Tempo Médio de Resolução (MTTR) por Diretoria',
-    description:
-      'Necessário compilar os dados consolidados do terceiro trimestre para apresentação ao comitê de governança.',
-    requester: 'Diretoria de Governança',
-    department: 'Gabinete / Gestão',
-    profile: 'Gestor',
-    priority: 'alta',
-    status: 'Novo',
-  },
-];
 
 const typeConfig: Record<
   FeedbackType,
@@ -95,6 +53,13 @@ interface FeedbackCenterProps {
   activeUserDepartment?: string;
 }
 
+function mapTipoBackend(tipo?: string): FeedbackType {
+  const t = String(tipo || '').toLowerCase();
+  if (t.includes('falha')) return 'falha';
+  if (t.includes('sugest')) return 'sugestao';
+  return 'demanda_gerencial';
+}
+
 export default function FeedbackCenter({
   currentRole,
   activeUserName,
@@ -102,7 +67,6 @@ export default function FeedbackCenter({
 }: FeedbackCenterProps) {
   const { isDark } = useTechTheme();
 
-  // Sincroniza os registos com o localStorage para persistir os relatórios enviados pelos utilizadores
   const [records, setRecords] = useState<FeedbackRecord[]>(() => {
     try {
       const saved = localStorage.getItem('sti_feedback_records');
@@ -110,18 +74,85 @@ export default function FeedbackCenter({
         return JSON.parse(saved);
       }
     } catch (e) {
-      console.error('Erro ao carregar feedbacks', e);
+      console.error('Erro ao carregar feedbacks locais', e);
     }
-    return initialRecords;
+    return [];
   });
 
-  useEffect(() => {
+  const [novoTipo, setNovoTipo] = useState<FeedbackType>('sugestao');
+  const [novoTitulo, setNovoTitulo] = useState('');
+  const [novoComentario, setNovoComentario] = useState('');
+  const [novaNota, setNovaNota] = useState<number>(5);
+  const [salvando, setSalvando] = useState(false);
+
+  const carregarFeedbacks = async () => {
     try {
-      localStorage.setItem('sti_feedback_records', JSON.stringify(records));
-    } catch (e) {
-      console.error('Erro ao salvar feedbacks', e);
+      const lista = await listarFeedbacks();
+      const mapeados: FeedbackRecord[] = lista.map((item) => {
+        const tipo = mapTipoBackend(item.tipo);
+        return {
+          id: `FB-${item.id}`,
+          type: tipo,
+          date: item.criado_em
+            ? new Date(item.criado_em).toLocaleString('pt-BR')
+            : new Date().toLocaleString('pt-BR'),
+          title: item.nota
+            ? `${typeConfig[tipo].label} — Avaliação ${item.nota}/5`
+            : typeConfig[tipo].label,
+          description: item.comentario || '',
+          requester: item.usuario_email || 'Usuário',
+          department: activeUserDepartment || 'DETRAN-TO',
+          profile: currentRole === 'gestor' ? 'Gestor' : 'Servidor',
+          priority: item.nota && item.nota <= 2 ? 'alta' : 'media',
+          status: 'Novo',
+        };
+      });
+      setRecords(mapeados);
+      try {
+        localStorage.setItem('sti_feedback_records', JSON.stringify(mapeados));
+      } catch {
+        // Ignora erro de storage
+      }
+    } catch (err) {
+      console.error('[FeedbackCenter] Erro ao carregar feedbacks do banco:', err);
     }
-  }, [records]);
+  };
+
+  useEffect(() => {
+    void carregarFeedbacks();
+    const timer = window.setInterval(() => {
+      void carregarFeedbacks();
+    }, 6000);
+    return () => window.clearInterval(timer);
+  }, []);
+
+  const handleCriarFeedback = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!novoComentario.trim() || salvando) return;
+
+    setSalvando(true);
+    try {
+      const textoFinal = novoTitulo.trim()
+        ? `${novoTitulo.trim()}: ${novoComentario.trim()}`
+        : novoComentario.trim();
+
+      await criarFeedback({
+        usuarioEmail: activeUserName || 'usuario@sti.chamados.com',
+        tipo: typeConfig[novoTipo].label,
+        comentario: textoFinal,
+        nota: novaNota,
+      });
+
+      setNovoTitulo('');
+      setNovoComentario('');
+      await carregarFeedbacks();
+    } catch (err) {
+      console.error('[FeedbackCenter] Erro ao salvar feedback:', err);
+      window.alert('Não foi possível salvar o feedback no servidor.');
+    } finally {
+      setSalvando(false);
+    }
+  };
 
   const [selectedType, setSelectedType] = useState<'todos' | FeedbackType>(
     'todos',
@@ -250,7 +281,6 @@ export default function FeedbackCenter({
       />
 
       <div className="mx-auto w-full max-w-[1400px] space-y-6 px-4 py-5 sm:px-6 lg:px-8">
-        {/* Cabeçalho */}
         <section
           className={[
             'rounded-2xl border p-5 shadow-sm',
@@ -259,7 +289,6 @@ export default function FeedbackCenter({
               : 'border-slate-200 bg-white',
           ].join(' ')}
         >
-
           <div className="relative flex flex-col gap-6 overflow-hidden lg:flex-row lg:items-center lg:justify-between">
             <div
               aria-hidden="true"
@@ -320,8 +349,7 @@ export default function FeedbackCenter({
                     isDark ? 'text-slate-400' : 'text-slate-600',
                   ].join(' ')}
                 >
-                  Acompanhe problemas, sugestões de aprimoramento e solicitações de
-                  relatórios em um único lugar.
+                  Acompanhe problemas, sugestões de aprimoramento e solicitações de relatórios em um único lugar, salvos no banco PostgreSQL.
                 </p>
               </div>
             </div>
@@ -367,9 +395,57 @@ export default function FeedbackCenter({
             </div>
           </div>
 
+          <form onSubmit={handleCriarFeedback} className="mt-5 grid gap-3 border-t border-slate-200 pt-4 dark:border-white/10 sm:grid-cols-5">
+            <select
+              value={novoTipo}
+              onChange={(e) => setNovoTipo(e.target.value as FeedbackType)}
+              className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs text-slate-900 dark:border-slate-700 dark:bg-slate-900 dark:text-white"
+            >
+              <option value="sugestao">Sugestão</option>
+              <option value="falha">Falha</option>
+              <option value="demanda_gerencial">Demanda gerencial</option>
+            </select>
+
+            <input
+              type="text"
+              value={novoTitulo}
+              onChange={(e) => setNovoTitulo(e.target.value)}
+              placeholder="Assunto curto (opcional)"
+              className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs text-slate-900 dark:border-slate-700 dark:bg-slate-900 dark:text-white"
+            />
+
+            <input
+              type="text"
+              value={novoComentario}
+              onChange={(e) => setNovoComentario(e.target.value)}
+              placeholder="Descreva o feedback ou demanda..."
+              className="sm:col-span-2 rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs text-slate-900 dark:border-slate-700 dark:bg-slate-900 dark:text-white"
+            />
+
+            <div className="flex gap-2">
+              <select
+                value={novaNota}
+                onChange={(e) => setNovaNota(Number(e.target.value))}
+                className="rounded-lg border border-slate-300 bg-white px-2 py-2 text-xs text-slate-900 dark:border-slate-700 dark:bg-slate-900 dark:text-white"
+              >
+                <option value={5}>5★</option>
+                <option value={4}>4★</option>
+                <option value={3}>3★</option>
+                <option value={2}>2★</option>
+                <option value={1}>1★</option>
+              </select>
+
+              <button
+                type="submit"
+                disabled={salvando || !novoComentario.trim()}
+                className="flex-1 rounded-lg bg-teal-600 px-3 py-2 text-xs font-semibold text-white hover:bg-teal-500 disabled:opacity-50"
+              >
+                {salvando ? 'Salvando...' : 'Registrar'}
+              </button>
+            </div>
+          </form>
         </section>
 
-        {/* Cards de resumo */}
         <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
           <SummaryCard
             icon={AlertCircle}
@@ -414,7 +490,6 @@ export default function FeedbackCenter({
           />
         </div>
 
-        {/* Filtros */}
         <section
           className={[
             'rounded-2xl border p-4',
@@ -501,7 +576,6 @@ export default function FeedbackCenter({
           </div>
         </section>
 
-        {/* Listagem */}
         <section
           className={[
             'overflow-hidden rounded-2xl border shadow-sm',
@@ -784,7 +858,6 @@ interface SummaryCardProps {
   onClick: () => void;
 }
 
-
 function SummaryCard({
   icon: Icon,
   title,
@@ -867,7 +940,6 @@ function SummaryCard({
     </button>
   );
 }
-
 
 interface MetadataItemProps {
   icon: React.ElementType;

@@ -1,5 +1,4 @@
-
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import {
   AlertCircle,
   ArrowRight,
@@ -13,6 +12,7 @@ import {
 } from 'lucide-react';
 
 import { useGestorTheme } from '@/components/gestor/GestorSidebar';
+import { listarFeedbacks } from '@/services/chamadoService';
 
 /*
 |--------------------------------------------------------------------------
@@ -39,49 +39,6 @@ interface FeedbackRecord {
   status: FeedbackStatus;
 }
 
-const initialRecords: FeedbackRecord[] = [
-  {
-    id: 'FB-001',
-    type: 'falha',
-    date: '30/09/2026, 13:53',
-    title: 'Lentidão no carregamento de anexos pesados',
-    description:
-      'Ao anexar PDFs acima de 5MB na abertura de chamado, a página congela por alguns segundos antes de confirmar o upload.',
-    requester: 'Ana Paula Rocha',
-    department: 'Recursos Humanos',
-    profile: 'Servidor',
-    priority: 'alta',
-    status: 'Em análise',
-  },
-  {
-    id: 'FB-002',
-    type: 'sugestao',
-    date: '29/09/2026, 13:53',
-    title: 'Adicionar filtro por data de abertura no painel',
-    description:
-      'Seria muito útil podermos filtrar os chamados por período de datas específico para conciliação mensal.',
-    requester: 'Carlos Eduardo',
-    department: 'Financeiro',
-    profile: 'Servidor',
-    priority: 'media',
-    status: 'Novo',
-  },
-  {
-    id: 'FB-003',
-    type: 'demanda_gerencial',
-    date: '01/10/2026, 01:53',
-    title:
-      'Relatório Executivo de Tempo Médio de Resolução (MTTR) por Diretoria',
-    description:
-      'Necessário compilar os dados consolidados do terceiro trimestre para apresentação ao comitê de governança.',
-    requester: 'Diretoria de Governança',
-    department: 'Gabinete / Gestão',
-    profile: 'Gestor',
-    priority: 'alta',
-    status: 'Novo',
-  },
-];
-
 const typeConfig: Record<
   FeedbackType,
   { label: string; icon: React.ElementType }
@@ -104,6 +61,13 @@ interface GestorFeedbacksProps {
   activeUserDepartment?: string;
 }
 
+function mapTipoBackend(tipo?: string): FeedbackType {
+  const t = String(tipo || '').toLowerCase();
+  if (t.includes('falha')) return 'falha';
+  if (t.includes('sugest')) return 'sugestao';
+  return 'demanda_gerencial';
+}
+
 export default function GestorFeedbacks({
   currentRole,
   activeUserName,
@@ -111,9 +75,60 @@ export default function GestorFeedbacks({
 }: GestorFeedbacksProps) {
   const { isDark } = useGestorTheme();
 
-  const [records, setRecords] = useState<FeedbackRecord[]>(initialRecords);
+  const [records, setRecords] = useState<FeedbackRecord[]>([]);
   const [selectedType, setSelectedType] = useState<'todos' | FeedbackType>('todos');
   const [search, setSearch] = useState('');
+
+  useEffect(() => {
+    let ativo = true;
+
+    const carregar = async () => {
+      try {
+        const lista = await listarFeedbacks();
+        if (!ativo) return;
+
+        const mapeados: FeedbackRecord[] = lista.map((item) => {
+          const tipo = mapTipoBackend(item.tipo);
+          return {
+            id: `FB-${item.id}`,
+            type: tipo,
+            date: item.criado_em
+              ? new Date(item.criado_em).toLocaleString('pt-BR')
+              : new Date().toLocaleString('pt-BR'),
+            title: item.nota
+              ? `${typeConfig[tipo].label} — Avaliação ${item.nota}/5`
+              : typeConfig[tipo].label,
+            description: item.comentario || '',
+            requester: item.usuario_email || 'Usuário',
+            department: activeUserDepartment || 'DETRAN-TO',
+            profile: currentRole === 'gestor' ? 'Gestor' : 'Servidor',
+            priority: item.nota && item.nota <= 2 ? 'alta' : 'media',
+            status: 'Novo',
+          };
+        });
+
+        setRecords((prev) => {
+          const statusPorId = new Map(prev.map((r) => [r.id, r.status]));
+          return mapeados.map((item) => ({
+            ...item,
+            status: statusPorId.get(item.id) || item.status,
+          }));
+        });
+      } catch (err) {
+        console.error('[GestorFeedbacks] Erro ao carregar feedbacks:', err);
+      }
+    };
+
+    void carregar();
+    const timer = window.setInterval(() => {
+      void carregar();
+    }, 6000);
+
+    return () => {
+      ativo = false;
+      window.clearInterval(timer);
+    };
+  }, [activeUserDepartment, currentRole]);
 
   const failureCount = records.filter((record) => record.type === 'falha').length;
   const suggestionCount = records.filter((record) => record.type === 'sugestao').length;

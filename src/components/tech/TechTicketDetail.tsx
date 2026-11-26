@@ -53,9 +53,9 @@ interface TechTicketDetailProps {
     id: string,
     message: string,
     attachments?: MessageAttachment[],
-    replyToId?: string
+    replyToId?: string,
+    files?: File[]
   ) => void;
-
   onRequestInfo: (
     id: string,
     question: string,
@@ -109,7 +109,6 @@ export default function TechTicketDetail({
 
   const chatScrollRef = useRef<HTMLDivElement>(null);
 
-
   const [pendingFiles, setPendingFiles] = useState<File[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -117,17 +116,17 @@ export default function TechTicketDetail({
     event: React.ChangeEvent<HTMLInputElement>
   ) => {
     const selected = Array.from(event.target.files ?? []);
-    const maxSize = 10 * 1024 * 1024; // 10 MB por arquivo
+    const maxSize = 10 * 1024 * 1024;
     const allowed = selected.filter(
       (file) =>
         file.type.startsWith('image/') ||
         file.type === 'application/pdf' ||
         file.type.startsWith('text/') ||
         file.type ===
-        'application/vnd.openxmlformats-officedocument.wordprocessingml.document' ||
+          'application/vnd.openxmlformats-officedocument.wordprocessingml.document' ||
         file.type === 'application/msword' ||
         file.type ===
-        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' ||
+          'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' ||
         file.type === 'application/vnd.ms-excel'
     );
 
@@ -140,8 +139,6 @@ export default function TechTicketDetail({
     }
 
     setPendingFiles((previous) => [...previous, ...valid].slice(0, 10));
-
-    // Permite selecionar novamente o mesmo arquivo.
     event.target.value = '';
   };
 
@@ -163,7 +160,6 @@ export default function TechTicketDetail({
   const [replacedParts, setReplacedParts] = useState(
     ticket.replacedParts ?? ''
   );
-
 
   useEffect(() => {
     setStatusSelect(ticket.status);
@@ -192,7 +188,6 @@ export default function TechTicketDetail({
   }, [ticket.id, ticket.updates.length]);
 
   useEffect(() => {
-    // Limpa os rascunhos somente ao trocar de chamado.
     setMessage('');
     setMessageMode('message');
     setNote('');
@@ -204,10 +199,8 @@ export default function TechTicketDetail({
     setSelectedReply(null);
   }, [ticket.id]);
 
-
   const [note, setNote] = useState('');
 
-  // Anexo atualmente aberto em tela cheia
   const [selectedAttachment, setSelectedAttachment] =
     useState<string | null>(null);
 
@@ -262,7 +255,6 @@ export default function TechTicketDetail({
     }
   };
 
-
   const handleConfirmClose = async (
     parecerTecnico: string
   ) => {
@@ -276,9 +268,6 @@ export default function TechTicketDetail({
     setIsCloseModalOpen(false);
   };
 
-
-  // Envia mensagem normal ou solicitação de informação
-
   const handleSend = () => {
     const text = message.trim();
 
@@ -291,24 +280,17 @@ export default function TechTicketDetail({
 
     if (!text && pendingFiles.length === 0) return;
 
-    const attachments: MessageAttachment[] = pendingFiles.map(
-      (file, index) => ({
-        id: `${Date.now()}-${index}`,
-        name: file.name,
-        type: file.type || 'application/octet-stream',
-        size: file.size,
-        url: URL.createObjectURL(file),
-      })
-    );
+    const filesToUpload = [...pendingFiles];
 
     if (messageMode === 'request') {
-      onRequestInfo(ticket.id, text, attachments);
+      onRequestInfo(ticket.id, text, []);
     } else {
       onSendMessage(
         ticket.id,
         text,
-        attachments,
-        selectedReply?.id
+        [],
+        selectedReply?.id,
+        filesToUpload
       );
     }
 
@@ -317,7 +299,6 @@ export default function TechTicketDetail({
     setMessageMode('message');
     setSelectedReply(null);
   };
-
 
   const handleStatus = () => {
     if (statusSelect !== ticket.status) {
@@ -396,7 +377,6 @@ export default function TechTicketDetail({
           Voltar para chamados
         </button>
 
-
         {/* Header */}
         <div
           className={`relative isolate mb-6 overflow-hidden rounded-2xl border shadow-sti ${colors.card}`}
@@ -451,7 +431,6 @@ export default function TechTicketDetail({
           </div>
         </div>
 
-
         <div className="grid gap-6 lg:grid-cols-3">
           {/* Conteúdo principal */}
           <div className="lg:col-span-2">
@@ -484,8 +463,7 @@ export default function TechTicketDetail({
               />
             </div>
 
-
-            {/* CONVERSA — visual inspirado no WhatsApp */}
+            {/* CONVERSA */}
             {tab === 'interactions' && (
               <div
                 className={`overflow-hidden rounded-2xl border shadow-md ${isDark
@@ -631,11 +609,13 @@ export default function TechTicketDetail({
 
                           {u.attachments && u.attachments.length > 0 && (
                             <div className="mt-2 flex flex-col gap-2">
-                              {u.attachments.map((attachment) => {
-                                const isImage = attachment.type.startsWith('image/');
+                              {u.attachments.map((attachment, idx) => {
+                                const isImage =
+                                  (attachment.type && attachment.type.startsWith('image/')) ||
+                                  /\.(png|jpe?g|gif|webp|bmp)$/i.test(attachment.url || attachment.name || '');
 
                                 return (
-                                  <div key={attachment.id}>
+                                  <div key={attachment.id || `${u.id}-att-${idx}`}>
                                     {isImage ? (
                                       <button
                                         type="button"
@@ -669,7 +649,6 @@ export default function TechTicketDetail({
                               })}
                             </div>
                           )}
-
 
                           {messageMode === 'message' && (
                             <button
@@ -713,7 +692,6 @@ export default function TechTicketDetail({
                           setSelectedReply(null);
                           setMessageMode((current) =>
                             current === 'message' ? 'request' : 'message'
-
                           );
                           setMessage('');
                         }}
@@ -787,8 +765,6 @@ export default function TechTicketDetail({
                       }}
                       className="flex items-end gap-2"
                     >
-
-
                       <input
                         ref={fileInputRef}
                         type="file"
@@ -859,7 +835,6 @@ export default function TechTicketDetail({
               </div>
             )}
 
-
             {/* SOLUÇÃO */}
             {tab === 'solution' && (
               <div
@@ -889,9 +864,7 @@ export default function TechTicketDetail({
 
                 {ticket.solution ? (
                   <div className="mb-5 space-y-4">
-                    {/* Parecer */}
                     <div className="rounded-xl border border-emerald-200 bg-emerald-50/60 p-4 dark:border-emerald-500/30 dark:bg-emerald-500/10">
-                      {/* Avaliação */}
                       {ticket.rating && (
                         <div className="mb-4 rounded-xl border border-amber-200 bg-amber-50/80 p-4 dark:border-amber-500/30 dark:bg-amber-500/10">
                           <div className="mb-1.5 flex items-center justify-between">
@@ -945,7 +918,6 @@ export default function TechTicketDetail({
                       </p>
                     </div>
 
-                    {/* Patrimônio / peças */}
                     {(ticket.assetTag || ticket.replacedParts) && (
                       <div className="grid gap-3 sm:grid-cols-2">
                         {ticket.assetTag && (
@@ -989,16 +961,14 @@ export default function TechTicketDetail({
                     )}
                   </div>
                 ) : (
-
                   <div className="mb-6 space-y-5">
-                    {/* Descrição técnica */}
                     <div className={`overflow-hidden rounded-xl border ${isDark
-                        ? 'border-slate-700 bg-slate-800/40'
-                        : 'border-slate-200 bg-white'
+                      ? 'border-slate-700 bg-slate-800/40'
+                      : 'border-slate-200 bg-white'
                       }`}>
                       <div className={`flex items-center gap-2 border-b px-4 py-3 ${isDark
-                          ? 'border-slate-700 bg-slate-800/70'
-                          : 'border-slate-100 bg-slate-50'
+                        ? 'border-slate-700 bg-slate-800/70'
+                        : 'border-slate-100 bg-slate-50'
                         }`}>
                         <FileText className="h-4 w-4 text-teal-600" />
                         <label className={`text-xs font-bold uppercase tracking-wider ${colors.textPrimary}`}>
@@ -1020,7 +990,6 @@ export default function TechTicketDetail({
                       </div>
                     </div>
 
-                    {/* Informações complementares */}
                     <div className="space-y-3">
                       <div>
                         <h3 className={`text-sm font-bold ${colors.textPrimary}`}>
@@ -1032,10 +1001,9 @@ export default function TechTicketDetail({
                       </div>
 
                       <div className="grid gap-4 sm:grid-cols-2">
-                        {/* Patrimônio */}
                         <div className={`rounded-xl border p-4 ${isDark
-                            ? 'border-slate-700 bg-slate-800/40'
-                            : 'border-slate-200 bg-slate-50/70'
+                          ? 'border-slate-700 bg-slate-800/40'
+                          : 'border-slate-200 bg-slate-50/70'
                           }`}>
                           <label className={`mb-3 flex items-center gap-2 text-xs font-bold ${colors.textSecondary}`}>
                             <Tag className="h-4 w-4 text-teal-600" />
@@ -1055,10 +1023,9 @@ export default function TechTicketDetail({
                           </p>
                         </div>
 
-                        {/* Peças e insumos */}
                         <div className={`rounded-xl border p-4 ${isDark
-                            ? 'border-slate-700 bg-slate-800/40'
-                            : 'border-slate-200 bg-slate-50/70'
+                          ? 'border-slate-700 bg-slate-800/40'
+                          : 'border-slate-200 bg-slate-50/70'
                           }`}>
                           <label className={`mb-3 flex items-center gap-2 text-xs font-bold ${colors.textSecondary}`}>
                             <Wrench className="h-4 w-4 text-amber-600" />
@@ -1080,10 +1047,8 @@ export default function TechTicketDetail({
                       </div>
                     </div>
                   </div>
-
                 )}
 
-                {/* Concluir chamado */}
                 {!ticket.solution && ticket.status !== 'fechado' && (
                   <div className="flex justify-end">
                     <Button
@@ -1095,7 +1060,6 @@ export default function TechTicketDetail({
                   </div>
                 )}
 
-                {/* DATA-AUDIT */}
                 {ticket.status === 'resolvido' && (
                   <div
                     className={`mt-6 rounded-xl border p-4 shadow-lg ${isDark
@@ -1189,7 +1153,6 @@ export default function TechTicketDetail({
                   onConfirm={handleConfirmClose}
                 />
 
-                {/* Fechar chamado */}
                 {ticket.solution && ticket.status === 'resolvido' && (
                   <div className="mt-5 flex justify-end">
                     <Button
@@ -1215,13 +1178,11 @@ export default function TechTicketDetail({
               </div>
             )}
 
-
             {/* NOTAS INTERNAS */}
             {tab === 'notes' && (
               <div
                 className={`overflow-hidden rounded-2xl border shadow-sm animate-fade-in ${colors.card}`}
               >
-                {/* Cabeçalho */}
                 <div className={`flex flex-col gap-3 border-b p-5 sm:flex-row sm:items-center sm:justify-between ${colors.borderSoft}`}>
                   <div className="flex items-center gap-3">
                     <div className={`flex h-11 w-11 items-center justify-center rounded-xl ${isDark ? 'bg-teal-500/15 text-teal-300' : 'bg-teal-50 text-teal-700'}`}>
@@ -1243,7 +1204,6 @@ export default function TechTicketDetail({
                   </span>
                 </div>
 
-                {/* Lista de observações */}
                 <div className="space-y-3 p-5">
                   {ticket.internalNotes.length === 0 && (
                     <div className={`rounded-xl border border-dashed px-4 py-8 text-center ${colors.borderSoft}`}>
@@ -1283,7 +1243,6 @@ export default function TechTicketDetail({
                   ))}
                 </div>
 
-                {/* Campo para nova observação */}
                 {ticket.status !== 'fechado' && (
                   <div className={`border-t p-5 ${colors.borderSoft}`}>
                     <label className={`mb-3 block text-sm font-semibold ${colors.textPrimary}`}>
@@ -1316,7 +1275,6 @@ export default function TechTicketDetail({
                 )}
               </div>
             )}
-
           </div>
 
           {/* Sidebar direita */}
@@ -1430,7 +1388,9 @@ export default function TechTicketDetail({
                       {ticket.attachments.map((attachment, i) => {
                         const isImage =
                           typeof attachment === 'string' &&
-                          attachment.startsWith('data:image/');
+                          (attachment.startsWith('data:image/') ||
+                            attachment.startsWith('http') ||
+                            attachment.startsWith('/api/'));
 
                         if (isImage) {
                           return (
@@ -1530,7 +1490,6 @@ export default function TechTicketDetail({
                     )}
                   </dd>
 
-                  {/* Gestão de custódia */}
                   {onAssign && ticket.status !== 'fechado' && (
                     <div
                       className={`mt-3 space-y-2 border-t pt-3 ${colors.borderSoft}`}
@@ -1664,7 +1623,6 @@ export default function TechTicketDetail({
                 )}
               </dl>
 
-              {/* Alterar status */}
               {canChangeStatus && (
                 <div
                   className={`mt-4 border-t pt-4 ${colors.borderSoft}`}
@@ -1755,7 +1713,6 @@ export default function TechTicketDetail({
   );
 }
 
-
 function formatMessageTime(value: string | Date): string {
   const date = value instanceof Date ? value : new Date(value);
 
@@ -1768,10 +1725,6 @@ function formatMessageTime(value: string | Date): string {
     minute: '2-digit',
   });
 }
-
-/* =========================================================
-   COMPONENTES AUXILIARES
-   ========================================================= */
 
 function TabButton({
   active,
@@ -1830,28 +1783,6 @@ function InfoRow({
       >
         {value}
       </dd>
-    </div>
-  );
-}
-
-function Avatar({
-  author,
-  name,
-}: {
-  author: 'usuario' | 'tecnico';
-  name: string;
-}) {
-  if (author === 'tecnico') {
-    return (
-      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-sti-navy-800 text-white">
-        <Headphones className="h-4 w-4" />
-      </div>
-    );
-  }
-
-  return (
-    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-sti-teal-100 text-sm font-semibold text-sti-teal-700 dark:bg-teal-500/15 dark:text-teal-300">
-      {name.charAt(0)}
     </div>
   );
 }

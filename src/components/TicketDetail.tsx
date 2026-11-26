@@ -30,7 +30,7 @@ interface TicketDetailProps {
   ) => void;
   ticket: Ticket;
   onNavigate: (p: Page) => void;
-  onReply: (message: string, replyToId?: string) => void;
+  onReply: (message: string, replyToId?: string, files?: File[]) => void;
 }
 
 export default function TicketDetail({
@@ -52,10 +52,12 @@ export default function TicketDetail({
     ticket.ratingComment ?? ''
   );
   const [submittedRating, setSubmittedRating] = useState(false);
-  const [chatAttachments, setChatAttachments] = useState<string[]>([]);
+  const [pendingFiles, setPendingFiles] = useState<File[]>([]);
+  const [previewUrls, setPreviewUrls] = useState<string[]>([]);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
+
   useEffect(() => {
     const container = chatScrollRef.current;
 
@@ -74,20 +76,19 @@ export default function TicketDetail({
 
     if (!files || files.length === 0) return;
 
-    Array.from(files).forEach((file) => {
-      const reader = new FileReader();
+    const selected = Array.from(files).filter(
+      (f) => f.type.startsWith('image/') && f.size <= 10 * 1024 * 1024
+    );
 
-      reader.onloadend = () => {
-        if (typeof reader.result === 'string') {
-          setChatAttachments((prev) => [
-            ...prev,
-            reader.result as string,
-          ]);
-        }
-      };
+    if (selected.length !== files.length) {
+      window.alert('Escolha apenas imagens de até 10 MB.');
+    }
 
-      reader.readAsDataURL(file);
-    });
+    setPendingFiles((prev) => [...prev, ...selected]);
+    setPreviewUrls((prev) => [
+      ...prev,
+      ...selected.map((file) => URL.createObjectURL(file)),
+    ]);
 
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
@@ -95,30 +96,23 @@ export default function TicketDetail({
   };
 
   const removeAttachment = (index: number) => {
-    setChatAttachments((prev) =>
-      prev.filter((_, i) => i !== index)
-    );
+    setPendingFiles((prev) => prev.filter((_, i) => i !== index));
+    setPreviewUrls((prev) => {
+      const urlToRevoke = prev[index];
+      if (urlToRevoke) URL.revokeObjectURL(urlToRevoke);
+      return prev.filter((_, i) => i !== index);
+    });
   };
 
   const handleSend = () => {
-    if (!reply.trim() && chatAttachments.length === 0) return;
+    if (!reply.trim() && pendingFiles.length === 0) return;
 
-    let fullMessage = reply.trim();
+    onReply(reply.trim(), selectedReply?.id, [...pendingFiles]);
 
-    if (chatAttachments.length > 0) {
-      const imgPayloads = chatAttachments
-        .map((img) => `[ATTACHMENT:${img}]`)
-        .join(' ');
-
-      fullMessage = fullMessage
-        ? `${fullMessage}\n${imgPayloads}`
-        : imgPayloads;
-    }
-
-    onReply(fullMessage, selectedReply?.id);
-
+    previewUrls.forEach((url) => URL.revokeObjectURL(url));
     setReply('');
-    setChatAttachments([]);
+    setPendingFiles([]);
+    setPreviewUrls([]);
     setSelectedReply(null);
   };
 
@@ -131,13 +125,22 @@ export default function TicketDetail({
     }
   };
 
-  const renderMessageContent = (rawText: string) => {
+  const renderMessageContent = (update: TicketUpdate) => {
+    const rawText = update.message || '';
     const attachmentRegex = /\[ATTACHMENT:(.*?)\]/g;
     const images: string[] = [];
     let match;
 
     while ((match = attachmentRegex.exec(rawText)) !== null) {
       images.push(match[1]);
+    }
+
+    if (update.attachments && update.attachments.length > 0) {
+      update.attachments.forEach((att) => {
+        if (att.url && !images.includes(att.url)) {
+          images.push(att.url);
+        }
+      });
     }
 
     const cleanText = rawText.replace(attachmentRegex, '').trim();
@@ -190,7 +193,7 @@ export default function TicketDetail({
         Voltar para meus chamados
       </button>
 
-      {/* Cabeçalho do chamado — visual inspirado no WhatsApp */}
+      {/* Cabeçalho do chamado */}
       <div
         className={`ticket-chat-header mb-0 rounded-t-xl rounded-b-none border px-4 py-5 shadow-none sm:px-6 ${isDark
           ? 'border-slate-700 bg-[#075e54]'
@@ -234,7 +237,6 @@ export default function TicketDetail({
 
       {/* Organização do chat e da barra lateral */}
       <div className="grid grid-cols-1 gap-5 lg:grid-cols-3 lg:gap-6">
-
         {/* Painel central: chat e mensagens */}
         <div className="space-y-6 lg:col-span-2">
           <div
@@ -336,7 +338,6 @@ export default function TicketDetail({
                     </p>
                   )}
 
-                  {/* Anexos da abertura do chamado */}
                   {ticket.attachments &&
                     ticket.attachments.length > 0 && (
                       <div className="mt-3 grid grid-cols-2 gap-2 border-t border-slate-700 pt-2">
@@ -384,8 +385,6 @@ export default function TicketDetail({
                       className={`flex max-w-[88%] sm:max-w-[78%] ${isUser ? 'justify-end' : 'justify-start'
                         }`}
                     >
-
-
                       <div
                         className={`rounded-lg px-3 py-2 shadow-sm ${isUser
                           ? 'rounded-tr-none bg-[#d9fdd3] text-[#172b20] dark:bg-[#005c4b] dark:text-slate-100'
@@ -394,7 +393,6 @@ export default function TicketDetail({
                             : 'rounded-tl-none bg-white text-slate-800'
                           }`}
                       >
-
                         <p
                           className={`mb-1 text-[11px] font-semibold ${isUser
                             ? 'text-emerald-800 dark:text-emerald-200'
@@ -446,7 +444,7 @@ export default function TicketDetail({
                           </button>
                         )}
 
-                        {renderMessageContent(u.message)}
+                        {renderMessageContent(u)}
 
                         <button
                           type="button"
@@ -482,7 +480,6 @@ export default function TicketDetail({
                   : 'border-[#d5ddd7] bg-[#f0f2f5]'
                   }`}
               >
-
                 {selectedReply && (
                   <div
                     className={`mb-3 flex items-center justify-between gap-3 rounded-xl border-l-4 px-3 py-2 ${isDark
@@ -514,10 +511,9 @@ export default function TicketDetail({
                   </div>
                 )}
 
-                {/* Pré-visualização dos anexos */}
-                {chatAttachments.length > 0 && (
+                {previewUrls.length > 0 && (
                   <div className="mb-3 flex flex-wrap gap-2">
-                    {chatAttachments.map((img, idx) => (
+                    {previewUrls.map((img, idx) => (
                       <div
                         key={idx}
                         className="relative h-16 w-20 overflow-hidden rounded-lg border border-slate-300"
@@ -589,7 +585,7 @@ export default function TicketDetail({
                     <Button
                       onClick={handleSend}
                       disabled={
-                        !reply.trim() && chatAttachments.length === 0
+                        !reply.trim() && pendingFiles.length === 0
                       }
                       variant="primary"
                       className="h-8 px-3 text-xs"
@@ -602,7 +598,6 @@ export default function TicketDetail({
               </div>
             ) : (
               <div className="mt-6 space-y-4">
-                {/* Avaliação após resolução */}
                 {ticket.status === 'resolvido' &&
                   !ticket.rating &&
                   !submittedRating ? (
@@ -722,7 +717,7 @@ export default function TicketDetail({
         {/* Barra lateral com metadados */}
         <div className="flex flex-col gap-4">
           <div
-            className={`rounded-xl border p-5 shadow-sm ${isDark
+            className={`rounded-2xl border p-5 shadow-sm ${isDark
               ? 'border-slate-700 bg-slate-900'
               : 'border-slate-200 bg-white'
               }`}
@@ -803,7 +798,7 @@ export default function TicketDetail({
           </div>
 
           <div
-            className={`rounded-xl border p-5 shadow-sm ${isDark
+            className={`rounded-2xl border p-5 shadow-sm ${isDark
               ? 'border-slate-700 bg-slate-900'
               : 'border-slate-200 bg-white'
               }`}

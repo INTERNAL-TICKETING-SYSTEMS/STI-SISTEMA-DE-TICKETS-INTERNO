@@ -5,7 +5,11 @@ import GestorAuditTable from '@/components/gestor/GestorAuditTable';
 import {
   atualizarChamado,
   criarChamado,
+  criarFeedback,
+  enviarMensagemChamado,
   listarChamados,
+  listarMensagensChamado,
+  uploadImagemChamado,
 } from '@/services/chamadoService';
 import { registrarAuditoria } from './services/auditService';
 import GestorSidebar, { GestorPage, GestorPageContainer } from '@/components/gestor/GestorSidebar';
@@ -209,6 +213,18 @@ function getThemeBackground() {
     : 'bg-slate-50 text-slate-900';
 }
 
+function isTecnicoEmail(email?: string): boolean {
+  if (!email) return false;
+  const normalized = email.toLowerCase();
+  return (
+    normalized.includes('tecnico') ||
+    normalized.includes('carlos') ||
+    normalized.includes('joao') ||
+    normalized.includes('guilherme') ||
+    normalized.includes('wanderson')
+  );
+}
+
 export default function App() {
   const [authScreen, setAuthScreen] = useState<AuthScreen>('login');
 
@@ -348,106 +364,168 @@ export default function App() {
 
   const [tickets, setTickets] = useState<Ticket[]>(mockTickets);
 
+  const sincronizarChamadosEMensagens = async () => {
+    const chamados = await listarChamados();
+
+    const ticketsDoBackend: Ticket[] = await Promise.all(
+      chamados.map(async (chamado: any) => {
+        const statusRecebido = String(chamado.status || '').toLowerCase();
+
+        const status: TicketStatus =
+          statusRecebido === 'em_andamento' ||
+            statusRecebido === 'em andamento'
+            ? 'em_andamento'
+            : statusRecebido === 'resolvido'
+              ? 'resolvido'
+              : statusRecebido === 'fechado'
+                ? 'fechado'
+                : statusRecebido === 'aguardando'
+                  ? 'aguardando'
+                  : 'aberto';
+
+        const prioridadeRecebida = String(chamado.prioridade || '').toLowerCase();
+
+        const priority: Ticket['priority'] =
+          prioridadeRecebida === 'alta'
+            ? 'alta'
+            : prioridadeRecebida === 'baixa'
+              ? 'baixa'
+              : 'media';
+
+        const criadoEm =
+          chamado.criado_em ||
+          chamado.criadoEm ||
+          new Date().toISOString();
+
+        const atualizadoEm =
+          chamado.atualizado_em ||
+          chamado.atualizadoEm ||
+          criadoEm;
+
+        const emailSolicitante =
+          chamado.solicitante_email ||
+          chamado.solicitanteEmail ||
+          '';
+
+        const categoria = chamado.categoria || 'Geral';
+
+        let updatesList: Ticket['updates'] = [];
+        const notesList: Ticket['internalNotes'] = [];
+        const attachmentsList: string[] = [];
+
+        try {
+          const mensagens = await listarMensagensChamado(chamado.id);
+          mensagens.forEach((m) => {
+            if (m.imagem_url) {
+              attachmentsList.push(m.imagem_url);
+            }
+
+            const textoMsg = m.mensagem || '';
+            if (textoMsg.startsWith('[NOTA_INTERNA] ')) {
+              notesList.push({
+                id: String(m.id),
+                authorName: m.remetente_email || 'Técnico',
+                message: textoMsg.replace('[NOTA_INTERNA] ', ''),
+                createdAt: m.criado_em || atualizadoEm,
+              });
+              return;
+            }
+
+            updatesList.push({
+              id: String(m.id),
+              author: isTecnicoEmail(m.remetente_email)
+                ? ('tecnico' as const)
+                : ('usuario' as const),
+              authorName: m.remetente_email || 'Usuário',
+              message: textoMsg || (m.imagem_url ? 'Enviou uma imagem' : ''),
+              createdAt: m.criado_em || atualizadoEm,
+              attachments: m.imagem_url
+                ? [
+                    {
+                      name: m.imagem_url.split('/').pop() || 'imagem',
+                      type: 'image/*',
+                      size: 0,
+                      url: m.imagem_url,
+                    } as any,
+                  ]
+                : [],
+            });
+          });
+        } catch {
+          // Mantém listas vazias se não houver mensagens salvas ainda
+        }
+
+        return {
+          id: String(chamado.id),
+          protocol: chamado.protocolo || `STI-${chamado.id}`,
+          title: chamado.titulo || 'Sem título',
+          description: chamado.descricao || '',
+          category: categoria,
+          status,
+          priority,
+          createdAt: criadoEm,
+          updatedAt: atualizadoEm,
+          updates: updatesList,
+          requesterName:
+            chamado.solicitanteNome ||
+            emailSolicitante ||
+            'Não informado',
+          requesterEmail: emailSolicitante,
+          requesterDepartment:
+            chamado.solicitanteDepartamento || 'Não informado',
+          requesterLocation: 'A definir',
+          requesterContact: emailSolicitante || '',
+          equipmentOrSystem: categoria || 'A identificar',
+          approximateDate: String(criadoEm).slice(0, 10),
+          impact: 'Não informado',
+          errorMessage: 'Nenhuma',
+          attachments: attachmentsList,
+          assignee:
+            chamado.responsavel ||
+            chamado.tecnico_atribuido_email ||
+            null,
+          attendanceStartedAt: null,
+          solution: chamado.solucao || null,
+          internalNotes: notesList,
+        };
+      })
+    );
+
+    setTickets(ticketsDoBackend);
+  };
+
   useEffect(() => {
     let ativo = true;
 
-    async function carregarChamados() {
+    const executarSync = async () => {
       try {
-        const chamados = await listarChamados();
-
         if (!ativo) return;
-
-        const ticketsDoBackend: Ticket[] = chamados.map((chamado: any) => {
-          const statusRecebido = String(chamado.status || '').toLowerCase();
-
-          const status: TicketStatus =
-            statusRecebido === 'em_andamento' ||
-              statusRecebido === 'em andamento'
-              ? 'em_andamento'
-              : statusRecebido === 'resolvido'
-                ? 'resolvido'
-                : statusRecebido === 'fechado'
-                  ? 'fechado'
-                  : statusRecebido === 'aguardando'
-                    ? 'aguardando'
-                    : 'aberto';
-
-          const prioridadeRecebida = String(chamado.prioridade || '').toLowerCase();
-
-          const priority: Ticket['priority'] =
-            prioridadeRecebida === 'alta'
-              ? 'alta'
-              : prioridadeRecebida === 'baixa'
-                ? 'baixa'
-                : 'media';
-
-          const criadoEm =
-            chamado.criado_em ||
-            chamado.criadoEm ||
-            new Date().toISOString();
-
-          const atualizadoEm =
-            chamado.atualizado_em ||
-            chamado.atualizadoEm ||
-            criadoEm;
-
-          const emailSolicitante =
-            chamado.solicitante_email ||
-            chamado.solicitanteEmail ||
-            '';
-
-          const categoria = chamado.categoria || 'Geral';
-
-          return {
-            id: String(chamado.id),
-            protocol: chamado.protocolo || `STI-${chamado.id}`,
-            title: chamado.titulo || 'Sem título',
-            description: chamado.descricao || '',
-            category: categoria,
-            status,
-            priority,
-            createdAt: criadoEm,
-            updatedAt: atualizadoEm,
-            updates: [],
-            requesterName:
-              chamado.solicitanteNome ||
-              emailSolicitante ||
-              'Não informado',
-            requesterEmail: emailSolicitante,
-            requesterDepartment:
-              chamado.solicitanteDepartamento || 'Não informado',
-            requesterLocation: 'A definir',
-            requesterContact: emailSolicitante || '',
-            equipmentOrSystem: categoria || 'A identificar',
-            approximateDate: String(criadoEm).slice(0, 10),
-            impact: 'Não informado',
-            errorMessage: 'Nenhuma',
-            attachments: [],
-            assignee:
-              chamado.responsavel ||
-              chamado.tecnico_atribuido_email ||
-              null,
-            attendanceStartedAt: null,
-            solution: chamado.solucao || null,
-            internalNotes: [],
-          };
-        });
-
-        setTickets(ticketsDoBackend);
+        await sincronizarChamadosEMensagens();
       } catch (error) {
         console.error(
           '[STI] Não foi possível carregar os chamados do backend:',
           error
         );
       }
+    };
+
+    void executarSync();
+
+    if (!authed) {
+      return () => {
+        ativo = false;
+      };
     }
 
-    void carregarChamados();
+    const intervalo = window.setInterval(() => {
+      void executarSync();
+    }, 5000);
 
     return () => {
       ativo = false;
+      window.clearInterval(intervalo);
     };
-  }, []);
+  }, [authed]);
 
   const handleSaveProfile = (updatedUser: User) => {
     const previousUser = activeUser;
@@ -554,6 +632,7 @@ export default function App() {
     startDate: string;
     blocking: string;
     attachments: string[];
+    files?: File[];
   }): Promise<{ protocolo: string }> => {
     const generatedProtocol =
       'STI-' +
@@ -571,6 +650,19 @@ export default function App() {
       solicitanteEmail: activeUser.email,
       solicitanteDepartamento: activeUser.department,
     });
+
+    const uploadedUrls: string[] = [];
+    if (data.files && data.files.length > 0) {
+      for (const file of data.files) {
+        const url = await uploadImagemChamado(file);
+        uploadedUrls.push(url);
+        await enviarMensagemChamado(chamadoSalvo.id, {
+          remetenteEmail: activeUser.email,
+          mensagem: `Anexo enviado na abertura: ${file.name}`,
+          imagemUrl: url,
+        }).catch(() => {});
+      }
+    }
 
     const now = new Date().toISOString();
 
@@ -602,7 +694,7 @@ export default function App() {
           ? 'Alto — não consigo trabalhar'
           : 'Médio — dá para contornar',
       errorMessage: 'Nenhuma',
-      attachments: data.attachments || [],
+      attachments: uploadedUrls.length > 0 ? uploadedUrls : data.attachments || [],
       assignee: null,
       attendanceStartedAt: null,
       solution: null,
@@ -642,44 +734,72 @@ export default function App() {
     };
   };
 
-  const handleUserReply = (
+  const handleUserReply = async (
     id: string,
     message: string,
-    replyToId?: string
+    replyToId?: string,
+    files: File[] = []
   ) => {
     const now = new Date().toISOString();
+    let imagemUrl: string | null = null;
 
-    setTickets((prev) =>
-      prev.map((t) =>
-        t.id === id
-          ? {
-            ...t,
-            updatedAt: now,
-            status: 'em_andamento',
-            updates: [
-              ...t.updates,
-              {
-                id: String(Date.now()),
-                author: 'usuario' as const,
-                authorName: activeUser.name,
-                message,
-                createdAt: now,
-                replyToId,
-              },
-            ],
-          }
-          : t
-      )
-    );
+    try {
+      if (files.length > 0) {
+        imagemUrl = await uploadImagemChamado(files[0]);
+      }
 
-    registrarAuditoria({
-      entidade: 'CHAMADO',
-      idEntidade: id,
-      tipoOperacao: 'MENSAGEM_USUARIO',
-      autor: activeUser?.email || 'solicitante@sti.chamados.com',
-      estadoAtual: { mensagem: message },
-      metadados: { origem: 'Chat do Chamado - Solicitante' }
-    }).catch(err => console.error('[Auditoria] Falha ao registrar mensagem do usuário:', err));
+      const salva = await enviarMensagemChamado(id, {
+        remetenteEmail: activeUser.email,
+        mensagem: message,
+        imagemUrl,
+      });
+
+      setTickets((prev) =>
+        prev.map((t) =>
+          t.id === id
+            ? {
+              ...t,
+              updatedAt: salva.criado_em || now,
+              status: 'em_andamento',
+              attachments: imagemUrl ? [...t.attachments, imagemUrl] : t.attachments,
+              updates: [
+                ...t.updates,
+                {
+                  id: String(salva.id || Date.now()),
+                  author: 'usuario' as const,
+                  authorName: activeUser.name,
+                  message,
+                  createdAt: salva.criado_em || now,
+                  replyToId,
+                  attachments: imagemUrl
+                    ? [
+                        {
+                          name: imagemUrl.split('/').pop() || 'imagem',
+                          type: 'image/*',
+                          size: 0,
+                          url: imagemUrl,
+                        } as any,
+                      ]
+                    : [],
+                },
+              ],
+            }
+            : t
+        )
+      );
+
+      registrarAuditoria({
+        entidade: 'CHAMADO',
+        idEntidade: id,
+        tipoOperacao: 'MENSAGEM_USUARIO',
+        autor: activeUser?.email || 'solicitante@sti.chamados.com',
+        estadoAtual: { mensagem: message, imagemUrl },
+        metadados: { origem: 'Chat do Chamado - Solicitante' }
+      }).catch(err => console.error('[Auditoria] Falha ao registrar mensagem do usuário:', err));
+    } catch (err) {
+      console.error('[STI] Erro ao enviar mensagem do usuário:', err);
+      window.alert('Não foi possível enviar a mensagem para o servidor.');
+    }
   };
 
   const handleAssume = async (id: string) => {
@@ -748,13 +868,18 @@ export default function App() {
         status: novoStatus,
       });
 
+      const logMsg = isReassign
+        ? `Chamado transferido de ${targetTicket.assignee} para ${assigneeName}.`
+        : `Atendimento assumido por ${assigneeName} (Manutenção / TI).`;
+
+      await enviarMensagemChamado(id, {
+        remetenteEmail: activeUser.email,
+        mensagem: logMsg,
+      }).catch(() => {});
+
       setTickets((prev) =>
         prev.map((t) => {
           if (t.id !== id) return t;
-
-          const logMsg = isReassign
-            ? `Chamado transferido de ${t.assignee} para ${assigneeName}.`
-            : `Atendimento assumido por ${assigneeName} (Manutenção / TI).`;
 
           return {
             ...t,
@@ -818,107 +943,150 @@ export default function App() {
     window.print();
   };
 
-  const handleTechMessage = (
+  const handleTechMessage = async (
     id: string,
     message: string,
     attachments: MessageAttachment[] = [],
-    replyToId?: string
+    replyToId?: string,
+    files: File[] = []
   ) => {
     const now = new Date().toISOString();
+    let imagemUrl: string | null =
+      (attachments.find((a: any) => a.url) as any)?.url || null;
 
-    setTickets((prev) =>
-      prev.map((t) =>
-        t.id === id
-          ? {
-            ...t,
-            updatedAt: now,
-            updates: [
-              ...t.updates,
-              {
-                id: String(Date.now()),
-                author: 'tecnico' as const,
-                authorName: activeUser.name,
-                message,
-                createdAt: now,
-                attachments,
-                replyToId,
-              },
-            ],
-          }
-          : t
-      )
-    );
+    try {
+      if (files.length > 0) {
+        imagemUrl = await uploadImagemChamado(files[0]);
+      }
 
-    registrarAuditoria({
-      entidade: 'CHAMADO',
-      idEntidade: id,
-      tipoOperacao: 'MENSAGEM_TECNICO',
-      autor: activeUser?.email || 'tecnico@sti.chamados.com',
-      estadoAtual: {
+      const salva = await enviarMensagemChamado(id, {
+        remetenteEmail: activeUser.email,
         mensagem: message,
-        anexos: attachments.map((a) => ({
-          nome: a.name,
-          tipo: a.type,
-          tamanho: a.size,
-        })),
-      },
-      metadados: { origem: 'Chat Técnico' },
-    }).catch((err) =>
-      console.error('[Auditoria] Falha ao registrar mensagem técnica:', err)
-    );
+        imagemUrl,
+      });
+
+      const anexosFinais: MessageAttachment[] = imagemUrl
+        ? [
+            ...attachments,
+            {
+              name: imagemUrl.split('/').pop() || 'imagem',
+              type: 'image/*',
+              size: 0,
+              url: imagemUrl,
+            } as any,
+          ]
+        : attachments;
+
+      setTickets((prev) =>
+        prev.map((t) =>
+          t.id === id
+            ? {
+              ...t,
+              updatedAt: salva.criado_em || now,
+              attachments: imagemUrl ? [...t.attachments, imagemUrl] : t.attachments,
+              updates: [
+                ...t.updates,
+                {
+                  id: String(salva.id || Date.now()),
+                  author: 'tecnico' as const,
+                  authorName: activeUser.name,
+                  message,
+                  createdAt: salva.criado_em || now,
+                  attachments: anexosFinais,
+                  replyToId,
+                },
+              ],
+            }
+            : t
+        )
+      );
+
+      registrarAuditoria({
+        entidade: 'CHAMADO',
+        idEntidade: id,
+        tipoOperacao: 'MENSAGEM_TECNICO',
+        autor: activeUser?.email || 'tecnico@sti.chamados.com',
+        estadoAtual: {
+          mensagem: message,
+          imagemUrl,
+          anexos: anexosFinais.map((a) => ({
+            nome: a.name,
+            tipo: a.type,
+            tamanho: a.size,
+          })),
+        },
+        metadados: { origem: 'Chat Técnico' },
+      }).catch((err) =>
+        console.error('[Auditoria] Falha ao registrar mensagem técnica:', err)
+      );
+    } catch (err) {
+      console.error('[STI] Erro ao enviar mensagem técnica:', err);
+      window.alert('Não foi possível enviar a mensagem para o servidor.');
+    }
   };
 
-  const handleRequestInfo = (
+  const handleRequestInfo = async (
     id: string,
     question: string,
     attachments: MessageAttachment[] = []
   ) => {
     const now = new Date().toISOString();
 
-    setTickets((prev) =>
-      prev.map((t) =>
-        t.id === id
-          ? {
-            ...t,
-            status: 'aguardando' as TicketStatus,
-            updatedAt: now,
-            updates: [
-              ...t.updates,
-              {
-                id: String(Date.now()),
-                author: 'tecnico' as const,
-                authorName: activeUser.name,
-                message: question,
-                createdAt: now,
-                attachments,
-              },
-            ],
-          }
-          : t
-      )
-    );
+    try {
+      await atualizarChamado(Number(id), { status: 'aguardando' });
+      const salva = await enviarMensagemChamado(id, {
+        remetenteEmail: activeUser.email,
+        mensagem: question,
+      });
 
-    registrarAuditoria({
-      entidade: 'CHAMADO',
-      idEntidade: id,
-      tipoOperacao: 'SOLICITACAO_INFORMACOES',
-      autor: activeUser?.email || 'tecnico@sti.chamados.com',
-      estadoAtual: {
-        status: 'aguardando',
-        pergunta: question,
-        anexos: attachments.map((a) => ({
-          nome: a.name,
-          tipo: a.type,
-          tamanho: a.size,
-        })),
-      },
-      metadados: { acao: 'Aguardando retorno do solicitante' },
-    }).catch((err) =>
-      console.error(
-        '[Auditoria] Falha ao registrar solicitação de informações:',
-        err
-      )
-    );
+      setTickets((prev) =>
+        prev.map((t) =>
+          t.id === id
+            ? {
+              ...t,
+              status: 'aguardando' as TicketStatus,
+              updatedAt: salva.criado_em || now,
+              updates: [
+                ...t.updates,
+                {
+                  id: String(salva.id || Date.now()),
+                  author: 'tecnico' as const,
+                  authorName: activeUser.name,
+                  message: question,
+                  createdAt: salva.criado_em || now,
+                  attachments,
+                },
+              ],
+            }
+            : t
+        )
+      );
+
+      registrarAuditoria({
+        entidade: 'CHAMADO',
+        idEntidade: id,
+        tipoOperacao: 'SOLICITACAO_INFORMACOES',
+        autor: activeUser?.email || 'tecnico@sti.chamados.com',
+        estadoAtual: {
+          status: 'aguardando',
+          pergunta: question,
+          anexos: attachments.map((a) => ({
+            nome: a.name,
+            tipo: a.type,
+            tamanho: a.size,
+          })),
+        },
+        metadados: { acao: 'Aguardando retorno do solicitante' },
+      }).catch((err) =>
+        console.error(
+          '[Auditoria] Falha ao registrar solicitação de informações:',
+          err
+        )
+      );
+    } catch (err) {
+      console.error('[STI] Erro ao solicitar informações:', err);
+      window.alert('Não foi possível atualizar o chamado para aguardando.');
+    }
   };
 
   const handleChangeStatus = async (id: string, status: TicketStatus) => {
@@ -982,6 +1150,12 @@ export default function App() {
         solucao: solution,
       });
 
+      const msgSolucao = `Chamado resolvido. Solução: ${solution}`;
+      await enviarMensagemChamado(id, {
+        remetenteEmail: activeUser.email,
+        mensagem: msgSolucao,
+      }).catch(() => {});
+
       setTickets((prev) =>
         prev.map((t) =>
           t.id === id
@@ -999,7 +1173,7 @@ export default function App() {
                   id: String(Date.now()),
                   author: 'tecnico' as const,
                   authorName: activeUser.name,
-                  message: `Chamado resolvido. Solução: ${solution}`,
+                  message: msgSolucao,
                   createdAt: now,
                 },
               ],
@@ -1037,6 +1211,20 @@ export default function App() {
     try {
       await atualizarChamado(Number(id), { status: 'fechado' });
 
+      const msgAvaliacao = `Chamado avaliado com ${rating} de 5 estrelas pelo usuário.${comment ? ' Feedback: "' + comment + '"' : ''}`;
+      await enviarMensagemChamado(id, {
+        remetenteEmail: activeUser.email,
+        mensagem: msgAvaliacao,
+      }).catch(() => {});
+
+      await criarFeedback({
+        chamadoId: id,
+        usuarioEmail: activeUser.email,
+        tipo: 'AVALIACAO_CHAMADO',
+        comentario: comment || `Avaliação do chamado #${id}: ${rating}/5`,
+        nota: rating,
+      }).catch(() => {});
+
       setTickets((prev) =>
         prev.map((t) => {
           if (t.id !== id) return t;
@@ -1052,7 +1240,7 @@ export default function App() {
                 id: String(Date.now()),
                 author: 'usuario' as const,
                 authorName: activeUser.name,
-                message: `Chamado avaliado com ${rating} de 5 estrelas pelo usuário.${comment ? ' Feedback: "' + comment + '"' : ''}`,
+                message: msgAvaliacao,
                 createdAt: now,
               },
             ],
@@ -1078,27 +1266,37 @@ export default function App() {
     }
   };
 
-  const handleAddNote = (id: string, note: string) => {
+  const handleAddNote = async (id: string, note: string) => {
     const now = new Date().toISOString();
 
-    setTickets((prev) =>
-      prev.map((t) =>
-        t.id === id
-          ? {
-            ...t,
-            internalNotes: [
-              ...t.internalNotes,
-              {
-                id: String(Date.now()),
-                authorName: activeUser.name,
-                message: note,
-                createdAt: now,
-              },
-            ],
-          }
-          : t
-      )
-    );
+    try {
+      const salva = await enviarMensagemChamado(id, {
+        remetenteEmail: activeUser.email,
+        mensagem: `[NOTA_INTERNA] ${note}`,
+      });
+
+      setTickets((prev) =>
+        prev.map((t) =>
+          t.id === id
+            ? {
+              ...t,
+              internalNotes: [
+                ...t.internalNotes,
+                {
+                  id: String(salva.id || Date.now()),
+                  authorName: activeUser.name,
+                  message: note,
+                  createdAt: salva.criado_em || now,
+                },
+              ],
+            }
+            : t
+        )
+      );
+    } catch (err) {
+      console.error('[STI] Falha ao salvar nota interna:', err);
+      window.alert('Não foi possível salvar a observação interna no servidor.');
+    }
   };
 
   if (!authed) {
@@ -1171,11 +1369,13 @@ export default function App() {
           {userView.page === 'ticket-detail' && currentTicket && (
             <TicketDetail
               ticket={currentTicket}
-              onReply={(msg, replyToId) =>
-                handleUserReply(currentTicket.id, msg, replyToId)
+              onReply={(msg, replyToId, files) =>
+                void handleUserReply(currentTicket.id, msg, replyToId, files)
               }
               onNavigate={navigate}
-              onRateTicket={handleRateTicket}
+              onRateTicket={(rating, comment) =>
+                void handleRateTicket(currentTicket.id, rating, comment)
+              }
             />
           )}
         </PageContainer>
@@ -1260,20 +1460,20 @@ export default function App() {
             <TechTicketDetail
               ticket={currentTicket}
               onNavigate={navigate}
-              onSendMessage={(id, msg, attachments, replyToId) =>
-                handleTechMessage(id, msg, attachments, replyToId)
+              onSendMessage={(id, msg, attachments, replyToId, files) =>
+                void handleTechMessage(id, msg, attachments, replyToId, files)
               }
               onRequestInfo={(id, question, attachments) =>
-                handleRequestInfo(id, question, attachments)
+                void handleRequestInfo(id, question, attachments)
               }
               onChangeStatus={(id, status) =>
-                handleChangeStatus(id, status)
+                void handleChangeStatus(id, status)
               }
               onResolve={(id, solution, assetTag, replacedParts) =>
-                handleResolve(id, solution, assetTag, replacedParts)
+                void handleResolve(id, solution, assetTag, replacedParts)
               }
               onAddInternalNote={(id, note) =>
-                handleAddNote(id, note)
+                void handleAddNote(id, note)
               }
               techName={activeUser.name}
               technicians={mockTechnicians}
