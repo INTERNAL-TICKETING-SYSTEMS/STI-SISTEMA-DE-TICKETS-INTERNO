@@ -1,5 +1,4 @@
-﻿import { dbRepository } from '@/services/dbRepository';
-import { AuditCompliancePanel } from './components/tech/AuditCompliancePanel';
+﻿import { AuditCompliancePanel } from './components/tech/AuditCompliancePanel';
 
 import GestorAuditTable from '@/components/gestor/GestorAuditTable';
 
@@ -29,27 +28,21 @@ import TechTickets from '@/components/tech/TechTickets';
 import TechMyAttendance from '@/components/tech/TechMyAttendance';
 import TechTicketDetail from '@/components/tech/TechTicketDetail';
 import GestorRelatorios from '@/components/gestor/GestorRelatorios';
-import { mockTickets, currentUser, currentTech, mockTechnicians } from '@/data';
+import { mockTickets, currentUser, mockTechnicians } from '@/data';
 import { Ticket, UserRole, TicketStatus, User, MessageAttachment } from '@/types';
-import Logo from '@/components/Logo';
 
 type UserView = { page: Page } | { page: 'ticket-detail'; ticketId: string };
 type TechView = { page: TechPage } | { page: 'tech-ticket-detail'; ticketId: string };
 type AuthScreen = 'login' | 'register';
 
-// Simulated account database — maps email to role
-// Base Oficial STI Exclusiva (@sti.chamados.com)
 const TECH_DEFAULT_PASSWORD = '.\\ati@!#$%2020';
 
 const knownAccounts: Record<string, { role: UserRole; user: User; defaultPassword?: string; requireStrictPassword?: boolean }> = {
-  // Solicitante Padrão de Demonstração
   'servidor@sti.chamados.com': {
     role: 'usuario',
     user: currentUser,
     requireStrictPassword: false
   },
-
-  // Carlos Daniel Santos Ferreira (Técnico de Suporte STI)
   'carlos.daniel@sti.chamados.com': {
     role: 'tecnico',
     user: {
@@ -64,8 +57,6 @@ const knownAccounts: Record<string, { role: UserRole; user: User; defaultPasswor
     defaultPassword: TECH_DEFAULT_PASSWORD,
     requireStrictPassword: true
   },
-
-  // João Pedro Moreira (Técnico de Suporte STI)
   'joao.pedro@sti.chamados.com': {
     role: 'tecnico',
     user: {
@@ -80,8 +71,6 @@ const knownAccounts: Record<string, { role: UserRole; user: User; defaultPasswor
     defaultPassword: TECH_DEFAULT_PASSWORD,
     requireStrictPassword: true
   },
-
-  // Guilherme Ferreira de Souza (Técnico de Suporte STI)
   'guilherme.ferreira@sti.chamados.com': {
     role: 'tecnico',
     user: {
@@ -96,8 +85,6 @@ const knownAccounts: Record<string, { role: UserRole; user: User; defaultPasswor
     defaultPassword: TECH_DEFAULT_PASSWORD,
     requireStrictPassword: true
   },
-
-  // Wanderson Alves Maior (Técnico & Gestor)
   'wanderson.maior@sti.chamados.com': {
     role: 'tecnico',
     user: {
@@ -112,8 +99,6 @@ const knownAccounts: Record<string, { role: UserRole; user: User; defaultPasswor
     defaultPassword: TECH_DEFAULT_PASSWORD,
     requireStrictPassword: true
   },
-
-  // Luigue Soares Brandão (Diretor Administrativo)
   'luigue.brandao@sti.chamados.com': {
     role: 'gestor',
     user: {
@@ -127,8 +112,6 @@ const knownAccounts: Record<string, { role: UserRole; user: User; defaultPasswor
     },
     requireStrictPassword: false
   },
-
-  // Elias Nunes da Silva Junior (Gerente Administrativo)
   'elias.junior@sti.chamados.com': {
     role: 'gestor',
     user: {
@@ -148,10 +131,8 @@ function detectRoleFromEmail(email: string): { role: UserRole; user: User } {
   const normalizedEmail = email.toLowerCase().trim();
   const account = knownAccounts[normalizedEmail];
 
-  // Mantém as contas já configuradas no sistema.
   if (account) return account;
 
-  // Recupera o cadastro local e o perfil salvo para este e-mail.
   try {
     const customUsers = JSON.parse(
       localStorage.getItem('sti_registered_users') || '[]'
@@ -165,8 +146,6 @@ function detectRoleFromEmail(email: string): { role: UserRole; user: User } {
       localStorage.getItem(`sti_profile_${normalizedEmail}`) || 'null'
     );
 
-    // Usa os dados do próprio usuário, sem reutilizar dados pessoais
-    // de outra conta como valores padrão.
     if (found || savedProfile) {
       const userData = {
         ...currentUser,
@@ -205,7 +184,6 @@ function detectRoleFromEmail(email: string): { role: UserRole; user: User } {
     console.error('[STI] Erro ao recuperar dados do usuário:', err);
   }
 
-  // Não reutiliza nome, CPF, setor ou telefone de outra pessoa.
   return {
     role: 'usuario',
     user: {
@@ -369,7 +347,6 @@ export default function App() {
   };
 
   const [tickets, setTickets] = useState<Ticket[]>(mockTickets);
-  const [inspectedTicket, setInspectedTicket] = useState<Ticket | null>(null);
 
   useEffect(() => {
     let ativo = true;
@@ -472,7 +449,6 @@ export default function App() {
     };
   }, []);
 
-  // Atualiza o perfil ativo e salva os dados localmente.
   const handleSaveProfile = (updatedUser: User) => {
     const previousUser = activeUser;
 
@@ -484,10 +460,8 @@ export default function App() {
       roles: previousUser.roles,
     };
 
-    // Atualiza o usuário na interface.
     setActiveUser(normalizedUser);
 
-    // Atualiza o cadastro local, se ele existir.
     try {
       const registeredUsers = JSON.parse(
         localStorage.getItem('sti_registered_users') || '[]'
@@ -513,7 +487,6 @@ export default function App() {
         );
       }
 
-      // Mantém os dados do perfil para recuperar após recarregar a página.
       localStorage.setItem(
         `sti_profile_${normalizedUser.email.toLowerCase()}`,
         JSON.stringify(normalizedUser)
@@ -699,7 +672,6 @@ export default function App() {
       )
     );
 
-    // Auditoria imutável: Réplica enviada pelo usuário solicitante
     registrarAuditoria({
       entidade: 'CHAMADO',
       idEntidade: id,
@@ -710,38 +682,46 @@ export default function App() {
     }).catch(err => console.error('[Auditoria] Falha ao registrar mensagem do usuário:', err));
   };
 
-  // ---- Tech mutations ----
-  const handleAssume = (id: string) => {
+  const handleAssume = async (id: string) => {
     const now = new Date().toISOString();
 
-    setTickets((prev) =>
-      prev.map((t) =>
-        t.id === id
-          ? {
-            ...t,
-            assignee: activeUser.name,
-            status: 'em_andamento',
-            attendanceStartedAt: t.attendanceStartedAt ?? now,
-            updatedAt: now,
-          }
-          : t
-      )
-    );
+    try {
+      await atualizarChamado(Number(id), {
+        responsavel: activeUser.name,
+        status: 'em_andamento',
+      });
 
-    // Auditoria imutável: Técnico assumiu o atendimento
-    registrarAuditoria({
-      entidade: 'CHAMADO',
-      idEntidade: id,
-      tipoOperacao: 'ATRIBUICAO',
-      autor: activeUser?.email || 'tecnico@sti.chamados.com',
-      estadoAtual: {
-        tecnico: activeUser?.name || 'Técnico STI',
-        status: 'em_andamento'
-      },
-      metadados: { acao: 'Técnico assumiu o chamado' }
-    }).catch(err => console.error('[Auditoria] Falha ao registrar atribuição:', err));
+      setTickets((prev) =>
+        prev.map((t) =>
+          t.id === id
+            ? {
+              ...t,
+              assignee: activeUser.name,
+              status: 'em_andamento',
+              attendanceStartedAt: t.attendanceStartedAt ?? now,
+              updatedAt: now,
+            }
+            : t
+        )
+      );
 
-    setTechView({ page: 'tech-ticket-detail', ticketId: id });
+      registrarAuditoria({
+        entidade: 'CHAMADO',
+        idEntidade: id,
+        tipoOperacao: 'ATRIBUICAO',
+        autor: activeUser?.email || 'tecnico@sti.chamados.com',
+        estadoAtual: {
+          tecnico: activeUser?.name || 'Técnico STI',
+          status: 'em_andamento'
+        },
+        metadados: { acao: 'Técnico assumiu o chamado' }
+      }).catch(err => console.error('[Auditoria] Falha ao registrar atribuição:', err));
+
+      setTechView({ page: 'tech-ticket-detail', ticketId: id });
+    } catch (err) {
+      console.error('[STI] Erro ao assumir chamado no backend:', err);
+      window.alert('Não foi possível assumir o chamado no servidor.');
+    }
   };
 
   const handleAssignTicket = async (id: string, assigneeName: string) => {
@@ -941,152 +921,161 @@ export default function App() {
     );
   };
 
-  const handleChangeStatus = (id: string, status: TicketStatus) => {
+  const handleChangeStatus = async (id: string, status: TicketStatus) => {
     const now = new Date().toISOString();
 
-    setTickets((prev) =>
-      prev.map((t) => {
-        if (t.id !== id) return t;
+    try {
+      await atualizarChamado(Number(id), { status });
 
-        const resolvedAt =
-          status === 'resolvido'
-            ? t.resolvedAt || now
-            : status === 'fechado'
-              ? t.resolvedAt || null
-              : null;
+      setTickets((prev) =>
+        prev.map((t) => {
+          if (t.id !== id) return t;
 
-        return {
-          ...t,
-          status,
-          resolvedAt,
-          updatedAt: now,
-        };
-      })
-    );
+          const resolvedAt =
+            status === 'resolvido'
+              ? t.resolvedAt || now
+              : status === 'fechado'
+                ? t.resolvedAt || null
+                : null;
 
-    registrarAuditoria({
-      entidade: 'CHAMADO',
-      idEntidade: id,
-      tipoOperacao: 'ATUALIZACAO_STATUS',
-      autor: activeUser?.email || 'tecnico@sti.chamados.com',
-      estadoAtual: { status },
-      metadados: {
-        acao: 'Mudança manual de status pelo técnico',
-      },
-    }).catch((err) =>
-      console.error(
-        '[Auditoria] Falha ao registrar alteração de status:',
-        err
-      )
-    );
+          return {
+            ...t,
+            status,
+            resolvedAt,
+            updatedAt: now,
+          };
+        })
+      );
+
+      registrarAuditoria({
+        entidade: 'CHAMADO',
+        idEntidade: id,
+        tipoOperacao: 'ATUALIZACAO_STATUS',
+        autor: activeUser?.email || 'tecnico@sti.chamados.com',
+        estadoAtual: { status },
+        metadados: {
+          acao: 'Mudança manual de status pelo técnico',
+        },
+      }).catch((err) =>
+        console.error(
+          '[Auditoria] Falha ao registrar alteração de status:',
+          err
+        )
+      );
+    } catch (err) {
+      console.error('[STI] Falha ao salvar alteração de status:', err);
+      window.alert('Não foi possível salvar a alteração de status no servidor.');
+    }
   };
 
-  const handleResolve = (
+  const handleResolve = async (
     id: string,
     solution: string,
     assetTag?: string,
     replacedParts?: string
   ) => {
-    // Despacho oficial para persistência e microsserviço DATA-AUDIT
-    dbRepository.atualizarStatusChamado(
-      id,
-      'RESOLVIDO',
-      (activeUser as any)?.name ||
-      (activeUser as any)?.email ||
-      'Técnico STI',
-      (activeUser as any)?.id || undefined,
-      solution
-    );
-
     const now = new Date().toISOString();
 
-    setTickets((prev) =>
-      prev.map((t) =>
-        t.id === id
-          ? {
+    try {
+      await atualizarChamado(Number(id), {
+        status: 'resolvido',
+        solucao: solution,
+      });
+
+      setTickets((prev) =>
+        prev.map((t) =>
+          t.id === id
+            ? {
+              ...t,
+              status: 'resolvido' as TicketStatus,
+              solution,
+              assetTag: assetTag || t.assetTag,
+              replacedParts: replacedParts || t.replacedParts,
+              resolvedAt: t.resolvedAt || now,
+              updatedAt: now,
+              updates: [
+                ...t.updates,
+                {
+                  id: String(Date.now()),
+                  author: 'tecnico' as const,
+                  authorName: activeUser.name,
+                  message: `Chamado resolvido. Solução: ${solution}`,
+                  createdAt: now,
+                },
+              ],
+            }
+            : t
+        )
+      );
+
+      registrarAuditoria({
+        entidade: 'CHAMADO',
+        idEntidade: id,
+        tipoOperacao: 'RESOLUCAO',
+        autor: activeUser?.email || 'tecnico@sti.chamados.com',
+        estadoAtual: {
+          status: 'resolvido',
+          solucao: solution,
+          patrimonio: assetTag || null,
+          pecasTrocadas: replacedParts || null,
+        },
+        metadados: {
+          acao: 'Resolução técnica concluída',
+        },
+      }).catch((err) =>
+        console.error('[Auditoria] Falha ao registar resolução:', err)
+      );
+    } catch (err) {
+      console.error('[STI] Falha ao salvar resolução no backend:', err);
+      window.alert('Não foi possível salvar a resolução do chamado no servidor.');
+    }
+  };
+
+  const handleRateTicket = async (id: string, rating: number, comment?: string) => {
+    const now = new Date().toISOString();
+
+    try {
+      await atualizarChamado(Number(id), { status: 'fechado' });
+
+      setTickets((prev) =>
+        prev.map((t) => {
+          if (t.id !== id) return t;
+          return {
             ...t,
-            status: 'resolvido' as TicketStatus,
-            solution,
-            assetTag: assetTag || t.assetTag,
-            replacedParts: replacedParts || t.replacedParts,
-
-            // Mantém a primeira data de resolução
-            resolvedAt: t.resolvedAt || now,
-
+            status: 'fechado' as const,
+            rating,
+            ratingComment: comment,
             updatedAt: now,
             updates: [
               ...t.updates,
               {
                 id: String(Date.now()),
-                author: 'tecnico' as const,
+                author: 'usuario' as const,
                 authorName: activeUser.name,
-                message: `Chamado resolvido. Solução: ${solution}`,
+                message: `Chamado avaliado com ${rating} de 5 estrelas pelo usuário.${comment ? ' Feedback: "' + comment + '"' : ''}`,
                 createdAt: now,
               },
             ],
-          }
-          : t
-      )
-    );
+          };
+        })
+      );
 
-    // Auditoria imutável: Resolução técnica do chamado
-    registrarAuditoria({
-      entidade: 'CHAMADO',
-      idEntidade: id,
-      tipoOperacao: 'RESOLUCAO',
-      autor: activeUser?.email || 'tecnico@sti.chamados.com',
-      estadoAtual: {
-        status: 'resolvido',
-        solucao: solution,
-        patrimonio: assetTag || null,
-        pecasTrocadas: replacedParts || null,
-      },
-      metadados: {
-        acao: 'Resolução técnica concluída',
-      },
-    }).catch((err) =>
-      console.error('[Auditoria] Falha ao registar resolução:', err)
-    );
-  };
-
-  const handleRateTicket = (id: string, rating: number, comment?: string) => {
-    const now = new Date().toISOString();
-    setTickets((prev) =>
-      prev.map((t) => {
-        if (t.id !== id) return t;
-        return {
-          ...t,
-          status: 'fechado' as const,
-          rating,
-          ratingComment: comment,
-          updatedAt: now,
-          updates: [
-            ...t.updates,
-            {
-              id: String(Date.now()),
-              author: 'usuario' as const,
-              authorName: activeUser.name,
-              message: `Chamado avaliado com ${rating} de 5 estrelas pelo usuário.${comment ? ' Feedback: "' + comment + '"' : ''}`,
-              createdAt: now,
-            },
-          ],
-        };
-      })
-    );
-
-    // Auditoria imutável: Avaliação e Fechamento formal pelo solicitante
-    registrarAuditoria({
-      entidade: 'CHAMADO',
-      idEntidade: id,
-      tipoOperacao: 'AVALIACAO',
-      autor: activeUser?.email || 'solicitante@sti.chamados.com',
-      estadoAtual: {
-        status: 'fechado',
-        nota: rating,
-        comentario: comment || null
-      },
-      metadados: { acao: 'Encerramento formal com avaliação de satisfação' }
-    }).catch(err => console.error('[Auditoria] Falha ao registrar avaliação:', err));
+      registrarAuditoria({
+        entidade: 'CHAMADO',
+        idEntidade: id,
+        tipoOperacao: 'AVALIACAO',
+        autor: activeUser?.email || 'solicitante@sti.chamados.com',
+        estadoAtual: {
+          status: 'fechado',
+          nota: rating,
+          comentario: comment || null
+        },
+        metadados: { acao: 'Encerramento formal com avaliação de satisfação' }
+      }).catch(err => console.error('[Auditoria] Falha ao registrar avaliação:', err));
+    } catch (err) {
+      console.error('[STI] Falha ao encerrar/avaliar chamado:', err);
+      window.alert('Não foi possível encerrar o chamado no servidor.');
+    }
   };
 
   const handleAddNote = (id: string, note: string) => {
@@ -1112,7 +1101,6 @@ export default function App() {
     );
   };
 
-  // ---- Auth screens ----
   if (!authed) {
     if (authScreen === 'register') {
       return <Register onBackToLogin={() => setAuthScreen('login')} />;
@@ -1126,7 +1114,6 @@ export default function App() {
     );
   }
 
-  // ---- User area ----
   if (role === 'usuario') {
     const navigate = (p: Page) => setUserView({ page: p });
     const openTicket = (id: string) =>
@@ -1196,7 +1183,6 @@ export default function App() {
     );
   }
 
-  // ---- Tech area ----
   if (role === 'tecnico') {
     const navigate = (p: TechPage) => setTechView({ page: p });
     const openTicket = (id: string) =>
@@ -1299,7 +1285,6 @@ export default function App() {
     );
   }
 
-  // ---- Gestor area ----
   if (role === 'gestor') {
     return (
       <div className={`flex min-h-screen ${getThemeBackground()}`}>

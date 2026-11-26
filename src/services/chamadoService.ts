@@ -15,21 +15,20 @@ export interface CriarChamadoDTO {
 
 export interface ChamadoAPI {
   id: number;
-  protocolo: string;
+  protocolo?: string;
   titulo: string;
   descricao: string;
-  categoria: string;
+  categoria?: string;
   status: string;
   prioridade: string;
-  solicitanteNome: string;
+  solicitanteNome?: string;
   solicitanteEmail?: string;
   solicitanteDepartamento?: string;
-  responsavel?: string;
-  solucao?: string;
-  criadoEm: string;
-  atualizadoEm: string;
-
-  // Campos efetivamente retornados pela API
+  responsavel?: string | null;
+  tecnico_atribuido_email?: string | null;
+  solucao?: string | null;
+  criadoEm?: string;
+  atualizadoEm?: string;
   solicitante_email?: string;
   criado_em?: string;
   atualizado_em?: string;
@@ -49,7 +48,6 @@ export async function criarChamado(
 
   if (!resposta.ok) {
     const mensagem = await resposta.text();
-
     throw new Error(
       mensagem || `Erro ao criar chamado (HTTP ${resposta.status}).`
     );
@@ -67,7 +65,6 @@ export async function listarChamados(): Promise<ChamadoAPI[]> {
 
   if (!resposta.ok) {
     const mensagem = await resposta.text();
-
     throw new Error(
       mensagem || `Erro ao listar chamados (HTTP ${resposta.status}).`
     );
@@ -85,7 +82,7 @@ export interface AtualizarChamadoDTO {
 export async function atualizarChamado(
   id: number,
   dados: AtualizarChamadoDTO
-): Promise<ChamadoAPI> {
+): Promise<any> {
   const resposta = await fetch(`${API_URL}/api/v1/chamados/${id}`, {
     method: "PUT",
     headers: {
@@ -97,11 +94,10 @@ export async function atualizarChamado(
 
   if (!resposta.ok) {
     const mensagem = await resposta.text();
-
     throw new Error(
       mensagem || `Erro ao atualizar chamado (HTTP ${resposta.status}).`
     );
   }
 
-  return resposta.json() as Promise<ChamadoAPI>;
+  return resposta.json();
 }
