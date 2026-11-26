@@ -489,7 +489,7 @@ export default function Register({ onBackToLogin }: RegisterProps) {
             </Field>
 
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              <Field label="E-mail Pessoal ou Institucional">
+              <Field label="E-mail">
                 <input
                   type="email"
                   placeholder="seu.email@exemplo.com"
