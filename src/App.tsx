@@ -760,7 +760,7 @@ export default function App() {
         activeUser.department,
       requesterLocation: 'A definir',
       requesterContact: activeUser.phone,
-      equipmentOrSystem: 'A identificar',
+      equipmentOrSystem: categoriaOrFallback(chamadoSalvo.categoria || data.category),
       approximateDate: data.startDate || now.slice(0, 10),
       impact:
         data.blocking === 'sim'
@@ -806,6 +806,10 @@ export default function App() {
       protocolo: chamadoSalvo.protocolo || generatedProtocol,
     };
   };
+
+  function categoriaOrFallback(cat: string): string {
+    return cat || 'A identificar';
+  }
 
   const handleUserReply = async (
     id: string,
@@ -1415,6 +1419,7 @@ export default function App() {
               onNavigate={navigate}
               onOpenTicket={openTicket}
               userName={activeUser?.name || ''}
+              userEmail={activeUser?.email || ''}
             />
           )}
 

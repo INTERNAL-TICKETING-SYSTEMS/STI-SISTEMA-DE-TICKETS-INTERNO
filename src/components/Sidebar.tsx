@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import {
   LayoutDashboard,
@@ -9,7 +8,6 @@ import {
   LogOut,
   ShieldCheck,
   Bug,
-  PhoneCall,
   X,
   Send,
   Check,
@@ -18,6 +16,7 @@ import {
 } from 'lucide-react';
 
 import { registrarAuditoria } from '../services/auditService';
+import { criarFeedback } from '../services/chamadoService';
 import Logo from '@/components/Logo';
 import HelpCenterModal from './HelpCenterModal';
 import { belongsToUser } from '@/utils/ticketOwnership';
@@ -147,10 +146,9 @@ export default function Sidebar({
       );
     } catch (error) {
       console.error('[Feedback] Não foi possível salvar o feedback:', error);
-      return;
     }
 
-    let authorEmail = 'servidor@sti.chamados.com';
+    let authorEmail = activeUser?.email || 'servidor@sti.chamados.com';
 
     try {
       const raw =
@@ -163,6 +161,15 @@ export default function Sidebar({
     } catch {
       // Mantém o e-mail padrão para a auditoria.
     }
+
+    void criarFeedback({
+      usuarioEmail: authorEmail,
+      tipo: feedbackType === 'falha' ? 'Falha' : 'Sugestão',
+      comentario: description,
+      nota: feedbackType === 'falha' ? 2 : 5,
+    }).catch((err) => {
+      console.error('[Feedback] Falha ao enviar feedback para o backend:', err);
+    });
 
     try {
       void registrarAuditoria({

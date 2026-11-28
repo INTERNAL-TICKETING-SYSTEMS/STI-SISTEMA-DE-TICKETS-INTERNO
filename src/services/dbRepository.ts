@@ -11,79 +11,81 @@
   atualizado_em: string;
 }
 
-// Já inclui o /api/v1 para alinhar com os RequestMapping do Spring Boot
-const API_BASE_URL = 'https://data-audit-production.up.railway.app/api/v1';
+const API_BASE_URL =
+  (
+    import.meta.env.VITE_API_URL || "https://data-audit-production.up.railway.app"
+  ).replace(/\/$/, "") + "/api/v1";
 
 export const dbRepository = {
   async buscarUsuarios(): Promise<UsuarioDB[]> {
     try {
-      const response = await fetch(`${API_BASE_URL}/auth/usuarios`);
+      const response = await fetch(`${API_BASE_URL}/chamados/equipe`);
       if (!response.ok) return [];
       return await response.json();
     } catch (e) {
-      console.error('[DB Repository] Erro ao buscar utilizadores:', e);
+      console.error("[DB Repository] Erro ao buscar usuários:", e);
       return [];
     }
   },
 
   async buscarUsuarioPorLogin(identificador: string): Promise<UsuarioDB | null> {
     try {
-      // Corrigido para apontar para /auth/login conforme o AuthController
-      const response = await fetch(`${API_BASE_URL}/auth/login`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ identificador })
-      });
+      const response = await fetch(`${API_BASE_URL}/chamados/equipe`);
       if (!response.ok) return null;
-      return await response.json();
+      const lista = await response.json();
+      if (!Array.isArray(lista)) return null;
+      const termo = identificador.trim().toLowerCase();
+      return (
+        lista.find(
+          (u: any) =>
+            String(u.email || "").toLowerCase() === termo ||
+            String(u.nome || "").toLowerCase() === termo
+        ) || null
+      );
     } catch (e) {
-      console.error('[DB Repository] Erro ao buscar utilizador por login:', e);
+      console.error("[DB Repository] Erro ao buscar usuário por login:", e);
       return null;
     }
   },
 
-  async salvarRecuperacaoOtp(usuarioId: string, otpCode: string, emailPessoal: string) {
-    try {
-      console.log('[SMTP Docker] A disparar e-mail real via backend para:', emailPessoal);
-      // Aponta corretamente para /notifications/email
-      const response = await fetch(`${API_BASE_URL}/notifications/email`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          destinatario: emailPessoal,
-          assunto: 'Código de Recuperação de Senha - STI',
-          corpo: `O seu código OTP de recuperação de senha é: ${otpCode}`
-        })
-      });
-      
-      if (!response.ok) {
-        throw new Error(`Erro HTTP: ${response.status}`);
-      }
-      console.log('[SMTP Docker] Requisição de e-mail enviada ao backend com sucesso!');
-    } catch (e) {
-      console.error('[SMTP Docker] Erro ao comunicar com o backend:', e);
-      throw e;
+  async salvarRecuperacaoOtp(_usuarioId: string, otpCode: string, emailPessoal: string) {
+    const response = await fetch(`${API_BASE_URL}/notifications/email`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        destinatario: emailPessoal,
+        assunto: "Código de Recuperação de Senha - STI",
+        corpo: `O seu código OTP de recuperação de senha é: ${otpCode}`,
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`Erro HTTP: ${response.status}`);
     }
   },
 
-  async atualizarStatusChamado(chamadoId: string, novoStatus: string, tecnicoNome?: string, tecnicoId?: string, solucao?: string) {
+  async atualizarStatusChamado(
+    chamadoId: string,
+    novoStatus: string,
+    tecnicoNome?: string,
+    _tecnicoId?: string,
+    solucao?: string
+  ) {
     try {
-      // Corrigido de PUT para PATCH, visto que o DataViolationController usa @PatchMapping
-      const response = await fetch(`${API_BASE_URL}/audit/violations/${chamadoId}/resolver`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
+      const response = await fetch(`${API_BASE_URL}/chamados/${chamadoId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          novoStatus,
-          tecnicoNome,
-          tecnicoId,
-          solucao
-        })
+          status: novoStatus,
+          responsavel: tecnicoNome,
+          solucao,
+        }),
       });
       if (!response.ok) {
-        console.error('[DB Repository] Falha ao atualizar status no backend');
+        console.error("[DB Repository] Falha ao atualizar chamado no backend");
       }
     } catch (e) {
-      console.error('[DB Repository] Erro de rede ao atualizar status:', e);
+      console.error("[DB Repository] Erro de rede ao atualizar chamado:", e);
     }
-  }
+  },
 };

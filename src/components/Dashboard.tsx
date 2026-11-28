@@ -5,12 +5,14 @@ import { PlusCircle, ClipboardList, ArrowRight, MessagesSquare, Lightbulb, Alert
 import Button from '@/components/ui/Button';
 import { Page } from '@/components/Sidebar';
 import { useTechTheme } from '@/components/tech/techTheme';
+import { criarFeedback } from '@/services/chamadoService';
 
 interface DashboardProps {
   tickets: Ticket[];
   onNavigate: (p: Page) => void;
   onOpenTicket: (id: string) => void;
   userName: string;
+  userEmail?: string;
 }
 
 export default function Dashboard({
@@ -18,6 +20,7 @@ export default function Dashboard({
   onNavigate,
   onOpenTicket,
   userName,
+  userEmail,
 }: DashboardProps) {
   const recent = tickets.slice(0, 4);
   const { isDark } = useTechTheme();
@@ -33,6 +36,34 @@ export default function Dashboard({
     iconBg: isDark ? 'bg-slate-800' : 'bg-slate-100',
     iconText: isDark ? 'text-slate-300' : 'text-slate-400',
     arrow: isDark ? 'text-slate-500' : 'text-slate-300',
+  };
+
+  const enviarFeedbackRapido = async (
+    tipo: 'Falha' | 'Sugestão',
+    tituloPrompt: string,
+    detalhePrompt: string,
+    notaPadrao: number,
+    mensagemSucesso: string
+  ) => {
+    const title = window.prompt(tituloPrompt);
+    if (!title || !title.trim()) return;
+    const description = window.prompt(detalhePrompt) || '';
+    const comentario = description.trim()
+      ? `${title.trim()}: ${description.trim()}`
+      : title.trim();
+
+    try {
+      await criarFeedback({
+        usuarioEmail: userEmail || userName || 'usuario@sti.chamados.com',
+        tipo,
+        comentario,
+        nota: notaPadrao,
+      });
+      window.alert(mensagemSucesso);
+    } catch (err) {
+      console.error('[Dashboard] Erro ao enviar feedback:', err);
+      window.alert('Não foi possível enviar o registro para o servidor.');
+    }
   };
 
   return (
@@ -106,28 +137,15 @@ export default function Dashboard({
       {/* Sugestões e Ações Rápidas de Feedback */}
       <div className="mb-12 grid gap-5 sm:grid-cols-2">
         <button
-          onClick={() => {
-            // Ação para reportar falha / abrir canal de feedback
-            const title = prompt('Descreva resumidamente a falha encontrada:');
-            if (title) {
-              const description = prompt('Detalhe o que ocorreu:') || '';
-              const existing = JSON.parse(localStorage.getItem('sti_feedback_records') || '[]');
-              const newRecord = {
-                id: 'FB-' + Math.floor(100 + Math.random() * 900),
-                type: 'falha',
-                date: new Date().toLocaleString(),
-                title,
-                description,
-                requester: userName || 'Servidor',
-                department: 'Geral',
-                profile: 'Servidor',
-                priority: 'alta',
-                status: 'Novo'
-              };
-              localStorage.setItem('sti_feedback_records', JSON.stringify([newRecord, ...existing]));
-              alert('Falha reportada com sucesso aos desenvolvedores!');
-            }
-          }}
+          onClick={() =>
+            void enviarFeedbackRapido(
+              'Falha',
+              'Descreva resumidamente a falha encontrada:',
+              'Detalhe o que ocorreu:',
+              2,
+              'Falha reportada com sucesso à equipe técnica!'
+            )
+          }
           className={`group flex items-center gap-4 rounded-2xl border p-5 text-left transition-all ${colors.card} hover:border-red-400`}
         >
           <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-red-500/10 text-red-500">
@@ -141,28 +159,15 @@ export default function Dashboard({
         </button>
 
         <button
-          onClick={() => {
-            // Ação para enviar sugestão de melhoria
-            const title = prompt('Qual a sua sugestão de melhoria?');
-            if (title) {
-              const description = prompt('Explique como essa melhoria ajudaria:') || '';
-              const existing = JSON.parse(localStorage.getItem('sti_feedback_records') || '[]');
-              const newRecord = {
-                id: 'FB-' + Math.floor(100 + Math.random() * 900),
-                type: 'sugestao',
-                date: new Date().toLocaleString(),
-                title,
-                description,
-                requester: userName || 'Servidor',
-                department: 'Geral',
-                profile: 'Servidor',
-                priority: 'media',
-                status: 'Novo'
-              };
-              localStorage.setItem('sti_feedback_records', JSON.stringify([newRecord, ...existing]));
-              alert('Sugestão enviada com sucesso!');
-            }
-          }}
+          onClick={() =>
+            void enviarFeedbackRapido(
+              'Sugestão',
+              'Qual a sua sugestão de melhoria?',
+              'Explique como essa melhoria ajudaria:',
+              5,
+              'Sugestão enviada com sucesso!'
+            )
+          }
           className={`group flex items-center gap-4 rounded-2xl border p-5 text-left transition-all ${colors.card} hover:border-amber-400`}
         >
           <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-amber-500/10 text-amber-500">
