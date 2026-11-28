@@ -3,6 +3,7 @@
 import GestorAuditTable from '@/components/gestor/GestorAuditTable';
 
 import {
+  assinarEventosChamados,
   atualizarChamado,
   criarChamado,
   criarFeedback,
@@ -14,7 +15,7 @@ import {
 import { registrarAuditoria } from './services/auditService';
 import GestorSidebar, { GestorPage, GestorPageContainer } from '@/components/gestor/GestorSidebar';
 import GestorDashboard from '@/components/gestor/GestorDashboard';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import GestorEquipe from '@/components/gestor/GestorEquipe';
 import Sidebar, { Page, PageContainer } from '@/components/Sidebar';
 import Login from '@/components/Login';
@@ -255,6 +256,89 @@ function isTecnicoEmail(email?: string): boolean {
   );
 }
 
+function mapChamadoApiToTicket(chamado: any, existing?: Ticket): Ticket {
+  const statusRecebido = String(chamado.status || '').toLowerCase();
+
+  const status: TicketStatus =
+    statusRecebido === 'em_andamento' ||
+      statusRecebido === 'em andamento'
+      ? 'em_andamento'
+      : statusRecebido === 'resolvido'
+        ? 'resolvido'
+        : statusRecebido === 'fechado'
+          ? 'fechado'
+          : statusRecebido === 'aguardando'
+            ? 'aguardando'
+            : 'aberto';
+
+  const prioridadeRecebida = String(chamado.prioridade || '').toLowerCase();
+
+  const priority: Ticket['priority'] =
+    prioridadeRecebida === 'alta'
+      ? 'alta'
+      : prioridadeRecebida === 'baixa'
+        ? 'baixa'
+        : 'media';
+
+  const criadoEm =
+    chamado.criado_em ||
+    chamado.criadoEm ||
+    existing?.createdAt ||
+    new Date().toISOString();
+
+  const atualizadoEm =
+    chamado.atualizado_em ||
+    chamado.atualizadoEm ||
+    criadoEm;
+
+  const emailSolicitante =
+    chamado.solicitante_email ||
+    chamado.solicitanteEmail ||
+    existing?.requesterEmail ||
+    '';
+
+  const categoria = chamado.categoria || existing?.category || 'Geral';
+
+  return {
+    id: String(chamado.id),
+    protocol: chamado.protocolo || existing?.protocol || `STI-${chamado.id}`,
+    title: chamado.titulo || existing?.title || 'Sem título',
+    description: chamado.descricao || existing?.description || '',
+    category: categoria,
+    status,
+    priority,
+    createdAt: criadoEm,
+    updatedAt: atualizadoEm,
+    updates: existing?.updates || [],
+    requesterName:
+      chamado.solicitanteNome ||
+      existing?.requesterName ||
+      emailSolicitante ||
+      'Não informado',
+    requesterEmail: emailSolicitante,
+    requesterDepartment:
+      chamado.solicitanteDepartamento ||
+      chamado.solicitante_departamento ||
+      existing?.requesterDepartment ||
+      'Não informado',
+    requesterLocation: existing?.requesterLocation || 'A definir',
+    requesterContact: existing?.requesterContact || emailSolicitante || '',
+    equipmentOrSystem: categoria || 'A identificar',
+    approximateDate: String(criadoEm).slice(0, 10),
+    impact: existing?.impact || 'Não informado',
+    errorMessage: existing?.errorMessage || 'Nenhuma',
+    attachments: existing?.attachments || [],
+    assignee:
+      chamado.responsavel ||
+      chamado.tecnico_atribuido_email ||
+      existing?.assignee ||
+      null,
+    attendanceStartedAt: existing?.attendanceStartedAt || null,
+    solution: chamado.solucao || existing?.solution || null,
+    internalNotes: existing?.internalNotes || [],
+  };
+}
+
 export default function App() {
   const [authScreen, setAuthScreen] = useState<AuthScreen>('login');
 
@@ -394,143 +478,100 @@ export default function App() {
 
   const [tickets, setTickets] = useState<Ticket[]>(mockTickets);
 
-  const sincronizarChamadosEMensagens = async () => {
-    const chamados = await listarChamados();
+  // Sem N+1: carrega apenas os chamados no escopo do usuário; mensagens são carregadas sob demanda
+  const sincronizarChamados = useCallback(async () => {
+    const chamados = await listarChamados(role, activeUser?.email);
+    setTickets((prev) => {
+      const prevMap = new Map(prev.map((t) => [t.id, t]));
+      return chamados.map((chamado: any) =>
+        mapChamadoApiToTicket(chamado, prevMap.get(String(chamado.id)))
+      );
+    });
+  }, [role, activeUser?.email]);
 
-    const ticketsDoBackend: Ticket[] = await Promise.all(
-      chamados.map(async (chamado: any) => {
-        const statusRecebido = String(chamado.status || '').toLowerCase();
+  const carregarMensagensDoChamado = useCallback(async (chamadoId: string) => {
+    try {
+      const mensagens = await listarMensagensChamado(chamadoId);
+      const updatesList: Ticket['updates'] = [];
+      const notesList: Ticket['internalNotes'] = [];
+      const attachmentsList: string[] = [];
 
-        const status: TicketStatus =
-          statusRecebido === 'em_andamento' ||
-            statusRecebido === 'em andamento'
-            ? 'em_andamento'
-            : statusRecebido === 'resolvido'
-              ? 'resolvido'
-              : statusRecebido === 'fechado'
-                ? 'fechado'
-                : statusRecebido === 'aguardando'
-                  ? 'aguardando'
-                  : 'aberto';
-
-        const prioridadeRecebida = String(chamado.prioridade || '').toLowerCase();
-
-        const priority: Ticket['priority'] =
-          prioridadeRecebida === 'alta'
-            ? 'alta'
-            : prioridadeRecebida === 'baixa'
-              ? 'baixa'
-              : 'media';
-
-        const criadoEm =
-          chamado.criado_em ||
-          chamado.criadoEm ||
-          new Date().toISOString();
-
-        const atualizadoEm =
-          chamado.atualizado_em ||
-          chamado.atualizadoEm ||
-          criadoEm;
-
-        const emailSolicitante =
-          chamado.solicitante_email ||
-          chamado.solicitanteEmail ||
-          '';
-
-        const categoria = chamado.categoria || 'Geral';
-
-        let updatesList: Ticket['updates'] = [];
-        const notesList: Ticket['internalNotes'] = [];
-        const attachmentsList: string[] = [];
-
-        try {
-          const mensagens = await listarMensagensChamado(chamado.id);
-          mensagens.forEach((m) => {
-            if (m.imagem_url) {
-              attachmentsList.push(m.imagem_url);
-            }
-
-            const textoMsg = m.mensagem || '';
-            if (textoMsg.startsWith('[NOTA_INTERNA] ')) {
-              notesList.push({
-                id: String(m.id),
-                authorName: m.remetente_email || 'Técnico',
-                message: textoMsg.replace('[NOTA_INTERNA] ', ''),
-                createdAt: m.criado_em || atualizadoEm,
-              });
-              return;
-            }
-
-            updatesList.push({
-              id: String(m.id),
-              author: isTecnicoEmail(m.remetente_email)
-                ? ('tecnico' as const)
-                : ('usuario' as const),
-              authorName: m.remetente_email || 'Usuário',
-              message: textoMsg || (m.imagem_url ? 'Enviou uma imagem' : ''),
-              createdAt: m.criado_em || atualizadoEm,
-              attachments: m.imagem_url
-                ? [
-                    {
-                      name: m.imagem_url.split('/').pop() || 'imagem',
-                      type: 'image/*',
-                      size: 0,
-                      url: m.imagem_url,
-                    } as any,
-                  ]
-                : [],
-            });
-          });
-        } catch {
-          // Mantém listas vazias se não houver mensagens salvas ainda
+      mensagens.forEach((m) => {
+        if (m.imagem_url) {
+          attachmentsList.push(m.imagem_url);
         }
 
-        return {
-          id: String(chamado.id),
-          protocol: chamado.protocolo || `STI-${chamado.id}`,
-          title: chamado.titulo || 'Sem título',
-          description: chamado.descricao || '',
-          category: categoria,
-          status,
-          priority,
-          createdAt: criadoEm,
-          updatedAt: atualizadoEm,
-          updates: updatesList,
-          requesterName:
-            chamado.solicitanteNome ||
-            emailSolicitante ||
-            'Não informado',
-          requesterEmail: emailSolicitante,
-          requesterDepartment:
-            chamado.solicitanteDepartamento || 'Não informado',
-          requesterLocation: 'A definir',
-          requesterContact: emailSolicitante || '',
-          equipmentOrSystem: categoria || 'A identificar',
-          approximateDate: String(criadoEm).slice(0, 10),
-          impact: 'Não informado',
-          errorMessage: 'Nenhuma',
-          attachments: attachmentsList,
-          assignee:
-            chamado.responsavel ||
-            chamado.tecnico_atribuido_email ||
-            null,
-          attendanceStartedAt: null,
-          solution: chamado.solucao || null,
-          internalNotes: notesList,
-        };
-      })
-    );
+        const textoMsg = m.mensagem || '';
+        if (textoMsg.startsWith('[NOTA_INTERNA] ')) {
+          notesList.push({
+            id: String(m.id),
+            authorName: m.remetente_email || 'Técnico',
+            message: textoMsg.replace('[NOTA_INTERNA] ', ''),
+            createdAt: m.criado_em,
+          });
+          return;
+        }
 
-    setTickets(ticketsDoBackend);
-  };
+        updatesList.push({
+          id: String(m.id),
+          author: isTecnicoEmail(m.remetente_email)
+            ? ('tecnico' as const)
+            : ('usuario' as const),
+          authorName: m.remetente_email || 'Usuário',
+          message: textoMsg || (m.imagem_url ? 'Enviou uma imagem' : ''),
+          createdAt: m.criado_em,
+          attachments: m.imagem_url
+            ? [
+                {
+                  name: m.imagem_url.split('/').pop() || 'imagem',
+                  type: 'image/*',
+                  size: 0,
+                  url: m.imagem_url,
+                } as any,
+              ]
+            : [],
+        });
+      });
+
+      setTickets((prev) =>
+        prev.map((t) =>
+          t.id === chamadoId
+            ? {
+                ...t,
+                updates: updatesList,
+                internalNotes: notesList,
+                attachments: Array.from(new Set([...t.attachments, ...attachmentsList])),
+              }
+            : t
+        )
+      );
+    } catch {
+      // Mantém estado atual caso não haja mensagens ou ocorra falha momentânea
+    }
+  }, []);
+
+  const activeDetailTicketId =
+    role === 'usuario' && userView.page === 'ticket-detail'
+      ? userView.ticketId
+      : role === 'tecnico' && techView.page === 'tech-ticket-detail'
+        ? techView.ticketId
+        : null;
 
   useEffect(() => {
+    if (activeDetailTicketId) {
+      void carregarMensagensDoChamado(activeDetailTicketId);
+    }
+  }, [activeDetailTicketId, carregarMensagensDoChamado]);
+
+  useEffect(() => {
+    if (!authed) return;
+
     let ativo = true;
 
     const executarSync = async () => {
       try {
         if (!ativo) return;
-        await sincronizarChamadosEMensagens();
+        await sincronizarChamados();
       } catch (error) {
         console.error(
           '[STI] Não foi possível carregar os chamados do backend:',
@@ -541,21 +582,23 @@ export default function App() {
 
     void executarSync();
 
-    if (!authed) {
-      return () => {
-        ativo = false;
-      };
-    }
-
-    const intervalo = window.setInterval(() => {
-      void executarSync();
-    }, 5000);
+    const cancelarSse = assinarEventosChamados((tipo, data) => {
+      if (!ativo) return;
+      if (tipo === 'chamado-criado' || tipo === 'chamado-atualizado') {
+        void sincronizarChamados();
+      } else if (tipo === 'mensagem-criada') {
+        const alvoId = data?.chamado_id ? String(data.chamado_id) : activeDetailTicketId;
+        if (alvoId) {
+          void carregarMensagensDoChamado(alvoId);
+        }
+      }
+    });
 
     return () => {
       ativo = false;
-      window.clearInterval(intervalo);
+      cancelarSse();
     };
-  }, [authed]);
+  }, [authed, sincronizarChamados, carregarMensagensDoChamado, activeDetailTicketId]);
 
   const handleSaveProfile = (updatedUser: User) => {
     const previousUser = activeUser;
@@ -964,7 +1007,7 @@ export default function App() {
   const handlePrintReport = (tipoRelatorio: string) => {
     registrarAuditoria({
       entidade: 'RELATORIO',
-      idEntidade: tipoRelatorio.toUpperCase().replace(/s+/g, '_'),
+      idEntidade: tipoRelatorio.toUpperCase().replace(/\s+/g, '_'),
       tipoOperacao: 'EMISSAO_RELATORIO',
       autor: activeUser?.email || 'gestor@sti.chamados.com',
       estadoAtual: { relatorio: tipoRelatorio, impressoEm: new Date().toISOString() },
@@ -1403,9 +1446,9 @@ export default function App() {
                 void handleUserReply(currentTicket.id, msg, replyToId, files)
               }
               onNavigate={navigate}
-              onRateTicket={(id: string, rating: number, comment?: string) =>
-                void handleRateTicket(id, rating, comment)
-              }
+              onRateTicket={(id: string, rating: number, comment?: string) => {
+                void handleRateTicket(id, rating, comment);
+              }}
             />
           )}
         </PageContainer>

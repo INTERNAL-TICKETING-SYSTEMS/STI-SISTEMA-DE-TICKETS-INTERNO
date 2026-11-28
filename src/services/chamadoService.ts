@@ -53,6 +53,54 @@ export interface FeedbackAPI {
   criado_em: string;
 }
 
+export interface MembroEquipeAPI {
+  id: number;
+  nome: string;
+  email: string;
+  perfil: string;
+  departamento: string;
+  ativo: boolean;
+  disponivel: boolean;
+}
+
+export function assinarEventosChamados(
+  onEvento: (tipo: string, data: any) => void
+): () => void {
+  const source = new EventSource(`${API_URL}/api/v1/chamados/stream`);
+
+  const tipos = ["chamado-criado", "chamado-atualizado", "mensagem-criada"];
+  tipos.forEach((tipo) => {
+    source.addEventListener(tipo, (event: MessageEvent) => {
+      try {
+        const parsed = event.data ? JSON.parse(event.data) : null;
+        onEvento(tipo, parsed);
+      } catch {
+        onEvento(tipo, event.data);
+      }
+    });
+  });
+
+  source.onerror = () => {
+    // EventSource reconecta nativamente ao cair a conexão
+  };
+
+  return () => {
+    source.close();
+  };
+}
+
+export async function listarEquipe(): Promise<MembroEquipeAPI[]> {
+  const resposta = await fetch(`${API_URL}/api/v1/chamados/equipe`, {
+    headers: { Accept: "application/json" },
+  });
+
+  if (!resposta.ok) {
+    throw new Error(`Erro ao carregar equipe (HTTP ${resposta.status}).`);
+  }
+
+  return resposta.json() as Promise<MembroEquipeAPI[]>;
+}
+
 export async function criarChamado(dados: CriarChamadoDTO): Promise<ChamadoAPI> {
   const resposta = await fetch(`${API_URL}/api/v1/chamados`, {
     method: "POST",
@@ -71,8 +119,13 @@ export async function criarChamado(dados: CriarChamadoDTO): Promise<ChamadoAPI> 
   return resposta.json() as Promise<ChamadoAPI>;
 }
 
-export async function listarChamados(): Promise<ChamadoAPI[]> {
-  const resposta = await fetch(`${API_URL}/api/v1/chamados`, {
+export async function listarChamados(role?: string, email?: string): Promise<ChamadoAPI[]> {
+  const params = new URLSearchParams();
+  if (role) params.set("role", role);
+  if (email) params.set("email", email);
+  const query = params.toString() ? `?${params.toString()}` : "";
+
+  const resposta = await fetch(`${API_URL}/api/v1/chamados${query}`, {
     headers: {
       Accept: "application/json",
     },

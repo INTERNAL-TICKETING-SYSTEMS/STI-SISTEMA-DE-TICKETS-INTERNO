@@ -1,5 +1,4 @@
-﻿
-import React from 'react';
+﻿import React from 'react';
 import { useTechTheme } from './techTheme';
 
 import {
@@ -21,6 +20,7 @@ import {
 } from '@/types';
 
 import { mockTechnicians } from '@/data';
+import { listarEquipe } from '@/services/chamadoService';
 import Logo from '../Logo';
 
 export type TechPage =
@@ -73,6 +73,34 @@ export default function TechSidebar({
   onSwitchRole,
 }: TechSidebarProps) {
   const { isDark, toggleTheme } = useTechTheme();
+  const [equipe, setEquipe] = React.useState(mockTechnicians);
+
+  React.useEffect(() => {
+    let ativo = true;
+
+    listarEquipe()
+      .then((lista) => {
+        if (!ativo || !Array.isArray(lista) || lista.length === 0) return;
+        setEquipe(
+          lista.map((m) => ({
+            id: String(m.id),
+            name: m.nome,
+            email: m.email,
+            role: m.perfil || 'Técnico de Suporte',
+            department: m.departamento || 'Suporte Técnico STI',
+            status: m.disponivel ? 'disponivel' : 'indisponivel',
+            available: m.disponivel,
+          })) as any,
+        );
+      })
+      .catch(() => {
+        // Mantém fallback local caso o endpoint ainda não responda
+      });
+
+    return () => {
+      ativo = false;
+    };
+  }, []);
 
   const unassignedCount = tickets.filter(
     (ticket) =>
@@ -314,12 +342,12 @@ export default function TechSidebar({
                 : 'bg-slate-100 text-slate-500',
             ].join(' ')}
           >
-            {mockTechnicians.length} técnicos
+            {equipe.length} técnicos
           </span>
         </div>
 
         <div className="space-y-1.5">
-          {mockTechnicians.map((tech) => {
+          {equipe.map((tech) => {
             const isMe = tech.name === userName;
 
             const techTickets = tickets.filter(
@@ -407,9 +435,7 @@ export default function TechSidebar({
                             : 'text-slate-400',
                       ].join(' ')}
                     >
-                      {isMe
-                        ? 'Você • '
-                        : ''}
+                      {isMe ? 'Você • ' : ''}
                       {available ? 'Disponível' : 'Indisponível'}
                     </span>
                   </div>

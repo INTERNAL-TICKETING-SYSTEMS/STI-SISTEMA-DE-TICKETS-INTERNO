@@ -1,5 +1,7 @@
+import { useEffect, useState } from 'react';
 import { Ticket } from '@/types';
 import { mockTechnicians } from '@/data';
+import { listarEquipe } from '@/services/chamadoService';
 import { useGestorTheme } from './GestorSidebar';
 
 interface GestorEquipeProps {
@@ -8,6 +10,34 @@ interface GestorEquipeProps {
 
 export default function GestorEquipe({ tickets }: GestorEquipeProps) {
   const { isDark } = useGestorTheme();
+  const [equipe, setEquipe] = useState(mockTechnicians);
+
+  useEffect(() => {
+    let ativo = true;
+
+    listarEquipe()
+      .then((lista) => {
+        if (!ativo || !Array.isArray(lista) || lista.length === 0) return;
+        setEquipe(
+          lista.map((m) => ({
+            id: String(m.id),
+            name: m.nome,
+            email: m.email,
+            role: m.perfil || 'Técnico de Suporte',
+            department: m.departamento || 'Suporte Técnico STI',
+            status: m.disponivel ? 'disponivel' : 'indisponivel',
+            available: m.disponivel,
+          })) as any,
+        );
+      })
+      .catch(() => {
+        // Mantém fallback local
+      });
+
+    return () => {
+      ativo = false;
+    };
+  }, []);
 
   return (
     <div className="space-y-4">
@@ -30,7 +60,7 @@ export default function GestorEquipe({ tickets }: GestorEquipeProps) {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-4">
-        {mockTechnicians.map((t) => {
+        {equipe.map((t) => {
           const techTickets = tickets.filter(
             (tk) => tk.assignee === t.name
           );

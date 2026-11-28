@@ -26,8 +26,65 @@ const GENEROS_OPCOES = [
   { valor: 'PREFIRO_NAO_DIZER', rotulo: 'Prefiro não dizer' },
 ];
 
+const IDADE_MINIMA = 18;
+const IDADE_MAXIMA = 110;
+
 const toLowerSafe = (value: unknown): string =>
   typeof value === 'string' ? value.toLowerCase() : '';
+
+function validarDataNascimento(isoDateStr: string): { valida: boolean; motivo?: string } {
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(isoDateStr.trim());
+  if (!match) {
+    return { valida: false, motivo: 'Informe uma data de nascimento válida no formato dd/mm/aaaa.' };
+  }
+
+  const ano = Number(match[1]);
+  const mes = Number(match[2]);
+  const dia = Number(match[3]);
+
+  if (mes < 1 || mes > 12 || dia < 1 || dia > 31) {
+    return { valida: false, motivo: 'Data de nascimento inexistente.' };
+  }
+
+  const dataNasc = new Date(Date.UTC(ano, mes - 1, dia));
+  if (
+    dataNasc.getUTCFullYear() !== ano ||
+    dataNasc.getUTCMonth() !== mes - 1 ||
+    dataNasc.getUTCDate() !== dia
+  ) {
+    return { valida: false, motivo: 'Data de nascimento inválida para o calendário.' };
+  }
+
+  const hoje = new Date();
+  const hojeUtc = new Date(Date.UTC(hoje.getFullYear(), hoje.getMonth(), hoje.getDate()));
+
+  if (dataNasc > hojeUtc) {
+    return { valida: false, motivo: 'A data de nascimento não pode estar no futuro.' };
+  }
+
+  let idade = hojeUtc.getUTCFullYear() - ano;
+  const mesAtual = hojeUtc.getUTCMonth() + 1;
+  const diaAtual = hojeUtc.getUTCDate();
+  if (mesAtual < mes || (mesAtual === mes && diaAtual < dia)) {
+    idade -= 1;
+  }
+
+  if (idade < IDADE_MINIMA) {
+    return {
+      valida: false,
+      motivo: `É necessário ter pelo menos ${IDADE_MINIMA} anos para realizar o cadastro.`,
+    };
+  }
+
+  if (idade > IDADE_MAXIMA) {
+    return {
+      valida: false,
+      motivo: `Data de nascimento fora do limite permitido (idade máxima de ${IDADE_MAXIMA} anos).`,
+    };
+  }
+
+  return { valida: true };
+}
 
 function gerarEmailAcessoSti(nomeCompleto: string, emailDigitado: string): string {
   const cleanEmail = emailDigitado.trim().toLowerCase();
@@ -223,7 +280,13 @@ export default function Register({ onBackToLogin }: RegisterProps) {
     }
 
     if (!birthDate) {
-      setError('Informe a data de nascimento.');
+      setError('Informe a data de nascimento no formato dd/mm/aaaa.');
+      return;
+    }
+
+    const validacaoData = validarDataNascimento(birthDate);
+    if (!validacaoData.valida) {
+      setError(validacaoData.motivo || 'Data de nascimento inválida.');
       return;
     }
 
@@ -316,7 +379,10 @@ export default function Register({ onBackToLogin }: RegisterProps) {
           }).catch((err: any) => console.error('[Auditoria] Falha:', err));
         } else {
           const errText = await res.text();
-          setError('Erro ao salvar no servidor: ' + errText);
+          setError(
+            errText ||
+              'Não foi possível concluir o cadastro com os dados informados. Verifique os campos ou entre em contato com o suporte.',
+          );
         }
       })
       .catch((err: any) => {
