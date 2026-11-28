@@ -394,7 +394,9 @@ export default function App() {
 
   const [tickets, setTickets] = useState<Ticket[]>(mockTickets);
 
-  const sincronizarChamadosEMensagens = async () => {
+  const sincronizarChamadosEMensagens = async (
+  isActive: () => boolean = () => true
+) => {
     const chamados = await listarChamados();
 
     const ticketsDoBackend: Ticket[] = await Promise.all(
@@ -521,21 +523,30 @@ export default function App() {
       })
     );
 
-    setTickets(ticketsDoBackend);
+    if (isActive()) {
+  setTickets(ticketsDoBackend);
+}
   };
 
+ 
   useEffect(() => {
     let ativo = true;
+    let sincronizando = false;
 
     const executarSync = async () => {
+      if (!ativo || sincronizando) return;
+
+      sincronizando = true;
+
       try {
-        if (!ativo) return;
-        await sincronizarChamadosEMensagens();
+        await sincronizarChamadosEMMensagens(() => ativo);
       } catch (error) {
         console.error(
           '[STI] Não foi possível carregar os chamados do backend:',
           error
         );
+      } finally {
+        sincronizando = false;
       }
     };
 
@@ -556,6 +567,8 @@ export default function App() {
       window.clearInterval(intervalo);
     };
   }, [authed]);
+
+      
 
   const handleSaveProfile = (updatedUser: User) => {
     const previousUser = activeUser;
@@ -964,7 +977,7 @@ export default function App() {
   const handlePrintReport = (tipoRelatorio: string) => {
     registrarAuditoria({
       entidade: 'RELATORIO',
-      idEntidade: tipoRelatorio.toUpperCase().replace(/s+/g, '_'),
+      idEntidade: tipoRelatorio.toUpperCase().replace(/\s+/g, '_'),
       tipoOperacao: 'EMISSAO_RELATORIO',
       autor: activeUser?.email || 'gestor@sti.chamados.com',
       estadoAtual: { relatorio: tipoRelatorio, impressoEm: new Date().toISOString() },
