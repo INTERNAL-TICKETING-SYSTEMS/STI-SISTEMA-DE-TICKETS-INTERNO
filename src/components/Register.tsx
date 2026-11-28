@@ -390,7 +390,7 @@ export default function Register({ onBackToLogin }: RegisterProps) {
           )}
 
           <form onSubmit={handleSubmit} className="space-y-7">
-            <Field label="Nome Completo">
+            <Field label="Nome Completo" labelClassName="!text-slate-700">
               <input
                 placeholder="Ex.: João da Silva"
                 value={name}
@@ -401,7 +401,7 @@ export default function Register({ onBackToLogin }: RegisterProps) {
             </Field>
 
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              <Field label="CPF">
+              <Field label="CPF" labelClassName="!text-slate-700">
                 <input
                   placeholder="000.000.000-00"
                   value={cpf}
@@ -411,7 +411,7 @@ export default function Register({ onBackToLogin }: RegisterProps) {
                   className={inputClass}
                 />
               </Field>
-              <Field label="Data de Nascimento">
+              <Field label="Data de Nascimento" labelClassName="!text-slate-700">
                 <input
                   type="text"
                   placeholder="dd/mm/aaaa"
@@ -424,7 +424,7 @@ export default function Register({ onBackToLogin }: RegisterProps) {
               </Field>
             </div>
 
-            <Field label="Gênero">
+            <Field label="Gênero" labelClassName="!text-slate-700">
               <select
                 value={gender}
                 onChange={(e) => setGender(e.target.value)}
@@ -440,7 +440,7 @@ export default function Register({ onBackToLogin }: RegisterProps) {
               </select>
             </Field>
 
-            <Field label="Setor de Lotação (DETRAN)">
+            <Field label="Setor de Lotação (DETRAN)" labelClassName="!text-slate-700">
               <div className="relative">
                 <Search className="pointer-events-none absolute left-3.5 top-1/2 z-10 h-4 w-4 -translate-y-1/2 text-slate-400" />
                 <input
@@ -489,7 +489,7 @@ export default function Register({ onBackToLogin }: RegisterProps) {
             </Field>
 
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              <Field label="E-mail">
+              <Field label="E-mail" labelClassName="!text-slate-700">
                 <input
                   type="email"
                   placeholder="seu.email@exemplo.com"
@@ -499,7 +499,7 @@ export default function Register({ onBackToLogin }: RegisterProps) {
                   className={inputClass}
                 />
               </Field>
-              <Field label="Telefone / WhatsApp">
+              <Field label="Telefone / WhatsApp" labelClassName="!text-slate-700">
                 <input
                   type="tel"
                   placeholder="(63) 99999-9999"
@@ -513,7 +513,7 @@ export default function Register({ onBackToLogin }: RegisterProps) {
             </div>
 
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              <Field label="Senha de Acesso">
+              <Field label="Senha de Acesso" labelClassName="!text-slate-700">
                 <input
                   type="password"
                   placeholder="Mínimo 8 caracteres"
@@ -524,7 +524,7 @@ export default function Register({ onBackToLogin }: RegisterProps) {
                   className={inputClass}
                 />
               </Field>
-              <Field label="Confirmar Senha">
+              <Field label="Confirmar Senha" labelClassName="!text-slate-700">
                 <input
                   type="password"
                   placeholder="Repita sua senha"
