@@ -1,5 +1,6 @@
 ﻿import { dbRepository } from '../services/dbRepository';
 import { useTechTheme } from '@/components/tech/techTheme';
+import ThreeFieldEffect from '@/components/ThreeFieldEffect';
 import React, { useState } from 'react';
 import {
   Lock,
@@ -22,6 +23,7 @@ import {
 import Button from '@/components/ui/Button';
 import { Field, Input } from '@/components/ui/Field';
 import Logo from '@/components/Logo';
+import LoginScene from '@/components/LoginScene';
 import { User, UserRole } from '@/types';
 
 const API_BASE = (
@@ -452,15 +454,25 @@ export default function Login({
         </button>
       </div>
 
+
       <section
-        className={`relative hidden overflow-hidden md:flex md:w-[42%] md:flex-col lg:w-[44%] ${isDark ? 'bg-[#081522]' : 'bg-slate-200'
+        className={`relative hidden min-h-screen overflow-hidden md:flex md:w-[42%] md:flex-col lg:w-[44%] ${isDark ? 'bg-[#06111d]' : 'bg-[#eaf2f7]'
           }`}
       >
+        {/* Fundo 3D */}
+        <div className="absolute inset-0">
+          <LoginScene isDark={isDark} />
+        </div>
+
+        {/* Gradiente para manter a identidade visual */}
         <div
-          className={`pointer-events-none absolute -left-32 -top-32 h-96 w-96 rounded-full blur-3xl ${isDark ? 'bg-cyan-500/10' : 'bg-cyan-400/20'
+          className={`pointer-events-none absolute inset-0 ${isDark
+            ? 'bg-gradient-to-br from-[#06111d]/80 via-[#071421]/35 to-[#0b3b45]/50'
+            : 'bg-gradient-to-br from-white/35 via-[#eaf2f7]/10 to-cyan-100/25'
             }`}
         />
 
+        {/* Conteúdo sobre a animação */}
         <div
           className={`relative z-10 flex min-h-screen w-full flex-col justify-between p-8 lg:p-12 ${isDark ? 'text-white' : 'text-slate-900'
             }`}
@@ -469,99 +481,32 @@ export default function Login({
             <Logo
               variant="login"
               light={isDark}
-              className="drop-shadow-[0_0_18px_rgba(20,184,166,0.16)]"
+              className="drop-shadow-[0_0_22px_rgba(20,184,166,0.22)]"
             />
           </div>
 
-          <div className="my-10 max-w-xl space-y-7">
-            <div
-              className={`inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-semibold ${isDark
-                ? 'border-cyan-500/20 bg-cyan-500/10 text-cyan-300'
-                : 'border-cyan-600/20 bg-cyan-500/10 text-cyan-800'
-                }`}
-            >
-              <span className="h-2.5 w-2.5 animate-pulse rounded-full bg-teal-400" />
-              Suporte de TI em um só lugar
-            </div>
 
-            <div className="space-y-4">
-              <h2 className="text-4xl font-bold leading-tight tracking-tight lg:text-5xl">
-                Precisa de alguma
-                <br />
-                ajuda?
-              </h2>
-              <p
-                className={`max-w-lg text-base leading-relaxed lg:text-lg ${isDark ? 'text-slate-300' : 'text-slate-600'
-                  }`}
-              >
-                Abra seu chamado, acompanhe o atendimento e veja as atualizações sem complicação.
-              </p>
 
-              <div className="space-y-3 pt-2">
-                <div
-                  className={`flex items-center gap-4 rounded-2xl border p-4 ${isDark
-                    ? 'border-white/10 bg-white/[0.03]'
-                    : 'border-slate-300/70 bg-white/60'
-                    }`}
-                >
-                  <div className="rounded-xl bg-cyan-500/15 p-3 text-cyan-500">
-                    <ShieldCheck className="h-6 w-6" />
-                  </div>
-                  <div>
-                    <h3 className="text-sm font-bold">Acesso centralizado</h3>
-                    <p className={`mt-1 text-xs ${mutedColor}`}>
-                      Um único ambiente para solicitar suporte.
-                    </p>
-                  </div>
-                </div>
-
-                <div
-                  className={`flex items-center gap-4 rounded-2xl border p-4 ${isDark
-                    ? 'border-white/10 bg-white/[0.03]'
-                    : 'border-slate-300/70 bg-white/60'
-                    }`}
-                >
-                  <div className="rounded-xl bg-cyan-500/15 p-3 text-cyan-500">
-                    <Activity className="h-6 w-6" />
-                  </div>
-                  <div>
-                    <h3 className="text-sm font-bold">Acompanhamento fácil</h3>
-                    <p className={`mt-1 text-xs ${mutedColor}`}>
-                      Consulte o andamento dos seus chamados.
-                    </p>
-                  </div>
-                </div>
-
-                <div
-                  className={`flex items-center gap-4 rounded-2xl border p-4 ${isDark
-                    ? 'border-white/10 bg-white/[0.03]'
-                    : 'border-slate-300/70 bg-white/60'
-                    }`}
-                >
-                  <div className="rounded-xl bg-cyan-500/15 p-3 text-cyan-500">
-                    <BarChart3 className="h-6 w-6" />
-                  </div>
-                  <div>
-                    <h3 className="text-sm font-bold">Atendimento organizado</h3>
-                    <p className={`mt-1 text-xs ${mutedColor}`}>
-                      Mais clareza durante todo o atendimento.
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <p className={`text-sm ${isDark ? 'text-slate-500' : 'text-slate-600'}`}>
-            STI © {new Date().getFullYear()}
+          <p
+            className={`text-xs tracking-[0.18em] ${isDark ? 'text-slate-500' : 'text-slate-500'
+              }`}
+          >
+            STI · SISTEMA DE TICKETS INTERNOS
+            <span className="mt-2 block tracking-normal">
+              © {new Date().getFullYear()}
+            </span>
           </p>
         </div>
       </section>
 
+
       <section
-        className={`flex min-h-screen flex-1 items-center justify-center px-5 py-16 sm:px-8 lg:px-12 xl:px-16 ${loginPanelBackground}`}
+        className={`relative isolate flex min-h-screen flex-1 items-center justify-center overflow-hidden px-5 py-16 sm:px-8 lg:px-12 xl:px-16 ${loginPanelBackground}`}
       >
-        <div className="w-full max-w-xl">
+        {/* Fundo 3D decorativo do painel de acesso */}
+
+        {/* Formulário permanece acima da animação */}
+        <div className="relative z-10 w-full max-w-xl">
           <div
             className={`space-y-8 rounded-3xl border p-7 shadow-2xl backdrop-blur-sm transition-all duration-300 sm:p-10 lg:p-11 ${cardBackground} ${cardBorder} ${isDark
               ? 'shadow-black/40 ring-1 ring-white/[0.03]'
@@ -579,54 +524,58 @@ export default function Login({
 
             <form onSubmit={handleSubmit} className="space-y-6">
               <Field label="E-mail de acesso" labelClassName={labelColor}>
-                <div className="relative">
-                  <Mail className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
-                  <Input
-                    type="email"
-                    required
-                    autoComplete="username"
-                    placeholder="seu.nome@sti.chamados.com"
-                    value={email}
-                    onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                      setEmail(e.target.value)
-                    }
-                    className={inputClassName}
-                  />
-                </div>
+                <ThreeFieldEffect isDark={isDark}>
+                  <div className="relative">
+                    <Mail className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
+                    <Input
+                      type="email"
+                      required
+                      autoComplete="username"
+                      placeholder="seu.nome@sti.chamados.com"
+                      value={email}
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                        setEmail(e.target.value)
+                      }
+                      className={inputClassName}
+                    />
+                  </div>
+                </ThreeFieldEffect>
               </Field>
 
               <Field label="Senha de acesso" labelClassName={labelColor}>
-                <div className="relative">
-                  <Lock className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
-                  <Input
-                    type={mostrarSenha ? 'text' : 'password'}
-                    required
-                    autoComplete="current-password"
-                    placeholder="Digite sua senha"
-                    value={senha}
-                    onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                      setSenha(e.target.value)
-                    }
-                    className={`${inputClassName} pr-12`}
-                  />
+                <ThreeFieldEffect isDark={isDark}>
+                  <div className="relative">
+                    <Lock className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
+                    <Input
+                      type={mostrarSenha ? 'text' : 'password'}
+                      required
+                      autoComplete="current-password"
+                      placeholder="Digite sua senha"
+                      value={senha}
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                        setSenha(e.target.value)
+                      }
+                      className={`${inputClassName} pr-12`}
+                    />
 
-                  <button
-                    type="button"
-                    onClick={() => setMostrarSenha((anterior) => !anterior)}
-                    aria-label={mostrarSenha ? 'Ocultar senha' : 'Mostrar senha'}
-                    title={mostrarSenha ? 'Ocultar senha' : 'Mostrar senha'}
-                    className={`absolute right-4 top-1/2 -translate-y-1/2 rounded-lg p-1.5 transition-colors focus:outline-none focus:ring-2 focus:ring-cyan-400 ${isDark
-                      ? 'text-slate-400 hover:bg-white/5 hover:text-cyan-300'
-                      : 'text-slate-500 hover:bg-slate-100 hover:text-cyan-700'
-                      }`}
-                  >
-                    {mostrarSenha ? (
-                      <EyeOff className="h-5 w-5" />
-                    ) : (
-                      <Eye className="h-5 w-5" />
-                    )}
-                  </button>
-                </div>
+                    <button
+                      type="button"
+                      onClick={() => setMostrarSenha((anterior) => !anterior)}
+                      aria-label={mostrarSenha ? 'Ocultar senha' : 'Mostrar senha'}
+                      title={mostrarSenha ? 'Ocultar senha' : 'Mostrar senha'}
+                      className={`absolute right-4 top-1/2 -translate-y-1/2 rounded-lg p-1.5 transition-colors focus:outline-none focus:ring-2 focus:ring-cyan-400 ${isDark
+                        ? 'text-slate-400 hover:bg-white/5 hover:text-cyan-300'
+                        : 'text-slate-500 hover:bg-slate-100 hover:text-cyan-700'
+                        }`}
+                    >
+                      {mostrarSenha ? (
+                        <EyeOff className="h-5 w-5" />
+                      ) : (
+                        <Eye className="h-5 w-5" />
+                      )}
+                    </button>
+                  </div>
+                </ThreeFieldEffect>
               </Field>
 
               {loginErrorMessage && (
@@ -899,3 +848,4 @@ export default function Login({
     </div>
   );
 }
+
