@@ -2,6 +2,7 @@
 import { ArrowLeft, CheckCircle2, Search } from 'lucide-react';
 import Button from './ui/Button';
 import { Field } from './ui/Field';
+import { useTechTheme } from './tech/techTheme';
 import { registrarAuditoria } from '../services/auditService';
 import { SETORES_DETRAN } from '../data/setores';
 
@@ -111,6 +112,7 @@ function gerarEmailAcessoSti(nomeCompleto: string, emailDigitado: string): strin
 }
 
 export default function Register({ onBackToLogin }: RegisterProps) {
+  const { isDark } = useTechTheme();
   const [name, setName] = useState('');
   const [cpf, setCpf] = useState('');
   const [birthDateInput, setBirthDateInput] = useState('');
@@ -425,13 +427,29 @@ export default function Register({ onBackToLogin }: RegisterProps) {
     );
   }
 
-  const inputClass =
-    'w-full rounded-xl border border-slate-300 px-4 py-3 text-sm text-slate-900 outline-none transition duration-200 focus:border-teal-600 focus:ring-2 focus:ring-teal-500/30';
+  const inputClass = `w-full rounded-xl border px-4 py-3 text-sm outline-none transition duration-200 focus:ring-2 ${isDark
+    ? 'border-slate-600 bg-[#101e30] text-slate-100 placeholder:text-slate-500 focus:border-teal-400 focus:ring-teal-500/30'
+    : 'border-slate-300 bg-white text-slate-900 placeholder:text-slate-400 focus:border-teal-600 focus:ring-teal-500/30'
+    }`;
 
   return (
-    <div className="min-h-screen bg-slate-50 md:flex">
+    <div
+      className={`min-h-screen md:flex ${isDark
+        ? 'bg-[#070e17] text-slate-100'
+        : 'bg-slate-50 text-slate-900'
+        }`}
+      style={{
+        '--field-label-color': isDark ? '#e2e8f0' : '#334155',
+        '--field-hint-color': isDark ? '#94a3b8' : '#64748b',
+      } as React.CSSProperties}
+    >
       <main className="flex min-w-0 flex-1 items-start justify-center px-4 py-5 sm:px-6 sm:py-8 lg:items-center lg:px-8">
-        <div className="w-full max-w-2xl overflow-visible rounded-2xl border border-slate-200/80 bg-white p-5 shadow-xl shadow-slate-200/50 sm:p-7 lg:p-8">
+        <div
+          className={`w-full max-w-2xl overflow-visible rounded-2xl border p-5 shadow-xl sm:p-7 lg:p-8 ${isDark
+            ? 'border-slate-700/80 bg-[#0b1727] shadow-black/30'
+            : 'border-slate-200/80 bg-white shadow-slate-200/50'
+            }`}
+        >
           <header className="mb-7">
             <button
               type="button"
@@ -530,23 +548,40 @@ export default function Register({ onBackToLogin }: RegisterProps) {
                   </p>
                 )}
 
+
                 {showSectorOptions && (
-                  <div className="absolute z-50 mt-2 max-h-60 w-full overflow-y-auto rounded-xl border border-slate-200 bg-white p-1 shadow-xl">
+                  <div
+                    className={`absolute z-50 mt-2 max-h-60 w-full overflow-y-auto rounded-xl border p-1 shadow-xl ${isDark
+                      ? 'border-slate-700 bg-[#101e30] shadow-black/30'
+                      : 'border-slate-200 bg-white'
+                      }`}
+                  >
                     {filteredSectors.map((s) => (
                       <button
                         key={s.id}
                         type="button"
                         onMouseDown={(e) => e.preventDefault()}
                         onClick={() => handleSectorSelect(s)}
-                        className="w-full rounded-lg px-3 py-3 text-left text-sm hover:bg-teal-50"
+                        className={`w-full rounded-lg px-3 py-3 text-left text-sm transition ${isDark
+                          ? 'text-slate-200 hover:bg-teal-900/40'
+                          : 'text-slate-700 hover:bg-teal-50'
+                          }`}
                       >
                         {s.sigla ? (
                           <>
-                            <span className="font-semibold text-slate-800">{s.sigla}</span>
+                            <span
+                              className={`font-semibold ${isDark ? 'text-slate-100' : 'text-slate-800'
+                                }`}
+                            >
+                              {s.sigla}
+                            </span>
                             {' — '}
                           </>
                         ) : null}
-                        <span className="text-slate-600">{s.nome}</span>
+
+                        <span className={isDark ? 'text-slate-300' : 'text-slate-600'}>
+                          {s.nome}
+                        </span>
                       </button>
                     ))}
                   </div>
@@ -608,7 +643,7 @@ export default function Register({ onBackToLogin }: RegisterProps) {
             </Button>
           </form>
         </div>
-      </main>
-    </div>
+      </main >
+    </div >
   );
 }
