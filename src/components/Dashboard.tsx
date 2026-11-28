@@ -101,7 +101,7 @@ export default function Dashboard({
       {/* SaudaÃ§Ã£o */}
       <div className="mb-8">
         <p className={`text-sm font-medium ${colors.muted}`}>
-          OlÃ¡, {userName || 'UsuÃ¡rio'}
+          Olá, {userName || 'Usuário'}
         </p>
 
         <h1 className={`mt-1 text-2xl font-bold ${colors.heading}`}>
@@ -109,7 +109,7 @@ export default function Dashboard({
         </h1>
       </div>
 
-      {/* AÃ§Ãµes principais */}
+      {/* Ações principais */}
       <div className="mb-12 grid gap-5 sm:grid-cols-2">
         <button
           onClick={() => onNavigate('abrir-chamado')}
@@ -125,7 +125,7 @@ export default function Dashboard({
             </h2>
 
             <p className={`mt-0.5 text-sm ${colors.muted}`}>
-              Conte o que estÃ¡ acontecendo e a TI vai ajudar vocÃª.
+              Conte o que está acontecendo e a TI vai ajudar você.
             </p>
           </div>
 
@@ -153,7 +153,7 @@ export default function Dashboard({
             </h2>
 
             <p className={`mt-0.5 text-sm ${colors.muted}`}>
-              Veja como estÃ£o seus pedidos de ajuda.
+              Veja como estão seus pedidos de ajuda.
             </p>
           </div>
 
@@ -164,7 +164,7 @@ export default function Dashboard({
       </div>
 
 
-      {/* AÃ§Ãµes rÃ¡pidas de feedback */}
+      {/* Ações rápidas de feedback */}
       <div className="mb-12 grid gap-5 sm:grid-cols-2">
         <button
           type="button"
@@ -200,7 +200,7 @@ export default function Dashboard({
 
           <div className="flex-1">
             <h3 className={`text-sm font-semibold ${colors.heading}`}>
-              Enviar SugestÃ£o
+              Enviar Sugestão
             </h3>
             <p className={`text-xs ${colors.muted}`}>
               Compartilhe ideias de aprimoramento do sistema.
@@ -270,7 +270,7 @@ export default function Dashboard({
                       : 'text-slate-500 hover:bg-slate-100 hover:text-slate-900'
                     }`}
                 >
-                  <span className="text-xl leading-none">Ã—</span>
+                  <span className="text-xl leading-none">×</span>
                 </button>
               </div>
 
@@ -327,7 +327,7 @@ export default function Dashboard({
                 >
                   {feedbackType === 'falha'
                     ? 'O que aconteceu de errado?'
-                    : 'Qual melhoria vocÃª gostaria de sugerir?'}
+                    : 'Qual melhoria você gostaria de sugerir?'}
                 </label>
 
                 <textarea
@@ -363,7 +363,7 @@ export default function Dashboard({
                     className={`text-[11px] ${isDark ? 'text-slate-400' : 'text-slate-500'
                       }`}
                   >
-                    Enviado com sua identificaÃ§Ã£o
+                    Enviado com sua identificação
                   </p>
 
                   <div className="flex items-center gap-2">

@@ -1000,14 +1000,14 @@ ${nome}`;
 
           <div className="space-y-2">
             <label htmlFor="beneficiary-email" className="text-sm font-medium">
-              E-mail institucional *
+              E-mail *
             </label>
             <Input
               id="beneficiary-email"
               type="email"
               value={beneficiaryEmail}
               onChange={(event) => setBeneficiaryEmail(event.target.value)}
-              placeholder="nome@orgao.gov.br"
+              placeholder="Digite o e-mail"
               autoComplete="email"
             />
           </div>
